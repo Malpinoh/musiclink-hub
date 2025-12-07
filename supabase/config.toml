@@ -1,1 +1,4 @@
 project_id = "uwzhhzkvqqvaqvkuocrz"
+
+[functions.fetch-music-metadata]
+verify_jwt = false
