@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -14,6 +14,8 @@ import {
   AlertCircle
 } from "lucide-react";
 import { toast } from "sonner";
+import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
 import {
   SpotifyIcon,
   AppleMusicIcon,
@@ -23,40 +25,42 @@ import {
   DeezerIcon,
 } from "@/components/icons/PlatformIcons";
 
+const slugify = (text: string) => {
+  return text
+    .toLowerCase()
+    .replace(/[^\w\s-]/g, '')
+    .replace(/\s+/g, '-')
+    .replace(/-+/g, '-')
+    .trim();
+};
+
 const CreateFanlink = () => {
   const navigate = useNavigate();
+  const { user, loading: authLoading } = useAuth();
   const [inputValue, setInputValue] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [isCreating, setIsCreating] = useState(false);
   const [detectedType, setDetectedType] = useState<string | null>(null);
   const [fetchedData, setFetchedData] = useState<any>(null);
+  const [platformUrls, setPlatformUrls] = useState<Record<string, string>>({});
+
+  useEffect(() => {
+    if (!authLoading && !user) {
+      navigate("/login");
+    }
+  }, [user, authLoading, navigate]);
 
   const detectInputType = (input: string) => {
     const trimmed = input.trim();
     
-    if (/^\d{12,13}$/.test(trimmed)) {
-      return "UPC";
-    }
-    if (/^[A-Z]{2}[A-Z0-9]{3}\d{7}$/.test(trimmed.toUpperCase())) {
-      return "ISRC";
-    }
-    if (trimmed.includes("spotify.com")) {
-      return "Spotify Link";
-    }
-    if (trimmed.includes("music.apple.com") || trimmed.includes("itunes.apple.com")) {
-      return "Apple Music Link";
-    }
-    if (trimmed.includes("youtube.com") || trimmed.includes("youtu.be")) {
-      return "YouTube Link";
-    }
-    if (trimmed.includes("audiomack.com")) {
-      return "Audiomack Link";
-    }
-    if (trimmed.includes("boomplay.com")) {
-      return "Boomplay Link";
-    }
-    if (trimmed.includes("deezer.com")) {
-      return "Deezer Link";
-    }
+    if (/^\d{12,13}$/.test(trimmed)) return "UPC";
+    if (/^[A-Z]{2}[A-Z0-9]{3}\d{7}$/.test(trimmed.toUpperCase())) return "ISRC";
+    if (trimmed.includes("spotify.com")) return "Spotify Link";
+    if (trimmed.includes("music.apple.com") || trimmed.includes("itunes.apple.com")) return "Apple Music Link";
+    if (trimmed.includes("youtube.com") || trimmed.includes("youtu.be")) return "YouTube Link";
+    if (trimmed.includes("audiomack.com")) return "Audiomack Link";
+    if (trimmed.includes("boomplay.com")) return "Boomplay Link";
+    if (trimmed.includes("deezer.com")) return "Deezer Link";
     
     return null;
   };
@@ -76,37 +80,113 @@ const CreateFanlink = () => {
 
     setIsLoading(true);
     
-    // Simulate API fetch - in production this would call your edge functions
-    await new Promise(resolve => setTimeout(resolve, 2000));
+    // For now, simulate fetching - in production this would call edge functions
+    await new Promise(resolve => setTimeout(resolve, 1500));
     
     // Mock fetched data
     setFetchedData({
-      title: "Amazing Track",
-      artist: "Great Artist",
-      artwork: "https://placehold.co/300x300",
+      title: "New Release",
+      artist: "Artist Name",
+      artwork_url: "",
       releaseDate: "2024",
       type: "Single",
       upc: "123456789012",
       isrc: "USRC12345678",
     });
     
+    setPlatformUrls({
+      spotify: inputValue.includes("spotify") ? inputValue : "",
+      apple_music: inputValue.includes("apple") ? inputValue : "",
+      youtube: inputValue.includes("youtube") ? inputValue : "",
+      audiomack: inputValue.includes("audiomack") ? inputValue : "",
+      boomplay: "",
+      deezer: inputValue.includes("deezer") ? inputValue : "",
+    });
+    
     setIsLoading(false);
-    toast.success("Metadata fetched successfully!");
+    toast.success("Enter track details to continue");
   };
 
-  const handleCreate = () => {
-    toast.success("Fanlink created successfully!");
-    navigate("/dashboard");
+  const handleCreate = async () => {
+    if (!fetchedData.title || !fetchedData.artist) {
+      toast.error("Please fill in the track title and artist name");
+      return;
+    }
+
+    setIsCreating(true);
+
+    try {
+      const artistSlug = slugify(fetchedData.artist);
+      const slug = slugify(fetchedData.title);
+
+      // Create fanlink
+      const { data: fanlink, error: fanlinkError } = await supabase
+        .from("fanlinks")
+        .insert({
+          user_id: user?.id,
+          title: fetchedData.title,
+          artist: fetchedData.artist,
+          artwork_url: fetchedData.artwork_url || null,
+          release_date: fetchedData.releaseDate,
+          release_type: fetchedData.type,
+          upc: fetchedData.upc,
+          isrc: fetchedData.isrc,
+          slug,
+          artist_slug: artistSlug,
+        })
+        .select()
+        .single();
+
+      if (fanlinkError) throw fanlinkError;
+
+      // Create platform links
+      const platformLinks = Object.entries(platformUrls)
+        .filter(([_, url]) => url)
+        .map(([name, url], index) => ({
+          fanlink_id: fanlink.id,
+          platform_name: name,
+          platform_url: url,
+          display_order: index,
+        }));
+
+      if (platformLinks.length > 0) {
+        const { error: platformError } = await supabase
+          .from("platform_links")
+          .insert(platformLinks);
+
+        if (platformError) throw platformError;
+      }
+
+      toast.success("Fanlink created successfully!");
+      navigate("/dashboard");
+    } catch (error: any) {
+      console.error("Error creating fanlink:", error);
+      if (error.message?.includes("duplicate")) {
+        toast.error("A fanlink with this title already exists for this artist");
+      } else {
+        toast.error("Failed to create fanlink");
+      }
+    } finally {
+      setIsCreating(false);
+    }
   };
 
   const platforms = [
-    { name: "Spotify", icon: <SpotifyIcon />, color: "#1DB954", detected: true },
-    { name: "Apple Music", icon: <AppleMusicIcon />, color: "#FA243C", detected: true },
-    { name: "YouTube Music", icon: <YouTubeIcon />, color: "#FF0000", detected: true },
-    { name: "Audiomack", icon: <AudiomackIcon />, color: "#FFA500", detected: true },
-    { name: "Boomplay", icon: <BoomplayIcon />, color: "#FFCC00", detected: false },
-    { name: "Deezer", icon: <DeezerIcon />, color: "#FEAA2D", detected: true },
+    { key: "spotify", name: "Spotify", icon: <SpotifyIcon />, color: "#1DB954" },
+    { key: "apple_music", name: "Apple Music", icon: <AppleMusicIcon />, color: "#FA243C" },
+    { key: "youtube", name: "YouTube Music", icon: <YouTubeIcon />, color: "#FF0000" },
+    { key: "audiomack", name: "Audiomack", icon: <AudiomackIcon />, color: "#FFA500" },
+    { key: "boomplay", name: "Boomplay", icon: <BoomplayIcon />, color: "#FFCC00" },
+    { key: "deezer", name: "Deezer", icon: <DeezerIcon />, color: "#FEAA2D" },
   ];
+
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background">
@@ -124,7 +204,7 @@ const CreateFanlink = () => {
               Create New <span className="gradient-text">Fanlink</span>
             </h1>
             <p className="text-muted-foreground text-lg">
-              Paste any streaming link, UPC, or ISRC to auto-generate your fanlink
+              Paste any streaming link, UPC, or ISRC to get started
             </p>
           </motion.div>
 
@@ -167,19 +247,19 @@ const CreateFanlink = () => {
                 {isLoading ? (
                   <>
                     <Loader2 className="w-5 h-5 animate-spin" />
-                    Fetching Metadata...
+                    Processing...
                   </>
                 ) : (
                   <>
                     <Search className="w-5 h-5" />
-                    Fetch & Generate Links
+                    Continue
                   </>
                 )}
               </Button>
             </div>
           </motion.div>
 
-          {/* Fetched Data Preview */}
+          {/* Fetched Data Form */}
           {fetchedData && (
             <motion.div
               initial={{ opacity: 0, y: 20 }}
@@ -190,53 +270,53 @@ const CreateFanlink = () => {
                 <h2 className="font-display text-xl font-semibold mb-6">Track Information</h2>
                 
                 <div className="flex flex-col md:flex-row gap-6">
-                  <div className="w-32 h-32 rounded-xl bg-secondary flex items-center justify-center">
+                  <div className="w-32 h-32 rounded-xl bg-secondary flex items-center justify-center shrink-0">
                     <Music2 className="w-12 h-12 text-muted-foreground" />
                   </div>
                   
                   <div className="flex-1 space-y-4">
                     <div>
-                      <label className="text-sm text-muted-foreground">Track Title</label>
-                      <Input value={fetchedData.title} onChange={() => {}} />
+                      <label className="text-sm text-muted-foreground mb-1 block">Track Title *</label>
+                      <Input 
+                        value={fetchedData.title} 
+                        onChange={(e) => setFetchedData({...fetchedData, title: e.target.value})}
+                        placeholder="Enter track title"
+                      />
                     </div>
                     <div>
-                      <label className="text-sm text-muted-foreground">Artist Name</label>
-                      <Input value={fetchedData.artist} onChange={() => {}} />
-                    </div>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <label className="text-sm text-muted-foreground">UPC</label>
-                        <Input value={fetchedData.upc} readOnly className="text-muted-foreground" />
-                      </div>
-                      <div>
-                        <label className="text-sm text-muted-foreground">ISRC</label>
-                        <Input value={fetchedData.isrc} readOnly className="text-muted-foreground" />
-                      </div>
+                      <label className="text-sm text-muted-foreground mb-1 block">Artist Name *</label>
+                      <Input 
+                        value={fetchedData.artist} 
+                        onChange={(e) => setFetchedData({...fetchedData, artist: e.target.value})}
+                        placeholder="Enter artist name"
+                      />
                     </div>
                   </div>
                 </div>
               </div>
 
-              {/* Detected Platforms */}
+              {/* Platform Links */}
               <div className="glass-card p-6 md:p-8 mb-8">
-                <h2 className="font-display text-xl font-semibold mb-6">Detected Streaming Links</h2>
+                <h2 className="font-display text-xl font-semibold mb-6">Streaming Links</h2>
                 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-4">
                   {platforms.map((platform) => (
-                    <div
-                      key={platform.name}
-                      className={`flex items-center gap-4 p-4 rounded-xl border ${
-                        platform.detected 
-                          ? "border-primary/30 bg-primary/5" 
-                          : "border-border bg-secondary/30"
-                      }`}
-                    >
-                      <span style={{ color: platform.color }}>{platform.icon}</span>
-                      <span className="flex-1 font-medium">{platform.name}</span>
-                      {platform.detected ? (
-                        <CheckCircle className="w-5 h-5 text-primary" />
+                    <div key={platform.key} className="flex items-center gap-4">
+                      <div 
+                        className="w-10 h-10 rounded-lg bg-secondary flex items-center justify-center shrink-0"
+                        style={{ color: platform.color }}
+                      >
+                        {platform.icon}
+                      </div>
+                      <Input
+                        placeholder={`${platform.name} URL`}
+                        value={platformUrls[platform.key] || ""}
+                        onChange={(e) => setPlatformUrls({...platformUrls, [platform.key]: e.target.value})}
+                      />
+                      {platformUrls[platform.key] ? (
+                        <CheckCircle className="w-5 h-5 text-primary shrink-0" />
                       ) : (
-                        <AlertCircle className="w-5 h-5 text-muted-foreground" />
+                        <AlertCircle className="w-5 h-5 text-muted-foreground shrink-0" />
                       )}
                     </div>
                   ))}
@@ -247,7 +327,7 @@ const CreateFanlink = () => {
               <div className="glass-card p-6 md:p-8 mb-8">
                 <h2 className="font-display text-xl font-semibold mb-4">Your Fanlink URL</h2>
                 <div className="bg-secondary/50 rounded-xl p-4 font-mono text-sm break-all">
-                  md.malpinohdistro.com.ng/great-artist/amazing-track
+                  /{slugify(fetchedData.artist || "artist")}/{slugify(fetchedData.title || "track")}
                 </div>
               </div>
 
@@ -256,10 +336,20 @@ const CreateFanlink = () => {
                 variant="hero"
                 size="xl"
                 onClick={handleCreate}
+                disabled={isCreating || !fetchedData.title || !fetchedData.artist}
                 className="w-full"
               >
-                Create Fanlink
-                <ArrowRight className="w-5 h-5" />
+                {isCreating ? (
+                  <>
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                    Creating...
+                  </>
+                ) : (
+                  <>
+                    Create Fanlink
+                    <ArrowRight className="w-5 h-5" />
+                  </>
+                )}
               </Button>
             </motion.div>
           )}

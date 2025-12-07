@@ -1,11 +1,19 @@
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Music2, Menu, X } from "lucide-react";
+import { Music2, Menu, X, LogOut } from "lucide-react";
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { useAuth } from "@/contexts/AuthContext";
+import { toast } from "sonner";
 
 const Header = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const { user, signOut } = useAuth();
+
+  const handleSignOut = async () => {
+    await signOut();
+    toast.success("Signed out successfully");
+  };
 
   return (
     <header className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-xl border-b border-border/50">
@@ -24,21 +32,33 @@ const Header = () => {
           <Link to="/" className="text-muted-foreground hover:text-foreground transition-colors">
             Home
           </Link>
-          <Link to="/features" className="text-muted-foreground hover:text-foreground transition-colors">
-            Features
-          </Link>
-          <Link to="/pricing" className="text-muted-foreground hover:text-foreground transition-colors">
-            Pricing
-          </Link>
+          {user && (
+            <Link to="/dashboard" className="text-muted-foreground hover:text-foreground transition-colors">
+              Dashboard
+            </Link>
+          )}
         </div>
 
         <div className="hidden md:flex items-center gap-3">
-          <Button variant="ghost" asChild>
-            <Link to="/login">Sign In</Link>
-          </Button>
-          <Button variant="hero" asChild>
-            <Link to="/dashboard">Get Started</Link>
-          </Button>
+          {user ? (
+            <>
+              <Button variant="hero" asChild>
+                <Link to="/create">Create Fanlink</Link>
+              </Button>
+              <Button variant="ghost" size="icon" onClick={handleSignOut}>
+                <LogOut className="w-5 h-5" />
+              </Button>
+            </>
+          ) : (
+            <>
+              <Button variant="ghost" asChild>
+                <Link to="/login">Sign In</Link>
+              </Button>
+              <Button variant="hero" asChild>
+                <Link to="/login">Get Started</Link>
+              </Button>
+            </>
+          )}
         </div>
 
         {/* Mobile Menu Button */}
@@ -60,22 +80,43 @@ const Header = () => {
             className="md:hidden bg-background/95 backdrop-blur-xl border-b border-border"
           >
             <div className="container mx-auto px-4 py-4 flex flex-col gap-4">
-              <Link to="/" className="py-2 text-muted-foreground hover:text-foreground transition-colors">
+              <Link 
+                to="/" 
+                className="py-2 text-muted-foreground hover:text-foreground transition-colors"
+                onClick={() => setMobileMenuOpen(false)}
+              >
                 Home
               </Link>
-              <Link to="/features" className="py-2 text-muted-foreground hover:text-foreground transition-colors">
-                Features
-              </Link>
-              <Link to="/pricing" className="py-2 text-muted-foreground hover:text-foreground transition-colors">
-                Pricing
-              </Link>
+              {user && (
+                <Link 
+                  to="/dashboard" 
+                  className="py-2 text-muted-foreground hover:text-foreground transition-colors"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  Dashboard
+                </Link>
+              )}
               <div className="flex flex-col gap-2 pt-4 border-t border-border">
-                <Button variant="ghost" asChild>
-                  <Link to="/login">Sign In</Link>
-                </Button>
-                <Button variant="hero" asChild>
-                  <Link to="/dashboard">Get Started</Link>
-                </Button>
+                {user ? (
+                  <>
+                    <Button variant="hero" asChild onClick={() => setMobileMenuOpen(false)}>
+                      <Link to="/create">Create Fanlink</Link>
+                    </Button>
+                    <Button variant="ghost" onClick={() => { handleSignOut(); setMobileMenuOpen(false); }}>
+                      <LogOut className="w-5 h-5 mr-2" />
+                      Sign Out
+                    </Button>
+                  </>
+                ) : (
+                  <>
+                    <Button variant="ghost" asChild onClick={() => setMobileMenuOpen(false)}>
+                      <Link to="/login">Sign In</Link>
+                    </Button>
+                    <Button variant="hero" asChild onClick={() => setMobileMenuOpen(false)}>
+                      <Link to="/login">Get Started</Link>
+                    </Button>
+                  </>
+                )}
               </div>
             </div>
           </motion.div>

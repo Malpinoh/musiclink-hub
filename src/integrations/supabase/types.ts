@@ -14,7 +14,166 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      clicks: {
+        Row: {
+          city: string | null
+          clicked_at: string
+          country: string | null
+          device_type: string | null
+          fanlink_id: string
+          id: string
+          ip_address: string | null
+          platform_name: string | null
+          user_agent: string | null
+        }
+        Insert: {
+          city?: string | null
+          clicked_at?: string
+          country?: string | null
+          device_type?: string | null
+          fanlink_id: string
+          id?: string
+          ip_address?: string | null
+          platform_name?: string | null
+          user_agent?: string | null
+        }
+        Update: {
+          city?: string | null
+          clicked_at?: string
+          country?: string | null
+          device_type?: string | null
+          fanlink_id?: string
+          id?: string
+          ip_address?: string | null
+          platform_name?: string | null
+          user_agent?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "clicks_fanlink_id_fkey"
+            columns: ["fanlink_id"]
+            isOneToOne: false
+            referencedRelation: "fanlinks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      fanlinks: {
+        Row: {
+          artist: string
+          artist_slug: string
+          artwork_url: string | null
+          created_at: string
+          id: string
+          is_published: boolean | null
+          isrc: string | null
+          release_date: string | null
+          release_type: string | null
+          slug: string
+          title: string
+          upc: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          artist: string
+          artist_slug: string
+          artwork_url?: string | null
+          created_at?: string
+          id?: string
+          is_published?: boolean | null
+          isrc?: string | null
+          release_date?: string | null
+          release_type?: string | null
+          slug: string
+          title: string
+          upc?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          artist?: string
+          artist_slug?: string
+          artwork_url?: string | null
+          created_at?: string
+          id?: string
+          is_published?: boolean | null
+          isrc?: string | null
+          release_date?: string | null
+          release_type?: string | null
+          slug?: string
+          title?: string
+          upc?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      platform_links: {
+        Row: {
+          created_at: string
+          display_order: number | null
+          fanlink_id: string
+          id: string
+          is_active: boolean | null
+          platform_name: string
+          platform_url: string
+        }
+        Insert: {
+          created_at?: string
+          display_order?: number | null
+          fanlink_id: string
+          id?: string
+          is_active?: boolean | null
+          platform_name: string
+          platform_url: string
+        }
+        Update: {
+          created_at?: string
+          display_order?: number | null
+          fanlink_id?: string
+          id?: string
+          is_active?: boolean | null
+          platform_name?: string
+          platform_url?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "platform_links_fanlink_id_fkey"
+            columns: ["fanlink_id"]
+            isOneToOne: false
+            referencedRelation: "fanlinks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          created_at: string
+          full_name: string | null
+          id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          avatar_url?: string | null
+          created_at?: string
+          full_name?: string | null
+          id?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          avatar_url?: string | null
+          created_at?: string
+          full_name?: string | null
+          id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
