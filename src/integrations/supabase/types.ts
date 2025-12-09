@@ -147,6 +147,107 @@ export type Database = {
           },
         ]
       }
+      pre_save_actions: {
+        Row: {
+          action_type: string
+          completed: boolean | null
+          created_at: string
+          email: string | null
+          id: string
+          pre_save_id: string
+          spotify_user_id: string | null
+        }
+        Insert: {
+          action_type: string
+          completed?: boolean | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          pre_save_id: string
+          spotify_user_id?: string | null
+        }
+        Update: {
+          action_type?: string
+          completed?: boolean | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          pre_save_id?: string
+          spotify_user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pre_save_actions_pre_save_id_fkey"
+            columns: ["pre_save_id"]
+            isOneToOne: false
+            referencedRelation: "pre_saves"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      pre_saves: {
+        Row: {
+          album_title: string | null
+          artist: string
+          artist_slug: string
+          artwork_url: string | null
+          created_at: string
+          id: string
+          is_active: boolean | null
+          is_released: boolean | null
+          isrc: string | null
+          release_date: string | null
+          slug: string
+          spotify_album_id: string | null
+          spotify_artist_id: string | null
+          spotify_uri: string | null
+          title: string
+          upc: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          album_title?: string | null
+          artist: string
+          artist_slug: string
+          artwork_url?: string | null
+          created_at?: string
+          id?: string
+          is_active?: boolean | null
+          is_released?: boolean | null
+          isrc?: string | null
+          release_date?: string | null
+          slug: string
+          spotify_album_id?: string | null
+          spotify_artist_id?: string | null
+          spotify_uri?: string | null
+          title: string
+          upc?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          album_title?: string | null
+          artist?: string
+          artist_slug?: string
+          artwork_url?: string | null
+          created_at?: string
+          id?: string
+          is_active?: boolean | null
+          is_released?: boolean | null
+          isrc?: string | null
+          release_date?: string | null
+          slug?: string
+          spotify_album_id?: string | null
+          spotify_artist_id?: string | null
+          spotify_uri?: string | null
+          title?: string
+          upc?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null

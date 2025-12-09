@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import demoArtwork from "@/assets/demo-artwork.jpg";
+import SEOHead from "@/components/SEOHead";
 import {
   SpotifyIcon,
   AppleMusicIcon,
@@ -56,6 +57,8 @@ interface Fanlink {
   artwork_url: string | null;
   release_date: string | null;
   release_type: string | null;
+  isrc: string | null;
+  upc: string | null;
 }
 
 interface PlatformLink {
@@ -185,6 +188,15 @@ const FanlinkPage = () => {
 
   return (
     <div className="min-h-screen bg-background relative overflow-hidden">
+      {/* SEO Head */}
+      <SEOHead
+        title={fanlink.title}
+        artist={fanlink.artist}
+        imageUrl={fanlink.artwork_url || undefined}
+        pageUrl={currentUrl}
+        type="fanlink"
+      />
+
       {/* Background with artwork blur */}
       <div className="absolute inset-0 z-0">
         <img
