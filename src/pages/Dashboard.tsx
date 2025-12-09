@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { motion } from "framer-motion";
@@ -14,7 +15,9 @@ import {
   Copy, 
   Trash2,
   Music2,
-  Loader2
+  Loader2,
+  Clock,
+  Calendar
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -30,6 +33,18 @@ interface Fanlink {
   created_at: string;
 }
 
+interface PreSave {
+  id: string;
+  title: string;
+  artist: string;
+  artwork_url: string | null;
+  slug: string;
+  artist_slug: string;
+  release_date: string | null;
+  is_released: boolean;
+  created_at: string;
+}
+
 interface ClickCount {
   fanlink_id: string;
   count: number;
@@ -40,8 +55,10 @@ const Dashboard = () => {
   const { user, loading: authLoading } = useAuth();
   const [searchQuery, setSearchQuery] = useState("");
   const [fanlinks, setFanlinks] = useState<Fanlink[]>([]);
+  const [preSaves, setPreSaves] = useState<PreSave[]>([]);
   const [clickCounts, setClickCounts] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState("fanlinks");
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -52,6 +69,7 @@ const Dashboard = () => {
   useEffect(() => {
     if (user) {
       fetchFanlinks();
+      fetchPreSaves();
     }
   }, [user]);
 
@@ -87,17 +105,27 @@ const Dashboard = () => {
     }
   };
 
-  const handleDelete = async (id: string) => {
+  const fetchPreSaves = async () => {
+    try {
+      const { data, error } = await supabase
+        .from("pre_saves")
+        .select("*")
+        .eq("user_id", user?.id)
+        .order("created_at", { ascending: false });
+
+      if (error) throw error;
+      setPreSaves(data || []);
+    } catch (error) {
+      console.error("Error fetching pre-saves:", error);
+    }
+  };
+
+  const handleDeleteFanlink = async (id: string) => {
     if (!confirm("Are you sure you want to delete this fanlink?")) return;
 
     try {
-      const { error } = await supabase
-        .from("fanlinks")
-        .delete()
-        .eq("id", id);
-
+      const { error } = await supabase.from("fanlinks").delete().eq("id", id);
       if (error) throw error;
-
       setFanlinks(fanlinks.filter(f => f.id !== id));
       toast.success("Fanlink deleted");
     } catch (error) {
@@ -106,16 +134,42 @@ const Dashboard = () => {
     }
   };
 
-  const handleCopyLink = async (artistSlug: string, slug: string) => {
+  const handleDeletePreSave = async (id: string) => {
+    if (!confirm("Are you sure you want to delete this pre-save?")) return;
+
+    try {
+      const { error } = await supabase.from("pre_saves").delete().eq("id", id);
+      if (error) throw error;
+      setPreSaves(preSaves.filter(p => p.id !== id));
+      toast.success("Pre-save deleted");
+    } catch (error) {
+      console.error("Error deleting pre-save:", error);
+      toast.error("Failed to delete pre-save");
+    }
+  };
+
+  const handleCopyFanlinkUrl = async (artistSlug: string, slug: string) => {
     const url = `${window.location.origin}/${artistSlug}/${slug}`;
     await navigator.clipboard.writeText(url);
     toast.success("Link copied to clipboard!");
   };
 
-  const filteredLinks = fanlinks.filter(
+  const handleCopyPreSaveUrl = async (artistSlug: string, slug: string) => {
+    const url = `${window.location.origin}/presave/${artistSlug}/${slug}`;
+    await navigator.clipboard.writeText(url);
+    toast.success("Link copied to clipboard!");
+  };
+
+  const filteredFanlinks = fanlinks.filter(
     (link) =>
       link.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
       link.artist.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  const filteredPreSaves = preSaves.filter(
+    (ps) =>
+      ps.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      ps.artist.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   const totalClicks = Object.values(clickCounts).reduce((sum, count) => sum + count, 0);
@@ -142,14 +196,22 @@ const Dashboard = () => {
           >
             <div>
               <h1 className="font-display text-3xl md:text-4xl font-bold mb-2">Dashboard</h1>
-              <p className="text-muted-foreground">Manage your fanlinks and view analytics</p>
+              <p className="text-muted-foreground">Manage your fanlinks and pre-saves</p>
             </div>
-            <Button variant="hero" size="lg" asChild>
-              <Link to="/create">
-                <Plus className="w-5 h-5" />
-                Create Fanlink
-              </Link>
-            </Button>
+            <div className="flex gap-2">
+              <Button variant="outline" asChild>
+                <Link to="/presave/create">
+                  <Clock className="w-5 h-5 mr-2" />
+                  Pre-Save
+                </Link>
+              </Button>
+              <Button variant="hero" asChild>
+                <Link to="/create">
+                  <Plus className="w-5 h-5 mr-2" />
+                  Fanlink
+                </Link>
+              </Button>
+            </div>
           </motion.div>
 
           {/* Stats Cards */}
@@ -174,11 +236,11 @@ const Dashboard = () => {
             <div className="glass-card p-6">
               <div className="flex items-center gap-4">
                 <div className="w-12 h-12 rounded-xl bg-accent/20 flex items-center justify-center">
-                  <BarChart3 className="w-6 h-6 text-accent" />
+                  <Clock className="w-6 h-6 text-accent" />
                 </div>
                 <div>
-                  <p className="text-sm text-muted-foreground">Total Clicks</p>
-                  <p className="font-display text-2xl font-bold">{totalClicks.toLocaleString()}</p>
+                  <p className="text-sm text-muted-foreground">Pre-Saves</p>
+                  <p className="font-display text-2xl font-bold">{preSaves.length}</p>
                 </div>
               </div>
             </div>
@@ -186,11 +248,11 @@ const Dashboard = () => {
             <div className="glass-card p-6">
               <div className="flex items-center gap-4">
                 <div className="w-12 h-12 rounded-xl bg-spotify/20 flex items-center justify-center">
-                  <Music2 className="w-6 h-6 text-spotify" />
+                  <BarChart3 className="w-6 h-6 text-spotify" />
                 </div>
                 <div>
-                  <p className="text-sm text-muted-foreground">Published</p>
-                  <p className="font-display text-2xl font-bold">{fanlinks.length}</p>
+                  <p className="text-sm text-muted-foreground">Total Clicks</p>
+                  <p className="font-display text-2xl font-bold">{totalClicks.toLocaleString()}</p>
                 </div>
               </div>
             </div>
@@ -214,93 +276,174 @@ const Dashboard = () => {
             </div>
           </motion.div>
 
-          {/* Fanlinks List */}
-          <motion.div
-            className="space-y-4"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.3 }}
-          >
-            {filteredLinks.length === 0 ? (
-              <div className="glass-card p-12 text-center">
-                <Music2 className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
-                <h3 className="font-display text-xl font-semibold mb-2">No fanlinks found</h3>
-                <p className="text-muted-foreground mb-6">
-                  {searchQuery ? "Try a different search term" : "Create your first fanlink to get started"}
-                </p>
-                {!searchQuery && (
-                  <Button variant="hero" asChild>
-                    <Link to="/create">
-                      <Plus className="w-5 h-5" />
-                      Create Fanlink
-                    </Link>
-                  </Button>
-                )}
-              </div>
-            ) : (
-              filteredLinks.map((link, index) => (
-                <motion.div
-                  key={link.id}
-                  className="glass-card p-4 hover:border-primary/30 transition-all duration-300"
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.3 + index * 0.05 }}
-                >
-                  <div className="flex items-center gap-4">
-                    <div className="w-16 h-16 rounded-xl bg-secondary flex items-center justify-center overflow-hidden">
-                      {link.artwork_url ? (
-                        <img
-                          src={link.artwork_url}
-                          alt={link.title}
-                          className="w-full h-full object-cover"
-                        />
-                      ) : (
-                        <Music2 className="w-8 h-8 text-muted-foreground" />
-                      )}
-                    </div>
-                    
-                    <div className="flex-1 min-w-0">
-                      <h3 className="font-display font-semibold truncate">{link.title}</h3>
-                      <p className="text-sm text-muted-foreground truncate">{link.artist}</p>
-                      <p className="text-xs text-muted-foreground/60 mt-1">
-                        /{link.artist_slug}/{link.slug}
-                      </p>
-                    </div>
+          {/* Tabs for Fanlinks and Pre-saves */}
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+            <TabsList className="mb-6">
+              <TabsTrigger value="fanlinks" className="flex items-center gap-2">
+                <Link2 className="w-4 h-4" />
+                Fanlinks ({fanlinks.length})
+              </TabsTrigger>
+              <TabsTrigger value="presaves" className="flex items-center gap-2">
+                <Clock className="w-4 h-4" />
+                Pre-Saves ({preSaves.length})
+              </TabsTrigger>
+            </TabsList>
 
-                    <div className="hidden md:flex items-center gap-6">
-                      <div className="text-right">
-                        <p className="font-display font-semibold">{(clickCounts[link.id] || 0).toLocaleString()}</p>
-                        <p className="text-xs text-muted-foreground">clicks</p>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center gap-2">
-                      <Button variant="ghost" size="icon" asChild>
-                        <Link to={`/${link.artist_slug}/${link.slug}`} target="_blank">
-                          <ExternalLink className="w-4 h-4" />
+            <TabsContent value="fanlinks">
+              <motion.div
+                className="space-y-4"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+              >
+                {filteredFanlinks.length === 0 ? (
+                  <div className="glass-card p-12 text-center">
+                    <Music2 className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
+                    <h3 className="font-display text-xl font-semibold mb-2">No fanlinks found</h3>
+                    <p className="text-muted-foreground mb-6">
+                      {searchQuery ? "Try a different search term" : "Create your first fanlink to get started"}
+                    </p>
+                    {!searchQuery && (
+                      <Button variant="hero" asChild>
+                        <Link to="/create">
+                          <Plus className="w-5 h-5 mr-2" />
+                          Create Fanlink
                         </Link>
                       </Button>
-                      <Button 
-                        variant="ghost" 
-                        size="icon"
-                        onClick={() => handleCopyLink(link.artist_slug, link.slug)}
-                      >
-                        <Copy className="w-4 h-4" />
-                      </Button>
-                      <Button 
-                        variant="ghost" 
-                        size="icon" 
-                        className="text-destructive"
-                        onClick={() => handleDelete(link.id)}
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
-                    </div>
+                    )}
                   </div>
-                </motion.div>
-              ))
-            )}
-          </motion.div>
+                ) : (
+                  filteredFanlinks.map((link, index) => (
+                    <motion.div
+                      key={link.id}
+                      className="glass-card p-4 hover:border-primary/30 transition-all duration-300"
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: index * 0.05 }}
+                    >
+                      <div className="flex items-center gap-4">
+                        <div className="w-16 h-16 rounded-xl bg-secondary flex items-center justify-center overflow-hidden">
+                          {link.artwork_url ? (
+                            <img src={link.artwork_url} alt={link.title} className="w-full h-full object-cover" />
+                          ) : (
+                            <Music2 className="w-8 h-8 text-muted-foreground" />
+                          )}
+                        </div>
+                        
+                        <div className="flex-1 min-w-0">
+                          <h3 className="font-display font-semibold truncate">{link.title}</h3>
+                          <p className="text-sm text-muted-foreground truncate">{link.artist}</p>
+                          <p className="text-xs text-muted-foreground/60 mt-1">/{link.artist_slug}/{link.slug}</p>
+                        </div>
+
+                        <div className="hidden md:flex items-center gap-6">
+                          <div className="text-right">
+                            <p className="font-display font-semibold">{(clickCounts[link.id] || 0).toLocaleString()}</p>
+                            <p className="text-xs text-muted-foreground">clicks</p>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-2">
+                          <Button variant="ghost" size="icon" asChild>
+                            <Link to={`/${link.artist_slug}/${link.slug}`} target="_blank">
+                              <ExternalLink className="w-4 h-4" />
+                            </Link>
+                          </Button>
+                          <Button variant="ghost" size="icon" onClick={() => handleCopyFanlinkUrl(link.artist_slug, link.slug)}>
+                            <Copy className="w-4 h-4" />
+                          </Button>
+                          <Button variant="ghost" size="icon" className="text-destructive" onClick={() => handleDeleteFanlink(link.id)}>
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    </motion.div>
+                  ))
+                )}
+              </motion.div>
+            </TabsContent>
+
+            <TabsContent value="presaves">
+              <motion.div
+                className="space-y-4"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+              >
+                {filteredPreSaves.length === 0 ? (
+                  <div className="glass-card p-12 text-center">
+                    <Clock className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
+                    <h3 className="font-display text-xl font-semibold mb-2">No pre-saves found</h3>
+                    <p className="text-muted-foreground mb-6">
+                      {searchQuery ? "Try a different search term" : "Create a pre-save link for upcoming releases"}
+                    </p>
+                    {!searchQuery && (
+                      <Button variant="hero" asChild>
+                        <Link to="/presave/create">
+                          <Clock className="w-5 h-5 mr-2" />
+                          Create Pre-Save
+                        </Link>
+                      </Button>
+                    )}
+                  </div>
+                ) : (
+                  filteredPreSaves.map((ps, index) => (
+                    <motion.div
+                      key={ps.id}
+                      className="glass-card p-4 hover:border-primary/30 transition-all duration-300"
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: index * 0.05 }}
+                    >
+                      <div className="flex items-center gap-4">
+                        <div className="w-16 h-16 rounded-xl bg-secondary flex items-center justify-center overflow-hidden relative">
+                          {ps.artwork_url ? (
+                            <img src={ps.artwork_url} alt={ps.title} className="w-full h-full object-cover" />
+                          ) : (
+                            <Music2 className="w-8 h-8 text-muted-foreground" />
+                          )}
+                          {!ps.is_released && (
+                            <div className="absolute bottom-0 left-0 right-0 bg-primary/90 text-[10px] text-center py-0.5 font-semibold">
+                              PRE-SAVE
+                            </div>
+                          )}
+                        </div>
+                        
+                        <div className="flex-1 min-w-0">
+                          <h3 className="font-display font-semibold truncate">{ps.title}</h3>
+                          <p className="text-sm text-muted-foreground truncate">{ps.artist}</p>
+                          {ps.release_date && (
+                            <p className="text-xs text-muted-foreground/60 mt-1 flex items-center gap-1">
+                              <Calendar className="w-3 h-3" />
+                              {ps.release_date}
+                            </p>
+                          )}
+                        </div>
+
+                        <div className="hidden md:flex items-center gap-6">
+                          <div className={`px-3 py-1 rounded-full text-xs font-medium ${ps.is_released ? 'bg-green-500/20 text-green-400' : 'bg-primary/20 text-primary'}`}>
+                            {ps.is_released ? 'Released' : 'Upcoming'}
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-2">
+                          <Button variant="ghost" size="icon" asChild>
+                            <Link to={`/presave/${ps.artist_slug}/${ps.slug}`} target="_blank">
+                              <ExternalLink className="w-4 h-4" />
+                            </Link>
+                          </Button>
+                          <Button variant="ghost" size="icon" onClick={() => handleCopyPreSaveUrl(ps.artist_slug, ps.slug)}>
+                            <Copy className="w-4 h-4" />
+                          </Button>
+                          <Button variant="ghost" size="icon" className="text-destructive" onClick={() => handleDeletePreSave(ps.id)}>
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    </motion.div>
+                  ))
+                )}
+              </motion.div>
+            </TabsContent>
+          </Tabs>
         </div>
       </main>
 
