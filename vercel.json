@@ -1,0 +1,8 @@
+{
+  "rewrites": [
+    {
+      "source": "/((?!api|_next|static|favicon.ico|robots.txt|assets|presave/create|dashboard|login|demo|create-fanlink).*)",
+      "destination": "/index.html"
+    }
+  ]
+}
