@@ -1,6 +1,6 @@
 import { useParams, Link } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Music2, Bell, Heart, UserPlus, Loader2, ExternalLink, Calendar } from "lucide-react";
+import { Music2, Bell, Heart, UserPlus, Loader2, ExternalLink, Calendar, Share2, Copy, Check } from "lucide-react";
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
@@ -8,6 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 import demoArtwork from "@/assets/demo-artwork.jpg";
 import SEOHead from "@/components/SEOHead";
 import { SpotifyIcon } from "@/components/icons/PlatformIcons";
+import { getShareablePresaveUrl } from "@/lib/shareUrl";
 
 interface PreSave {
   id: string;
@@ -29,8 +30,14 @@ const PreSavePage = () => {
   const [notFound, setNotFound] = useState(false);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [copied, setCopied] = useState(false);
 
   const currentUrl = typeof window !== 'undefined' ? window.location.href : '';
+  
+  // Generate shareable URL that works with social media crawlers
+  const shareableUrl = artist && slug 
+    ? getShareablePresaveUrl(artist, slug) 
+    : currentUrl;
 
   useEffect(() => {
     fetchPreSave();
@@ -115,6 +122,29 @@ const PreSavePage = () => {
     });
   };
 
+  const handleCopyLink = async () => {
+    await navigator.clipboard.writeText(shareableUrl);
+    setCopied(true);
+    toast.success("Link copied! This link works with social media previews.");
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  const handleShare = async () => {
+    if (navigator.share && preSave) {
+      try {
+        await navigator.share({
+          title: `${preSave.title} by ${preSave.artist}`,
+          text: `Pre-save ${preSave.title} on Spotify`,
+          url: shareableUrl,
+        });
+      } catch {
+        handleCopyLink();
+      }
+    } else {
+      handleCopyLink();
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -167,6 +197,15 @@ const PreSavePage = () => {
             </div>
             <span className="font-display font-semibold text-sm">MDistro Link</span>
           </Link>
+
+          <div className="flex gap-2">
+            <Button variant="ghost" size="icon" onClick={handleShare}>
+              <Share2 className="w-5 h-5" />
+            </Button>
+            <Button variant="ghost" size="icon" onClick={handleCopyLink}>
+              {copied ? <Check className="w-5 h-5 text-primary" /> : <Copy className="w-5 h-5" />}
+            </Button>
+          </div>
         </header>
 
         {/* Main Content */}

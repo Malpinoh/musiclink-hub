@@ -8,6 +8,7 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import demoArtwork from "@/assets/demo-artwork.jpg";
 import SEOHead from "@/components/SEOHead";
+import { getShareableFanlinkUrl } from "@/lib/shareUrl";
 import {
   SpotifyIcon,
   AppleMusicIcon,
@@ -78,6 +79,11 @@ const FanlinkPage = () => {
   const [notFound, setNotFound] = useState(false);
 
   const currentUrl = window.location.href;
+  
+  // Generate shareable URL that works with social media crawlers
+  const shareableUrl = artist && song 
+    ? getShareableFanlinkUrl(artist, song) 
+    : currentUrl;
 
   useEffect(() => {
     fetchFanlink();
@@ -143,9 +149,9 @@ const FanlinkPage = () => {
   };
 
   const handleCopyLink = async () => {
-    await navigator.clipboard.writeText(currentUrl);
+    await navigator.clipboard.writeText(shareableUrl);
     setCopied(true);
-    toast.success("Link copied to clipboard!");
+    toast.success("Link copied! This link works with social media previews.");
     setTimeout(() => setCopied(false), 2000);
   };
 
@@ -155,7 +161,7 @@ const FanlinkPage = () => {
         await navigator.share({
           title: `${fanlink.title} by ${fanlink.artist}`,
           text: `Listen to ${fanlink.title} on all platforms`,
-          url: currentUrl,
+          url: shareableUrl,
         });
       } catch {
         handleCopyLink();
@@ -240,7 +246,7 @@ const FanlinkPage = () => {
             className="absolute top-16 right-4 z-50 glass-card p-4"
           >
             <QRCodeSVG
-              value={currentUrl}
+              value={shareableUrl}
               size={150}
               bgColor="transparent"
               fgColor="white"
