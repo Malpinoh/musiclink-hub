@@ -118,11 +118,13 @@ serve(async (req) => {
       });
     }
 
-    return new Response(JSON.stringify({ 
-      redirect: pageUrl,
-      presave 
-    }), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    // For regular users, redirect to the actual presave page
+    return new Response(null, {
+      status: 302,
+      headers: { 
+        ...corsHeaders, 
+        'Location': pageUrl
+      },
     });
 
   } catch (error) {
