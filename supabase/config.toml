@@ -29,3 +29,9 @@ verify_jwt = false
 
 [functions.generate-link]
 verify_jwt = false
+
+[functions.fanlink-meta]
+verify_jwt = false
+
+[functions.presave-meta]
+verify_jwt = false
