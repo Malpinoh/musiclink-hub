@@ -15,11 +15,15 @@ serve(async (req) => {
     const url = new URL(req.url);
     const pathParts = url.pathname.split('/').filter(Boolean);
     
-    // Extract artist and slug from path: /fanlink-meta/{artist}/{slug}
-    // The function name is the first part, so we skip it
-    const functionName = pathParts[0]; // "fanlink-meta"
-    const artist = pathParts[1];
-    const slug = pathParts[2];
+    // Find the index of 'fanlink-meta' in the path
+    // URL format: /functions/v1/fanlink-meta/{artist}/{slug}
+    const functionIndex = pathParts.findIndex(part => part === 'fanlink-meta');
+    const artist = functionIndex >= 0 ? pathParts[functionIndex + 1] : undefined;
+    const slug = functionIndex >= 0 ? pathParts[functionIndex + 2] : undefined;
+    
+    console.log('Path parts:', pathParts);
+    console.log('Function index:', functionIndex);
+    console.log('Artist:', artist, 'Slug:', slug);
 
     if (!artist || !slug) {
       return new Response(JSON.stringify({ error: 'Missing artist or slug' }), {

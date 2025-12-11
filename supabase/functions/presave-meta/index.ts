@@ -15,8 +15,15 @@ serve(async (req) => {
     const url = new URL(req.url);
     const pathParts = url.pathname.split('/').filter(Boolean);
     
-    const artist = pathParts[1];
-    const slug = pathParts[2];
+    // Find the index of 'presave-meta' in the path
+    // URL format: /functions/v1/presave-meta/{artist}/{slug}
+    const functionIndex = pathParts.findIndex(part => part === 'presave-meta');
+    const artist = functionIndex >= 0 ? pathParts[functionIndex + 1] : undefined;
+    const slug = functionIndex >= 0 ? pathParts[functionIndex + 2] : undefined;
+    
+    console.log('Path parts:', pathParts);
+    console.log('Function index:', functionIndex);
+    console.log('Artist:', artist, 'Slug:', slug);
 
     if (!artist || !slug) {
       return new Response(JSON.stringify({ error: 'Missing artist or slug' }), {
