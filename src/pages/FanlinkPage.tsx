@@ -1,7 +1,7 @@
 import { useParams, Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { QRCodeSVG } from "qrcode.react";
-import { Music2, Share2, Copy, Check, ExternalLink, Loader2 } from "lucide-react";
+import { Share2, Copy, Check, ExternalLink, Loader2, Music2 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
@@ -9,6 +9,7 @@ import { supabase } from "@/integrations/supabase/client";
 import demoArtwork from "@/assets/demo-artwork.jpg";
 import SEOHead from "@/components/SEOHead";
 import { getShareableFanlinkUrl } from "@/lib/shareUrl";
+import logo from "@/assets/logo.png";
 import {
   SpotifyIcon,
   AppleMusicIcon,
@@ -217,9 +218,7 @@ const FanlinkPage = () => {
         {/* Header */}
         <header className="p-4 flex justify-between items-center">
           <Link to="/" className="flex items-center gap-2 opacity-70 hover:opacity-100 transition-opacity">
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-primary to-accent flex items-center justify-center">
-              <Music2 className="w-4 h-4 text-primary-foreground" />
-            </div>
+            <img src={logo} alt="MDistro Link" className="w-8 h-8 rounded-lg" />
             <span className="font-display font-semibold text-sm">MDistro Link</span>
           </Link>
 
@@ -348,7 +347,7 @@ const FanlinkPage = () => {
             to="/"
             className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
           >
-            <Music2 className="w-4 h-4" />
+            <img src={logo} alt="MDistro Link" className="w-4 h-4 rounded" />
             <span>Powered by MDistro Link</span>
           </Link>
         </footer>

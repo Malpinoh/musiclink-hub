@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
-import { Music2, Twitter, Instagram, Youtube } from "lucide-react";
+import { Twitter, Instagram, Youtube } from "lucide-react";
+import logo from "@/assets/logo.png";
 
 const Footer = () => {
   return (
@@ -9,9 +10,7 @@ const Footer = () => {
           {/* Brand */}
           <div className="md:col-span-1">
             <Link to="/" className="flex items-center gap-2 mb-4">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-accent flex items-center justify-center">
-                <Music2 className="w-5 h-5 text-primary-foreground" />
-              </div>
+              <img src={logo} alt="MDistro Link" className="w-10 h-10 rounded-xl" />
               <span className="font-display font-bold text-xl">
                 MDistro<span className="text-primary">Link</span>
               </span>
