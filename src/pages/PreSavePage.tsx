@@ -9,6 +9,7 @@ import demoArtwork from "@/assets/demo-artwork.jpg";
 import SEOHead from "@/components/SEOHead";
 import { SpotifyIcon } from "@/components/icons/PlatformIcons";
 import { getShareablePresaveUrl } from "@/lib/shareUrl";
+import logo from "@/assets/logo.png";
 
 interface PreSave {
   id: string;
@@ -192,9 +193,7 @@ const PreSavePage = () => {
         {/* Header */}
         <header className="p-4 flex justify-between items-center">
           <Link to="/" className="flex items-center gap-2 opacity-70 hover:opacity-100 transition-opacity">
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-primary to-accent flex items-center justify-center">
-              <Music2 className="w-4 h-4 text-primary-foreground" />
-            </div>
+            <img src={logo} alt="MDistro Link" className="w-8 h-8 rounded-lg" />
             <span className="font-display font-semibold text-sm">MDistro Link</span>
           </Link>
 
@@ -330,7 +329,7 @@ const PreSavePage = () => {
             to="/"
             className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
           >
-            <Music2 className="w-4 h-4" />
+            <img src={logo} alt="MDistro Link" className="w-4 h-4 rounded" />
             <span>Powered by MDistro Link</span>
           </Link>
         </footer>
