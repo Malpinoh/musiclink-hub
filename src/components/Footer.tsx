@@ -10,7 +10,7 @@ const Footer = () => {
           {/* Brand */}
           <div className="md:col-span-1">
             <Link to="/" className="flex items-center gap-2 mb-4">
-              <img src={logo} alt="MDistro Link" className="w-10 h-10 rounded-xl" />
+              <img src={logo} alt="MDistro Link" className="w-8 h-8 rounded-lg" />
               <span className="font-display font-bold text-xl">
                 MDistro<span className="text-primary">Link</span>
               </span>
