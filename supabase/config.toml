@@ -35,3 +35,6 @@ verify_jwt = false
 
 [functions.presave-meta]
 verify_jwt = false
+
+[functions.generate-presave-links]
+verify_jwt = false
