@@ -17,7 +17,8 @@ import {
   Music2,
   Loader2,
   Clock,
-  Calendar
+  Calendar,
+  Edit
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -344,6 +345,11 @@ const Dashboard = () => {
 
                         <div className="flex items-center gap-2">
                           <Button variant="ghost" size="icon" asChild>
+                            <Link to={`/edit/fanlink/${link.id}`}>
+                              <Edit className="w-4 h-4" />
+                            </Link>
+                          </Button>
+                          <Button variant="ghost" size="icon" asChild>
                             <Link to={`/${link.artist_slug}/${link.slug}`} target="_blank">
                               <ExternalLink className="w-4 h-4" />
                             </Link>
@@ -425,6 +431,11 @@ const Dashboard = () => {
                         </div>
 
                         <div className="flex items-center gap-2">
+                          <Button variant="ghost" size="icon" asChild>
+                            <Link to={`/edit/presave/${ps.id}`}>
+                              <Edit className="w-4 h-4" />
+                            </Link>
+                          </Button>
                           <Button variant="ghost" size="icon" asChild>
                             <Link to={`/presave/${ps.artist_slug}/${ps.slug}`} target="_blank">
                               <ExternalLink className="w-4 h-4" />
