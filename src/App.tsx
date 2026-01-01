@@ -11,6 +11,8 @@ import Index from "./pages/Index";
 import Dashboard from "./pages/Dashboard";
 import CreateFanlink from "./pages/CreateFanlink";
 import CreatePreSave from "./pages/CreatePreSave";
+import EditFanlink from "./pages/EditFanlink";
+import EditPreSave from "./pages/EditPreSave";
 import Login from "./pages/Login";
 import FanlinkPage from "./pages/FanlinkPage";
 import PreSavePage from "./pages/PreSavePage";
@@ -44,8 +46,9 @@ const App = () => {
               <Route path="/" element={<Index />} />
               <Route path="/dashboard" element={<Dashboard />} />
               <Route path="/create" element={<CreateFanlink />} />
+              <Route path="/edit/fanlink/:id" element={<EditFanlink />} />
+              <Route path="/edit/presave/:id" element={<EditPreSave />} />
               <Route path="/presave/create" element={<CreatePreSave />} />
-              <Route path="/presave/:artist/:slug" element={<PreSavePage />} />
               <Route path="/login" element={<Login />} />
               <Route path="/demo" element={<DemoPage />} />
               <Route path="/:artist/:song" element={<FanlinkPage />} />
