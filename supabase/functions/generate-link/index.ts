@@ -306,8 +306,57 @@ function calculateAccuracyScore(
   return { score: Math.min(score, 100), breakdown };
 }
 
+// Fetch Apple Music link by UPC using iTunes API
+async function fetchAppleMusicByUPC(upc: string, expectedArtist: string, expectedTitle: string): Promise<string | null> {
+  try {
+    const url = `https://itunes.apple.com/lookup?upc=${encodeURIComponent(upc)}&entity=song`;
+    console.log("Fetching Apple Music by UPC:", url);
+    
+    const response = await fetch(url);
+    const data = await response.json();
+    
+    if (data.results && data.results.length > 0) {
+      // Find the matching track by verifying artist and title
+      for (const result of data.results) {
+        if (result.wrapperType === "track") {
+          const artistMatch = result.artistName?.toLowerCase().includes(expectedArtist.toLowerCase()) ||
+                              expectedArtist.toLowerCase().includes(result.artistName?.toLowerCase());
+          const titleMatch = result.trackName?.toLowerCase().includes(expectedTitle.toLowerCase()) ||
+                             expectedTitle.toLowerCase().includes(result.trackName?.toLowerCase());
+          
+          if (artistMatch || titleMatch) {
+            console.log("Apple Music match found:", result.trackViewUrl);
+            return result.trackViewUrl;
+          }
+        }
+        // Also check for album/collection level match
+        if (result.wrapperType === "collection" && result.collectionViewUrl) {
+          console.log("Apple Music album match found:", result.collectionViewUrl);
+          return result.collectionViewUrl;
+        }
+      }
+      // If we have results but no exact match, still return the first track URL if available
+      const firstTrack = data.results.find((r: any) => r.wrapperType === "track");
+      if (firstTrack?.trackViewUrl) {
+        console.log("Apple Music first track:", firstTrack.trackViewUrl);
+        return firstTrack.trackViewUrl;
+      }
+    }
+    
+    console.log("No Apple Music match found for UPC:", upc);
+    return null;
+  } catch (error) {
+    console.error("Error fetching Apple Music by UPC:", error);
+    return null;
+  }
+}
+
 // Generate streaming links
-function generateStreamingLinks(track: SpotifyTrack): Record<string, string> {
+async function generateStreamingLinks(
+  track: SpotifyTrack, 
+  upc: string | null,
+  inputType: string
+): Promise<Record<string, string>> {
   const links: Record<string, string> = {};
   const query = encodeURIComponent(`${track.artists[0]?.name || ""} ${track.name}`);
   const artistQuery = encodeURIComponent(track.artists[0]?.name || "");
@@ -316,8 +365,22 @@ function generateStreamingLinks(track: SpotifyTrack): Record<string, string> {
   // Spotify (verified)
   links.spotify = track.external_urls.spotify;
 
-  // Apple Music search
-  links.apple_music = `https://music.apple.com/search?term=${query}`;
+  // Apple Music - ONLY via UPC lookup, never inferred from Spotify
+  if (upc) {
+    const appleMusicUrl = await fetchAppleMusicByUPC(
+      upc, 
+      track.artists[0]?.name || "", 
+      track.name
+    );
+    if (appleMusicUrl) {
+      links.apple_music = appleMusicUrl;
+    } else {
+      links.apple_music = "Apple Music link not available yet.";
+    }
+  } else {
+    // No UPC available - cannot generate Apple Music link
+    links.apple_music = "Apple Music link not available yet.";
+  }
 
   // YouTube Music
   links.youtube = `https://music.youtube.com/search?q=${query}`;
@@ -381,9 +444,13 @@ serve(async (req) => {
     const isUPC = /^\d{12,13}$/.test(trimmedInput);
     const isISRC = /^[A-Z]{2}[A-Z0-9]{3}\d{7}$/i.test(trimmedInput);
     const isSpotifyUrl = trimmedInput.includes("spotify.com");
+    
+    // Store UPC for Apple Music lookup
+    let upcForAppleMusic: string | null = null;
 
     if (isUPC) {
       console.log("Searching by UPC:", trimmedInput);
+      upcForAppleMusic = trimmedInput;
       inputType = "upc";
       track = await searchByUPC(token, trimmedInput);
     } else if (isISRC) {
@@ -435,6 +502,9 @@ serve(async (req) => {
     // Calculate accuracy score
     const { score, breakdown } = calculateAccuracyScore(inputType, track, trimmedInput);
 
+    // Generate streaming links (async for Apple Music UPC lookup)
+    const streamingLinks = await generateStreamingLinks(track, upcForAppleMusic, inputType);
+
     // Build result
     const result: LinkResult = {
       metadata: {
@@ -444,7 +514,7 @@ serve(async (req) => {
         album_id: track.album?.id || "",
         artist_id: track.artists[0]?.id || "",
         isrc: track.external_ids?.isrc || null,
-        upc: track.external_ids?.upc || null,
+        upc: upcForAppleMusic || track.external_ids?.upc || null,
         release_date: track.album?.release_date || null,
         artwork: {
           large: track.album?.images?.find(i => i.width === 640)?.url || track.album?.images?.[0]?.url || null,
@@ -455,7 +525,7 @@ serve(async (req) => {
         spotify_artist_url: track.artists[0]?.external_urls?.spotify || null,
         spotify_album_url: track.album?.external_urls?.spotify || null,
       },
-      streaming_links: generateStreamingLinks(track),
+      streaming_links: streamingLinks,
       accuracy_score: score,
       accuracy_breakdown: breakdown,
     };
