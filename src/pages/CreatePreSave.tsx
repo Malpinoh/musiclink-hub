@@ -82,28 +82,45 @@ const CreatePreSave = () => {
         body: { input: inputValue.trim() }
       });
 
-      if (error) throw error;
-      if (!data || !data.title) {
+      if (error) {
+        // Check if this is a "not found" error - the release may not be live yet
+        const errorData = error.message ? JSON.parse(error.message.replace('Edge function returned 404: Error, ', '')) : null;
+        if (errorData?.error?.includes('No track found')) {
+          toast.error("Release not found on Spotify yet. For upcoming releases, you may need to enter the details manually or wait until it's distributed.");
+          return;
+        }
+        throw error;
+      }
+      
+      if (!data) {
         toast.error("Could not find release information");
         return;
       }
 
+      // Handle the response structure from generate-link
+      const metadata = data.metadata || data;
+      
       setMetadata({
-        title: data.title,
-        artist: data.artist,
-        album: data.album || data.title,
-        artworkUrl: data.artwork?.large || data.artwork?.medium || '',
-        releaseDate: data.releaseDate || '',
-        spotifyUri: data.spotifyUri || '',
-        spotifyAlbumId: data.spotifyAlbumId || '',
-        spotifyArtistId: data.spotifyArtistId || '',
-        isrc: data.isrc || ''
+        title: metadata.title || '',
+        artist: metadata.artist || '',
+        album: metadata.album || metadata.title || '',
+        artworkUrl: metadata.artwork?.large || metadata.artwork?.medium || '',
+        releaseDate: metadata.release_date || '',
+        spotifyUri: metadata.spotify_track_url ? `spotify:track:${metadata.spotify_track_url.split('/').pop()}` : '',
+        spotifyAlbumId: metadata.album_id || '',
+        spotifyArtistId: metadata.artist_id || '',
+        isrc: metadata.isrc || ''
       });
 
       toast.success("Release metadata fetched!");
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error fetching metadata:", error);
-      toast.error("Failed to fetch metadata. Please try again.");
+      // Try to parse a more helpful error message
+      if (error.message?.includes('No track found')) {
+        toast.error("Release not found. It may not be distributed to Spotify yet.");
+      } else {
+        toast.error("Failed to fetch metadata. Please try again.");
+      }
     } finally {
       setLoading(false);
     }
