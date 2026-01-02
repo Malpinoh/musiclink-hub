@@ -31,6 +31,23 @@ import {
   getPlatformIcon,
   getPlatformDisplayName
 } from "@/components/icons/PlatformIcons";
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  useSortable,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 
 interface PlatformLink {
   id: string;
@@ -52,6 +69,69 @@ interface Fanlink {
   release_date: string | null;
   release_type: string | null;
 }
+
+interface SortablePlatformItemProps {
+  link: PlatformLink;
+  onUpdateUrl: (id: string, url: string) => void;
+  onDelete: (id: string) => void;
+}
+
+const SortablePlatformItem = ({ link, onUpdateUrl, onDelete }: SortablePlatformItemProps) => {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: link.id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  };
+
+  const PlatformIcon = getPlatformIcon(link.platform_name);
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className={`flex items-center gap-3 ${isDragging ? 'z-50' : ''}`}
+    >
+      <div
+        {...attributes}
+        {...listeners}
+        className="cursor-grab active:cursor-grabbing touch-none"
+      >
+        <GripVertical className="w-4 h-4 text-muted-foreground" />
+      </div>
+      <div className="w-10 h-10 rounded-lg bg-secondary flex items-center justify-center shrink-0">
+        <PlatformIcon className="w-5 h-5" />
+      </div>
+      <div className="flex-1">
+        <p className="text-xs text-muted-foreground mb-1">
+          {getPlatformDisplayName(link.platform_name)}
+        </p>
+        <Input
+          value={link.platform_url}
+          onChange={(e) => onUpdateUrl(link.id, e.target.value)}
+          placeholder="Enter URL..."
+          className="h-9"
+        />
+      </div>
+      <Button
+        variant="ghost"
+        size="icon"
+        className="text-destructive shrink-0"
+        onClick={() => onDelete(link.id)}
+      >
+        <Trash2 className="w-4 h-4" />
+      </Button>
+    </div>
+  );
+};
 
 const platformOptions = [
   { key: "spotify", name: "Spotify", icon: SpotifyIcon, color: "#1DB954" },
@@ -76,6 +156,30 @@ const EditFanlink = () => {
   const [platformLinks, setPlatformLinks] = useState<PlatformLink[]>([]);
   const [newPlatform, setNewPlatform] = useState("");
   const [newPlatformUrl, setNewPlatformUrl] = useState("");
+
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+
+    if (over && active.id !== over.id) {
+      setPlatformLinks((items) => {
+        const oldIndex = items.findIndex((item) => item.id === active.id);
+        const newIndex = items.findIndex((item) => item.id === over.id);
+        const newItems = arrayMove(items, oldIndex, newIndex);
+        // Update display_order for all items
+        return newItems.map((item, index) => ({
+          ...item,
+          display_order: index,
+        }));
+      });
+    }
+  };
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -332,38 +436,27 @@ const EditFanlink = () => {
               Platform Links ({platformLinks.length})
             </h2>
             
-            <div className="space-y-3 mb-6">
-              {platformLinks.map((link) => {
-                const PlatformIcon = getPlatformIcon(link.platform_name);
-                return (
-                  <div key={link.id} className="flex items-center gap-3">
-                    <GripVertical className="w-4 h-4 text-muted-foreground cursor-grab" />
-                    <div className="w-10 h-10 rounded-lg bg-secondary flex items-center justify-center shrink-0">
-                      <PlatformIcon className="w-5 h-5" />
-                    </div>
-                    <div className="flex-1">
-                      <p className="text-xs text-muted-foreground mb-1">
-                        {getPlatformDisplayName(link.platform_name)}
-                      </p>
-                      <Input
-                        value={link.platform_url}
-                        onChange={(e) => updatePlatformUrl(link.id, e.target.value)}
-                        placeholder="Enter URL..."
-                        className="h-9"
-                      />
-                    </div>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="text-destructive shrink-0"
-                      onClick={() => handleDeletePlatform(link.id)}
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </Button>
-                  </div>
-                );
-              })}
-            </div>
+            <DndContext
+              sensors={sensors}
+              collisionDetection={closestCenter}
+              onDragEnd={handleDragEnd}
+            >
+              <SortableContext
+                items={platformLinks.map(l => l.id)}
+                strategy={verticalListSortingStrategy}
+              >
+                <div className="space-y-3 mb-6">
+                  {platformLinks.map((link) => (
+                    <SortablePlatformItem
+                      key={link.id}
+                      link={link}
+                      onUpdateUrl={updatePlatformUrl}
+                      onDelete={handleDeletePlatform}
+                    />
+                  ))}
+                </div>
+              </SortableContext>
+            </DndContext>
 
             {/* Add New Platform */}
             <div className="border-t border-border pt-4">
