@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -31,23 +31,6 @@ import {
   getPlatformIcon,
   getPlatformDisplayName
 } from "@/components/icons/PlatformIcons";
-import {
-  DndContext,
-  closestCenter,
-  KeyboardSensor,
-  PointerSensor,
-  useSensor,
-  useSensors,
-  DragEndEvent,
-} from "@dnd-kit/core";
-import {
-  arrayMove,
-  SortableContext,
-  sortableKeyboardCoordinates,
-  useSortable,
-  verticalListSortingStrategy,
-} from "@dnd-kit/sortable";
-import { CSS } from "@dnd-kit/utilities";
 
 interface PlatformLink {
   id: string;
@@ -69,69 +52,6 @@ interface Fanlink {
   release_date: string | null;
   release_type: string | null;
 }
-
-interface SortablePlatformItemProps {
-  link: PlatformLink;
-  onUpdateUrl: (id: string, url: string) => void;
-  onDelete: (id: string) => void;
-}
-
-const SortablePlatformItem = ({ link, onUpdateUrl, onDelete }: SortablePlatformItemProps) => {
-  const {
-    attributes,
-    listeners,
-    setNodeRef,
-    transform,
-    transition,
-    isDragging,
-  } = useSortable({ id: link.id });
-
-  const style = {
-    transform: CSS.Transform.toString(transform),
-    transition,
-    opacity: isDragging ? 0.5 : 1,
-  };
-
-  const PlatformIcon = getPlatformIcon(link.platform_name);
-
-  return (
-    <div
-      ref={setNodeRef}
-      style={style}
-      className={`flex items-center gap-3 ${isDragging ? 'z-50' : ''}`}
-    >
-      <div
-        {...attributes}
-        {...listeners}
-        className="cursor-grab active:cursor-grabbing touch-none"
-      >
-        <GripVertical className="w-4 h-4 text-muted-foreground" />
-      </div>
-      <div className="w-10 h-10 rounded-lg bg-secondary flex items-center justify-center shrink-0">
-        <PlatformIcon className="w-5 h-5" />
-      </div>
-      <div className="flex-1">
-        <p className="text-xs text-muted-foreground mb-1">
-          {getPlatformDisplayName(link.platform_name)}
-        </p>
-        <Input
-          value={link.platform_url}
-          onChange={(e) => onUpdateUrl(link.id, e.target.value)}
-          placeholder="Enter URL..."
-          className="h-9"
-        />
-      </div>
-      <Button
-        variant="ghost"
-        size="icon"
-        className="text-destructive shrink-0"
-        onClick={() => onDelete(link.id)}
-      >
-        <Trash2 className="w-4 h-4" />
-      </Button>
-    </div>
-  );
-};
 
 const platformOptions = [
   { key: "spotify", name: "Spotify", icon: SpotifyIcon, color: "#1DB954" },
@@ -156,30 +76,8 @@ const EditFanlink = () => {
   const [platformLinks, setPlatformLinks] = useState<PlatformLink[]>([]);
   const [newPlatform, setNewPlatform] = useState("");
   const [newPlatformUrl, setNewPlatformUrl] = useState("");
-
-  const sensors = useSensors(
-    useSensor(PointerSensor),
-    useSensor(KeyboardSensor, {
-      coordinateGetter: sortableKeyboardCoordinates,
-    })
-  );
-
-  const handleDragEnd = (event: DragEndEvent) => {
-    const { active, over } = event;
-
-    if (over && active.id !== over.id) {
-      setPlatformLinks((items) => {
-        const oldIndex = items.findIndex((item) => item.id === active.id);
-        const newIndex = items.findIndex((item) => item.id === over.id);
-        const newItems = arrayMove(items, oldIndex, newIndex);
-        // Update display_order for all items
-        return newItems.map((item, index) => ({
-          ...item,
-          display_order: index,
-        }));
-      });
-    }
-  };
+  const [draggedItem, setDraggedItem] = useState<string | null>(null);
+  const [dragOverItem, setDragOverItem] = useState<string | null>(null);
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -195,7 +93,6 @@ const EditFanlink = () => {
 
   const fetchFanlink = async () => {
     try {
-      // Fetch fanlink
       const { data: fanlinkData, error: fanlinkError } = await supabase
         .from("fanlinks")
         .select("*")
@@ -206,7 +103,6 @@ const EditFanlink = () => {
       if (fanlinkError) throw fanlinkError;
       setFanlink(fanlinkData);
 
-      // Fetch platform links
       const { data: linksData, error: linksError } = await supabase
         .from("platform_links")
         .select("*")
@@ -224,12 +120,54 @@ const EditFanlink = () => {
     }
   };
 
+  const handleDragStart = (e: React.DragEvent, linkId: string) => {
+    setDraggedItem(linkId);
+    e.dataTransfer.effectAllowed = "move";
+  };
+
+  const handleDragOver = (e: React.DragEvent, linkId: string) => {
+    e.preventDefault();
+    if (linkId !== draggedItem) {
+      setDragOverItem(linkId);
+    }
+  };
+
+  const handleDragLeave = () => {
+    setDragOverItem(null);
+  };
+
+  const handleDrop = (e: React.DragEvent, targetId: string) => {
+    e.preventDefault();
+    if (!draggedItem || draggedItem === targetId) return;
+
+    const draggedIndex = platformLinks.findIndex(l => l.id === draggedItem);
+    const targetIndex = platformLinks.findIndex(l => l.id === targetId);
+
+    const newLinks = [...platformLinks];
+    const [removed] = newLinks.splice(draggedIndex, 1);
+    newLinks.splice(targetIndex, 0, removed);
+
+    // Update display_order for all items
+    const updatedLinks = newLinks.map((link, index) => ({
+      ...link,
+      display_order: index,
+    }));
+
+    setPlatformLinks(updatedLinks);
+    setDraggedItem(null);
+    setDragOverItem(null);
+  };
+
+  const handleDragEnd = () => {
+    setDraggedItem(null);
+    setDragOverItem(null);
+  };
+
   const handleSave = async () => {
     if (!fanlink) return;
 
     setSaving(true);
     try {
-      // Update fanlink
       const { error: fanlinkError } = await supabase
         .from("fanlinks")
         .update({
@@ -244,7 +182,6 @@ const EditFanlink = () => {
 
       if (fanlinkError) throw fanlinkError;
 
-      // Update platform links
       for (const link of platformLinks) {
         const { error } = await supabase
           .from("platform_links")
@@ -371,7 +308,6 @@ const EditFanlink = () => {
             <h2 className="font-display font-semibold text-lg mb-4">Track Information</h2>
             
             <div className="flex gap-6">
-              {/* Artwork */}
               <div className="w-32 h-32 rounded-xl bg-secondary flex items-center justify-center overflow-hidden shrink-0">
                 {fanlink.artwork_url ? (
                   <img src={fanlink.artwork_url} alt={fanlink.title} className="w-full h-full object-cover" />
@@ -435,28 +371,58 @@ const EditFanlink = () => {
             <h2 className="font-display font-semibold text-lg mb-4">
               Platform Links ({platformLinks.length})
             </h2>
+            <p className="text-xs text-muted-foreground mb-4">
+              Drag to reorder platforms
+            </p>
             
-            <DndContext
-              sensors={sensors}
-              collisionDetection={closestCenter}
-              onDragEnd={handleDragEnd}
-            >
-              <SortableContext
-                items={platformLinks.map(l => l.id)}
-                strategy={verticalListSortingStrategy}
-              >
-                <div className="space-y-3 mb-6">
-                  {platformLinks.map((link) => (
-                    <SortablePlatformItem
-                      key={link.id}
-                      link={link}
-                      onUpdateUrl={updatePlatformUrl}
-                      onDelete={handleDeletePlatform}
-                    />
-                  ))}
-                </div>
-              </SortableContext>
-            </DndContext>
+            <div className="space-y-3 mb-6">
+              {platformLinks.map((link) => {
+                const PlatformIcon = getPlatformIcon(link.platform_name);
+                const isDragging = draggedItem === link.id;
+                const isDragOver = dragOverItem === link.id;
+                
+                return (
+                  <div
+                    key={link.id}
+                    draggable
+                    onDragStart={(e) => handleDragStart(e, link.id)}
+                    onDragOver={(e) => handleDragOver(e, link.id)}
+                    onDragLeave={handleDragLeave}
+                    onDrop={(e) => handleDrop(e, link.id)}
+                    onDragEnd={handleDragEnd}
+                    className={`flex items-center gap-3 p-2 rounded-lg transition-all ${
+                      isDragging ? 'opacity-50 bg-secondary' : ''
+                    } ${isDragOver ? 'border-2 border-primary border-dashed' : 'border-2 border-transparent'}`}
+                  >
+                    <div className="cursor-grab active:cursor-grabbing touch-none">
+                      <GripVertical className="w-4 h-4 text-muted-foreground" />
+                    </div>
+                    <div className="w-10 h-10 rounded-lg bg-secondary flex items-center justify-center shrink-0">
+                      <PlatformIcon className="w-5 h-5" />
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-xs text-muted-foreground mb-1">
+                        {getPlatformDisplayName(link.platform_name)}
+                      </p>
+                      <Input
+                        value={link.platform_url}
+                        onChange={(e) => updatePlatformUrl(link.id, e.target.value)}
+                        placeholder="Enter URL..."
+                        className="h-9"
+                      />
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="text-destructive shrink-0"
+                      onClick={() => handleDeletePlatform(link.id)}
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
+                  </div>
+                );
+              })}
+            </div>
 
             {/* Add New Platform */}
             <div className="border-t border-border pt-4">
