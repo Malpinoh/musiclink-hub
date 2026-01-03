@@ -10,7 +10,10 @@ import {
   Disc3,
   CheckCircle,
   ArrowRight,
-  Clock
+  Clock,
+  Edit3,
+  Image as ImageIcon,
+  AlertCircle
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -30,6 +33,7 @@ interface PreSaveMetadata {
   spotifyAlbumId: string;
   spotifyArtistId: string;
   isrc: string;
+  upc: string;
 }
 
 const slugify = (text: string): string => {
@@ -44,9 +48,25 @@ const slugify = (text: string): string => {
 const CreatePreSave = () => {
   const navigate = useNavigate();
   const { user, loading: authLoading } = useAuth();
+  
+  // Mode: "search" for Spotify lookup, "manual" for distributor metadata entry
+  const [mode, setMode] = useState<"search" | "manual">("manual");
+  
+  // Search mode state
   const [inputValue, setInputValue] = useState("");
   const [inputType, setInputType] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  
+  // Manual entry state
+  const [manualData, setManualData] = useState({
+    title: "",
+    artist: "",
+    upc: "",
+    isrc: "",
+    releaseDate: "",
+    artworkUrl: ""
+  });
+  
   const [creating, setCreating] = useState(false);
   const [metadata, setMetadata] = useState<PreSaveMetadata | null>(null);
 
@@ -70,6 +90,45 @@ const CreatePreSave = () => {
     setInputType(detectInputType(value));
   };
 
+  const handleManualChange = (field: keyof typeof manualData, value: string) => {
+    setManualData(prev => ({ ...prev, [field]: value }));
+  };
+
+  // Build metadata from manual entry
+  const handleManualSubmit = () => {
+    const { title, artist, upc, releaseDate } = manualData;
+    
+    if (!title.trim() || !artist.trim()) {
+      toast.error("Please enter at least title and artist");
+      return;
+    }
+
+    if (!upc.trim() || !/^\d{12,14}$/.test(upc.trim())) {
+      toast.error("Please enter a valid UPC (12-14 digits)");
+      return;
+    }
+
+    if (!releaseDate) {
+      toast.error("Please enter the release date");
+      return;
+    }
+
+    setMetadata({
+      title: title.trim(),
+      artist: artist.trim(),
+      album: title.trim(),
+      artworkUrl: manualData.artworkUrl.trim(),
+      releaseDate: releaseDate,
+      spotifyUri: "",
+      spotifyAlbumId: "",
+      spotifyArtistId: "",
+      isrc: manualData.isrc.trim().toUpperCase(),
+      upc: upc.trim()
+    });
+
+    toast.success("Release details ready! Pre-save available, streaming links activate on release day.");
+  };
+
   const handleFetch = async () => {
     if (!inputValue.trim()) {
       toast.error("Please enter a Spotify URL, UPC, or ISRC");
@@ -84,13 +143,13 @@ const CreatePreSave = () => {
 
       if (error) throw error;
 
-      // generate-link can return a "not found" payload with suggestions (HTTP 200)
-      if (data?.error) {
-        toast.error(data.error, {
-          description: Array.isArray((data as any).suggestions)
-            ? (data as any).suggestions.join(" • ")
-            : undefined,
+      // If not found, suggest manual mode for unreleased tracks
+      if (data?.not_found || data?.error) {
+        toast.info("Track not indexed yet. Use Manual Entry for unreleased music.", {
+          description: "Enter your distributor-provided metadata (UPC, release date, artwork).",
+          duration: 5000
         });
+        setMode("manual");
         return;
       }
       
@@ -99,30 +158,26 @@ const CreatePreSave = () => {
         return;
       }
 
-      // Handle the response structure from generate-link
-      const metadata = data.metadata || data;
+      const md = data.metadata || data;
       
       setMetadata({
-        title: metadata.title || '',
-        artist: metadata.artist || '',
-        album: metadata.album || metadata.title || '',
-        artworkUrl: metadata.artwork?.large || metadata.artwork?.medium || '',
-        releaseDate: metadata.release_date || '',
-        spotifyUri: metadata.spotify_track_url ? `spotify:track:${metadata.spotify_track_url.split('/').pop()}` : '',
-        spotifyAlbumId: metadata.album_id || '',
-        spotifyArtistId: metadata.artist_id || '',
-        isrc: metadata.isrc || ''
+        title: md.title || '',
+        artist: md.artist || '',
+        album: md.album || md.title || '',
+        artworkUrl: md.artwork?.large || md.artwork?.medium || '',
+        releaseDate: md.release_date || '',
+        spotifyUri: md.spotify_track_url ? `spotify:track:${md.spotify_track_url.split('/').pop()}` : '',
+        spotifyAlbumId: md.album_id || '',
+        spotifyArtistId: md.artist_id || '',
+        isrc: md.isrc || '',
+        upc: md.upc || ''
       });
 
       toast.success("Release metadata fetched!");
     } catch (error: any) {
       console.error("Error fetching metadata:", error);
-      // Try to parse a more helpful error message
-      if (error.message?.includes('No track found')) {
-        toast.error("Release not found. It may not be distributed to Spotify yet.");
-      } else {
-        toast.error("Failed to fetch metadata. Please try again.");
-      }
+      toast.info("Track not found. Switch to Manual Entry for unreleased music.");
+      setMode("manual");
     } finally {
       setLoading(false);
     }
@@ -144,20 +199,22 @@ const CreatePreSave = () => {
           artist: metadata.artist,
           slug: titleSlug,
           artist_slug: artistSlug,
-          artwork_url: metadata.artworkUrl,
+          artwork_url: metadata.artworkUrl || null,
           release_date: metadata.releaseDate,
-          spotify_uri: metadata.spotifyUri,
-          spotify_album_id: metadata.spotifyAlbumId,
-          spotify_artist_id: metadata.spotifyArtistId,
-          isrc: metadata.isrc,
-          album_title: metadata.album
+          spotify_uri: metadata.spotifyUri || null,
+          spotify_album_id: metadata.spotifyAlbumId || null,
+          spotify_artist_id: metadata.spotifyArtistId || null,
+          isrc: metadata.isrc || null,
+          upc: metadata.upc || null,
+          album_title: metadata.album,
+          is_released: false
         })
         .select()
         .single();
 
       if (error) throw error;
 
-      toast.success("Pre-save link created!");
+      toast.success("Pre-save link created! Streaming links will activate on release day.");
       navigate("/dashboard");
     } catch (error: any) {
       console.error("Error creating pre-save:", error);
@@ -179,6 +236,8 @@ const CreatePreSave = () => {
     );
   }
 
+  const isReleaseUpcoming = metadata?.releaseDate && new Date(metadata.releaseDate) > new Date();
+
   return (
     <div className="min-h-screen bg-background">
       <Header />
@@ -193,61 +252,187 @@ const CreatePreSave = () => {
             Create <span className="gradient-text">Pre-Save Link</span>
           </h1>
           <p className="text-muted-foreground">
-            Build hype before your release drops. Let fans pre-save to their library.
+            Build hype before your release drops. Enter your distributor-provided metadata.
           </p>
         </motion.div>
 
-        {/* Input Section */}
+        {/* Mode Toggle */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
-          className="glass-card p-6 mb-6"
+          transition={{ delay: 0.05 }}
+          className="flex gap-2 mb-6"
         >
-          <div className="flex items-center gap-2 mb-4">
-            <Clock className="w-5 h-5 text-primary" />
-            <h2 className="font-display font-semibold">Release Information</h2>
-          </div>
-
-          <div className="space-y-4">
-            <div>
-              <Label htmlFor="input">Spotify URL, UPC, or ISRC</Label>
-              <div className="flex gap-2 mt-1">
-                <div className="relative flex-1">
-                  <Input
-                    id="input"
-                    placeholder="Paste Spotify album/track URL, UPC, or ISRC..."
-                    value={inputValue}
-                    onChange={handleInputChange}
-                    className="pr-24"
-                  />
-                  {inputType && (
-                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs bg-primary/20 text-primary px-2 py-1 rounded">
-                      {inputType}
-                    </span>
-                  )}
-                </div>
-                <Button
-                  onClick={handleFetch}
-                  disabled={loading || !inputValue.trim()}
-                  className="min-w-[100px]"
-                >
-                  {loading ? (
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                  ) : (
-                    <>
-                      <Search className="w-4 h-4 mr-2" />
-                      Fetch
-                    </>
-                  )}
-                </Button>
-              </div>
-              <p className="text-xs text-muted-foreground mt-2">
-                Enter a Spotify album or track link for upcoming releases
-              </p>
-            </div>
-          </div>
+          <Button
+            variant={mode === "manual" ? "default" : "outline"}
+            onClick={() => { setMode("manual"); setMetadata(null); }}
+            className="flex-1"
+          >
+            <Edit3 className="w-4 h-4 mr-2" />
+            Manual Entry (Recommended)
+          </Button>
+          <Button
+            variant={mode === "search" ? "default" : "outline"}
+            onClick={() => { setMode("search"); setMetadata(null); }}
+            className="flex-1"
+          >
+            <Search className="w-4 h-4 mr-2" />
+            Search Released Track
+          </Button>
         </motion.div>
+
+        {/* Manual Entry Mode */}
+        {mode === "manual" && !metadata && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1 }}
+            className="glass-card p-6 mb-6"
+          >
+            <div className="flex items-center gap-2 mb-4">
+              <Edit3 className="w-5 h-5 text-primary" />
+              <h2 className="font-display font-semibold">Distributor Metadata</h2>
+            </div>
+
+            <div className="bg-primary/10 border border-primary/20 rounded-lg p-4 mb-6 flex items-start gap-3">
+              <AlertCircle className="w-5 h-5 text-primary mt-0.5 flex-shrink-0" />
+              <div className="text-sm">
+                <p className="font-medium text-primary mb-1">For Unreleased Music</p>
+                <p className="text-muted-foreground">
+                  Enter the metadata from your distributor (ONErpm, DistroKid, etc.). 
+                  Streaming links will automatically activate once the release goes live.
+                </p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="title">Track/Album Title *</Label>
+                <Input
+                  id="title"
+                  placeholder="Enter release title"
+                  value={manualData.title}
+                  onChange={(e) => handleManualChange("title", e.target.value)}
+                  className="mt-1"
+                />
+              </div>
+              <div>
+                <Label htmlFor="artist">Artist Name *</Label>
+                <Input
+                  id="artist"
+                  placeholder="Enter artist name"
+                  value={manualData.artist}
+                  onChange={(e) => handleManualChange("artist", e.target.value)}
+                  className="mt-1"
+                />
+              </div>
+              <div>
+                <Label htmlFor="upc">UPC Code *</Label>
+                <Input
+                  id="upc"
+                  placeholder="12-14 digit UPC from distributor"
+                  value={manualData.upc}
+                  onChange={(e) => handleManualChange("upc", e.target.value)}
+                  className="mt-1"
+                />
+              </div>
+              <div>
+                <Label htmlFor="isrc">ISRC (Optional)</Label>
+                <Input
+                  id="isrc"
+                  placeholder="e.g., USRC12345678"
+                  value={manualData.isrc}
+                  onChange={(e) => handleManualChange("isrc", e.target.value)}
+                  className="mt-1"
+                />
+              </div>
+              <div>
+                <Label htmlFor="releaseDate">Release Date *</Label>
+                <Input
+                  id="releaseDate"
+                  type="date"
+                  value={manualData.releaseDate}
+                  onChange={(e) => handleManualChange("releaseDate", e.target.value)}
+                  className="mt-1"
+                />
+              </div>
+              <div>
+                <Label htmlFor="artworkUrl">Artwork URL (Optional)</Label>
+                <Input
+                  id="artworkUrl"
+                  placeholder="https://..."
+                  value={manualData.artworkUrl}
+                  onChange={(e) => handleManualChange("artworkUrl", e.target.value)}
+                  className="mt-1"
+                />
+              </div>
+            </div>
+
+            <Button
+              onClick={handleManualSubmit}
+              className="mt-6 w-full"
+              size="lg"
+            >
+              <CheckCircle className="w-4 h-4 mr-2" />
+              Continue with Release Details
+            </Button>
+          </motion.div>
+        )}
+
+        {/* Search Mode */}
+        {mode === "search" && !metadata && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1 }}
+            className="glass-card p-6 mb-6"
+          >
+            <div className="flex items-center gap-2 mb-4">
+              <Clock className="w-5 h-5 text-primary" />
+              <h2 className="font-display font-semibold">Search Released Track</h2>
+            </div>
+
+            <p className="text-sm text-muted-foreground mb-4">
+              Only works for tracks already live on Spotify. For unreleased music, use Manual Entry.
+            </p>
+
+            <div className="space-y-4">
+              <div>
+                <Label htmlFor="input">Spotify URL, UPC, or ISRC</Label>
+                <div className="flex gap-2 mt-1">
+                  <div className="relative flex-1">
+                    <Input
+                      id="input"
+                      placeholder="Paste Spotify album/track URL, UPC, or ISRC..."
+                      value={inputValue}
+                      onChange={handleInputChange}
+                      className="pr-24"
+                    />
+                    {inputType && (
+                      <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs bg-primary/20 text-primary px-2 py-1 rounded">
+                        {inputType}
+                      </span>
+                    )}
+                  </div>
+                  <Button
+                    onClick={handleFetch}
+                    disabled={loading || !inputValue.trim()}
+                    className="min-w-[100px]"
+                  >
+                    {loading ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <>
+                        <Search className="w-4 h-4 mr-2" />
+                        Fetch
+                      </>
+                    )}
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </motion.div>
+        )}
 
         {/* Metadata Preview */}
         {metadata && (
@@ -259,20 +444,29 @@ const CreatePreSave = () => {
             <div className="flex items-center gap-2 mb-4">
               <Disc3 className="w-5 h-5 text-primary" />
               <h2 className="font-display font-semibold">Release Preview</h2>
+              {isReleaseUpcoming && (
+                <span className="ml-auto text-xs bg-accent/20 text-accent px-2 py-1 rounded-full">
+                  Upcoming Release
+                </span>
+              )}
             </div>
 
             <div className="flex gap-6">
               {/* Artwork */}
-              {metadata.artworkUrl && (
-                <div className="relative flex-shrink-0">
-                  <div className="absolute -inset-2 bg-gradient-to-r from-primary/20 to-accent/20 blur-xl rounded-xl" />
+              <div className="relative flex-shrink-0">
+                <div className="absolute -inset-2 bg-gradient-to-r from-primary/20 to-accent/20 blur-xl rounded-xl" />
+                {metadata.artworkUrl ? (
                   <img
                     src={metadata.artworkUrl}
                     alt={metadata.title}
                     className="relative w-40 h-40 rounded-xl object-cover shadow-xl"
                   />
-                </div>
-              )}
+                ) : (
+                  <div className="relative w-40 h-40 rounded-xl bg-secondary flex items-center justify-center shadow-xl">
+                    <ImageIcon className="w-12 h-12 text-muted-foreground" />
+                  </div>
+                )}
+              </div>
 
               {/* Info */}
               <div className="flex-1 space-y-3">
@@ -287,15 +481,6 @@ const CreatePreSave = () => {
                     {metadata.artist}
                   </p>
                 </div>
-                {metadata.album && metadata.album !== metadata.title && (
-                  <div>
-                    <p className="text-sm text-muted-foreground">Album</p>
-                    <p className="flex items-center gap-2">
-                      <Disc3 className="w-4 h-4 text-primary" />
-                      {metadata.album}
-                    </p>
-                  </div>
-                )}
                 {metadata.releaseDate && (
                   <div>
                     <p className="text-sm text-muted-foreground">Release Date</p>
@@ -305,12 +490,27 @@ const CreatePreSave = () => {
                     </p>
                   </div>
                 )}
+                {metadata.upc && (
+                  <div>
+                    <p className="text-sm text-muted-foreground">UPC</p>
+                    <p className="font-mono text-sm">{metadata.upc}</p>
+                  </div>
+                )}
               </div>
             </div>
 
+            {/* Status Message */}
+            {isReleaseUpcoming && (
+              <div className="mt-6 p-4 bg-accent/10 border border-accent/20 rounded-lg">
+                <p className="text-sm text-accent font-medium">
+                  ✨ Pre-save available, streaming links activate on release day.
+                </p>
+              </div>
+            )}
+
             {/* Pre-save Link Preview */}
-            <div className="mt-6 p-4 bg-secondary/50 rounded-lg">
-              <p className="text-sm text-muted-foreground mb-1">Pre-Save Link Preview</p>
+            <div className="mt-4 p-4 bg-secondary/50 rounded-lg">
+              <p className="text-sm text-muted-foreground mb-1">Smart Link Preview</p>
               <code className="text-sm text-primary">
                 https://md.malpinohdistro.com.ng/presave/{slugify(metadata.artist)}/{slugify(metadata.title)}
               </code>
@@ -320,16 +520,28 @@ const CreatePreSave = () => {
             <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
                 <CheckCircle className="w-4 h-4 text-primary" />
-                Save to Spotify Library
+                Pre-save to Library
               </div>
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
                 <CheckCircle className="w-4 h-4 text-primary" />
-                Follow Artist
+                Auto-resolve on Release
               </div>
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
                 <CheckCircle className="w-4 h-4 text-primary" />
-                Release Day Notification
+                Multi-Platform Support
               </div>
+            </div>
+
+            {/* Edit / Clear */}
+            <div className="mt-6 flex gap-2">
+              <Button
+                variant="outline"
+                onClick={() => setMetadata(null)}
+                className="flex-1"
+              >
+                <Edit3 className="w-4 h-4 mr-2" />
+                Edit Details
+              </Button>
             </div>
           </motion.div>
         )}
@@ -352,7 +564,7 @@ const CreatePreSave = () => {
               ) : (
                 <ArrowRight className="w-5 h-5 mr-2" />
               )}
-              Create Pre-Save Link
+              Create Smart Link
             </Button>
           </motion.div>
         )}
