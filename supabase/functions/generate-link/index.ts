@@ -486,16 +486,19 @@ serve(async (req) => {
     }
 
     if (!track) {
+      // IMPORTANT: return a 200 here so clients can display the suggestions without treating it as
+      // a transport-level failure (which shows up as "Edge function returned 404" in the UI).
       return new Response(
-        JSON.stringify({ 
+        JSON.stringify({
+          not_found: true,
           error: "No track found. Please try a different search term, UPC, ISRC, or Spotify link.",
           suggestions: [
             "Try using the exact track title and artist name",
             "Use an ISRC code for the most accurate results",
-            "Paste a direct Spotify track URL"
-          ]
+            "Paste a direct Spotify track URL",
+          ],
         }),
-        { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 

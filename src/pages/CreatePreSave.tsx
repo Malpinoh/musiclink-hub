@@ -82,14 +82,16 @@ const CreatePreSave = () => {
         body: { input: inputValue.trim() }
       });
 
-      if (error) {
-        // Check if this is a "not found" error - the release may not be live yet
-        const errorData = error.message ? JSON.parse(error.message.replace('Edge function returned 404: Error, ', '')) : null;
-        if (errorData?.error?.includes('No track found')) {
-          toast.error("Release not found on Spotify yet. For upcoming releases, you may need to enter the details manually or wait until it's distributed.");
-          return;
-        }
-        throw error;
+      if (error) throw error;
+
+      // generate-link can return a "not found" payload with suggestions (HTTP 200)
+      if (data?.error) {
+        toast.error(data.error, {
+          description: Array.isArray((data as any).suggestions)
+            ? (data as any).suggestions.join(" • ")
+            : undefined,
+        });
+        return;
       }
       
       if (!data) {
