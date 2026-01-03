@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { 
@@ -13,7 +13,9 @@ import {
   Clock,
   Edit3,
   Image as ImageIcon,
-  AlertCircle
+  AlertCircle,
+  Upload,
+  X
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -48,6 +50,7 @@ const slugify = (text: string): string => {
 const CreatePreSave = () => {
   const navigate = useNavigate();
   const { user, loading: authLoading } = useAuth();
+  const fileInputRef = useRef<HTMLInputElement>(null);
   
   // Mode: "search" for Spotify lookup, "manual" for distributor metadata entry
   const [mode, setMode] = useState<"search" | "manual">("manual");
@@ -66,6 +69,11 @@ const CreatePreSave = () => {
     releaseDate: "",
     artworkUrl: ""
   });
+  
+  // Artwork upload state
+  const [artworkFile, setArtworkFile] = useState<File | null>(null);
+  const [artworkPreview, setArtworkPreview] = useState<string | null>(null);
+  const [uploading, setUploading] = useState(false);
   
   const [creating, setCreating] = useState(false);
   const [metadata, setMetadata] = useState<PreSaveMetadata | null>(null);
@@ -94,8 +102,77 @@ const CreatePreSave = () => {
     setManualData(prev => ({ ...prev, [field]: value }));
   };
 
+  // Handle artwork file selection
+  const handleArtworkSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      toast.error("Please select an image file");
+      return;
+    }
+
+    // Validate file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error("Image must be less than 5MB");
+      return;
+    }
+
+    setArtworkFile(file);
+    
+    // Create preview
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setArtworkPreview(reader.result as string);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const clearArtwork = () => {
+    setArtworkFile(null);
+    setArtworkPreview(null);
+    setManualData(prev => ({ ...prev, artworkUrl: "" }));
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+  };
+
+  // Upload artwork to storage
+  const uploadArtwork = async (): Promise<string | null> => {
+    if (!artworkFile || !user) return null;
+
+    setUploading(true);
+    try {
+      const fileExt = artworkFile.name.split('.').pop();
+      const fileName = `${user.id}/${Date.now()}.${fileExt}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('artwork')
+        .upload(fileName, artworkFile, {
+          cacheControl: '3600',
+          upsert: false
+        });
+
+      if (uploadError) throw uploadError;
+
+      // Get public URL
+      const { data: { publicUrl } } = supabase.storage
+        .from('artwork')
+        .getPublicUrl(fileName);
+
+      return publicUrl;
+    } catch (error: any) {
+      console.error("Error uploading artwork:", error);
+      toast.error("Failed to upload artwork");
+      return null;
+    } finally {
+      setUploading(false);
+    }
+  };
+
   // Build metadata from manual entry
-  const handleManualSubmit = () => {
+  const handleManualSubmit = async () => {
     const { title, artist, upc, releaseDate } = manualData;
     
     if (!title.trim() || !artist.trim()) {
@@ -113,11 +190,20 @@ const CreatePreSave = () => {
       return;
     }
 
+    // Upload artwork if file selected
+    let artworkUrl = manualData.artworkUrl.trim();
+    if (artworkFile) {
+      const uploadedUrl = await uploadArtwork();
+      if (uploadedUrl) {
+        artworkUrl = uploadedUrl;
+      }
+    }
+
     setMetadata({
       title: title.trim(),
       artist: artist.trim(),
       album: title.trim(),
-      artworkUrl: manualData.artworkUrl.trim(),
+      artworkUrl: artworkUrl,
       releaseDate: releaseDate,
       spotifyUri: "",
       spotifyAlbumId: "",
@@ -356,25 +442,100 @@ const CreatePreSave = () => {
                   className="mt-1"
                 />
               </div>
-              <div>
-                <Label htmlFor="artworkUrl">Artwork URL (Optional)</Label>
-                <Input
-                  id="artworkUrl"
-                  placeholder="https://..."
-                  value={manualData.artworkUrl}
-                  onChange={(e) => handleManualChange("artworkUrl", e.target.value)}
-                  className="mt-1"
-                />
+              
+              {/* Artwork Upload */}
+              <div className="md:col-span-2">
+                <Label>Cover Artwork</Label>
+                <div className="mt-1 flex gap-4 items-start">
+                  {/* Upload area */}
+                  <div 
+                    className={`relative flex-1 border-2 border-dashed rounded-lg p-4 transition-colors cursor-pointer hover:border-primary/50 ${
+                      artworkPreview ? 'border-primary' : 'border-muted-foreground/25'
+                    }`}
+                    onClick={() => fileInputRef.current?.click()}
+                  >
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept="image/*"
+                      onChange={handleArtworkSelect}
+                      className="hidden"
+                    />
+                    
+                    {artworkPreview ? (
+                      <div className="flex items-center gap-4">
+                        <img 
+                          src={artworkPreview} 
+                          alt="Artwork preview" 
+                          className="w-20 h-20 rounded-lg object-cover"
+                        />
+                        <div className="flex-1">
+                          <p className="text-sm font-medium">{artworkFile?.name}</p>
+                          <p className="text-xs text-muted-foreground">
+                            {artworkFile && (artworkFile.size / 1024 / 1024).toFixed(2)} MB
+                          </p>
+                        </div>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            clearArtwork();
+                          }}
+                        >
+                          <X className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    ) : (
+                      <div className="text-center py-4">
+                        <Upload className="w-8 h-8 mx-auto text-muted-foreground mb-2" />
+                        <p className="text-sm text-muted-foreground">
+                          Click to upload artwork
+                        </p>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          PNG, JPG up to 5MB
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+                
+                {/* Or URL input */}
+                {!artworkFile && (
+                  <div className="mt-3">
+                    <div className="flex items-center gap-2 mb-2">
+                      <div className="flex-1 h-px bg-border" />
+                      <span className="text-xs text-muted-foreground">or paste URL</span>
+                      <div className="flex-1 h-px bg-border" />
+                    </div>
+                    <Input
+                      placeholder="https://..."
+                      value={manualData.artworkUrl}
+                      onChange={(e) => handleManualChange("artworkUrl", e.target.value)}
+                    />
+                  </div>
+                )}
               </div>
             </div>
 
             <Button
               onClick={handleManualSubmit}
+              disabled={uploading}
               className="mt-6 w-full"
               size="lg"
             >
-              <CheckCircle className="w-4 h-4 mr-2" />
-              Continue with Release Details
+              {uploading ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Uploading...
+                </>
+              ) : (
+                <>
+                  <CheckCircle className="w-4 h-4 mr-2" />
+                  Continue with Release Details
+                </>
+              )}
             </Button>
           </motion.div>
         )}
