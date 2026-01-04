@@ -7,7 +7,7 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import demoArtwork from "@/assets/demo-artwork.jpg";
 import SEOHead from "@/components/SEOHead";
-import { SpotifyIcon } from "@/components/icons/PlatformIcons";
+import { SpotifyIcon, AppleMusicIcon } from "@/components/icons/PlatformIcons";
 import { getShareablePresaveUrl } from "@/lib/shareUrl";
 import logo from "@/assets/logo.png";
 
@@ -22,7 +22,24 @@ interface PreSave {
   spotify_artist_id: string | null;
   album_title: string | null;
   is_released: boolean;
+  apple_music_url: string | null;
 }
+
+// Generate Spotify OAuth URL
+const getSpotifyAuthUrl = (preSaveId: string, action: string, returnUrl: string): string => {
+  const clientId = import.meta.env.VITE_SPOTIFY_CLIENT_ID || "your-client-id";
+  const redirectUri = `${window.location.origin}/callback/spotify`;
+  const scopes = "user-library-modify user-follow-modify user-read-email";
+  const state = btoa(JSON.stringify({ preSaveId, action, returnUrl }));
+  
+  return `https://accounts.spotify.com/authorize?client_id=${clientId}&response_type=code&redirect_uri=${encodeURIComponent(redirectUri)}&scope=${encodeURIComponent(scopes)}&state=${state}`;
+};
+
+// Generate Apple Music pre-add URL (placeholder that resolves on release)
+const getAppleMusicPreAddUrl = (artist: string, title: string): string => {
+  const query = encodeURIComponent(`${artist} ${title}`);
+  return `https://music.apple.com/search?term=${query}`;
+};
 
 const PreSavePage = () => {
   const { artist, slug } = useParams();
@@ -76,28 +93,38 @@ const PreSavePage = () => {
 
     setSaving(true);
     try {
-      // Log the pre-save action
-      await supabase.from("pre_save_actions").insert({
-        pre_save_id: preSave.id,
-        action_type: 'save_track'
-      });
-
-      // If released with a resolved Spotify URI, redirect to Spotify
+      // If released with a resolved Spotify album, redirect directly
       if (preSave.is_released && preSave.spotify_album_id) {
         window.open(`https://open.spotify.com/album/${preSave.spotify_album_id}`, '_blank');
       } else if (preSave.is_released && preSave.spotify_uri) {
         const spotifyId = preSave.spotify_uri.split(':').pop();
         window.open(`https://open.spotify.com/album/${spotifyId}`, '_blank');
       } else {
-        // Pre-save recorded - streaming links activate on release day
-        setSaved(true);
-        toast.success("Pre-save confirmed! Streaming links activate on release day.");
+        // For unreleased content, initiate Spotify OAuth to get library-modify permission
+        const returnUrl = window.location.pathname;
+        const authUrl = getSpotifyAuthUrl(preSave.id, "presave", returnUrl);
+        window.location.href = authUrl;
+        return; // Don't set saved state, OAuth flow will handle it
       }
     } catch (error) {
       console.error("Error saving:", error);
       toast.error("Something went wrong. Please try again.");
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleAppleMusicPreAdd = () => {
+    if (!preSave) return;
+    
+    // If released and we have Apple Music URL, use it
+    if (preSave.is_released && preSave.apple_music_url) {
+      window.open(preSave.apple_music_url, '_blank');
+    } else {
+      // For unreleased, open Apple Music search
+      const searchUrl = getAppleMusicPreAddUrl(preSave.artist, preSave.title);
+      window.open(searchUrl, '_blank');
+      toast.info("Apple Music link opens on release day. Search for the track when it's live!");
     }
   };
 
@@ -294,6 +321,20 @@ const PreSavePage = () => {
                     <ExternalLink className="w-4 h-4 opacity-50" />
                   </>
                 )}
+              </motion.button>
+
+              {/* Apple Music Pre-Add Button */}
+              <motion.button
+                onClick={handleAppleMusicPreAdd}
+                className="w-full flex items-center gap-4 p-4 rounded-xl font-medium transition-all duration-300 bg-gradient-to-r from-[#FA233B]/20 to-[#FB5C74]/20 hover:from-[#FA233B]/30 hover:to-[#FB5C74]/30 border border-[#FA233B]/50"
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+              >
+                <AppleMusicIcon />
+                <span className="flex-1 text-left">
+                  {preSave.is_released ? 'Listen on Apple Music' : 'Pre-Add on Apple Music'}
+                </span>
+                <ExternalLink className="w-4 h-4 opacity-50" />
               </motion.button>
 
               {/* Follow Artist Button */}

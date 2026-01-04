@@ -16,6 +16,7 @@ import EditPreSave from "./pages/EditPreSave";
 import Login from "./pages/Login";
 import FanlinkPage from "./pages/FanlinkPage";
 import PreSavePage from "./pages/PreSavePage";
+import SpotifyCallback from "./pages/SpotifyCallback";
 import DemoPage from "./pages/DemoPage";
 import NotFound from "./pages/NotFound";
 
@@ -51,6 +52,8 @@ const App = () => {
               <Route path="/presave/create" element={<CreatePreSave />} />
               <Route path="/login" element={<Login />} />
               <Route path="/demo" element={<DemoPage />} />
+              <Route path="/presave/:artist/:slug" element={<PreSavePage />} />
+              <Route path="/callback/spotify" element={<SpotifyCallback />} />
               <Route path="/:artist/:song" element={<FanlinkPage />} />
               <Route path="/link/:id" element={<FanlinkPage />} />
               <Route path="*" element={<NotFound />} />

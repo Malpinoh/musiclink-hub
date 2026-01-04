@@ -154,8 +154,13 @@ export type Database = {
           created_at: string
           email: string | null
           id: string
+          library_saved: boolean | null
+          library_saved_at: string | null
           pre_save_id: string
+          spotify_access_token: string | null
+          spotify_refresh_token: string | null
           spotify_user_id: string | null
+          token_expires_at: string | null
         }
         Insert: {
           action_type: string
@@ -163,8 +168,13 @@ export type Database = {
           created_at?: string
           email?: string | null
           id?: string
+          library_saved?: boolean | null
+          library_saved_at?: string | null
           pre_save_id: string
+          spotify_access_token?: string | null
+          spotify_refresh_token?: string | null
           spotify_user_id?: string | null
+          token_expires_at?: string | null
         }
         Update: {
           action_type?: string
@@ -172,8 +182,13 @@ export type Database = {
           created_at?: string
           email?: string | null
           id?: string
+          library_saved?: boolean | null
+          library_saved_at?: string | null
           pre_save_id?: string
+          spotify_access_token?: string | null
+          spotify_refresh_token?: string | null
           spotify_user_id?: string | null
+          token_expires_at?: string | null
         }
         Relationships: [
           {
@@ -188,6 +203,8 @@ export type Database = {
       pre_saves: {
         Row: {
           album_title: string | null
+          apple_music_resolved: boolean | null
+          apple_music_url: string | null
           artist: string
           artist_slug: string
           artwork_url: string | null
@@ -208,6 +225,8 @@ export type Database = {
         }
         Insert: {
           album_title?: string | null
+          apple_music_resolved?: boolean | null
+          apple_music_url?: string | null
           artist: string
           artist_slug: string
           artwork_url?: string | null
@@ -228,6 +247,8 @@ export type Database = {
         }
         Update: {
           album_title?: string | null
+          apple_music_resolved?: boolean | null
+          apple_music_url?: string | null
           artist?: string
           artist_slug?: string
           artwork_url?: string | null

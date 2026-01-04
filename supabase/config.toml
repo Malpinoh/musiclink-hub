@@ -41,3 +41,9 @@ verify_jwt = false
 
 [functions.auto-resolve-presaves]
 verify_jwt = false
+
+[functions.spotify-oauth-callback]
+verify_jwt = false
+
+[functions.execute-presave-library-saves]
+verify_jwt = false
