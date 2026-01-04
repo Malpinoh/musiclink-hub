@@ -82,13 +82,16 @@ const PreSavePage = () => {
         action_type: 'save_track'
       });
 
-      // If released, redirect to Spotify
-      if (preSave.is_released && preSave.spotify_uri) {
-        window.open(`https://open.spotify.com/track/${preSave.spotify_uri.split(':').pop()}`, '_blank');
+      // If released with a resolved Spotify URI, redirect to Spotify
+      if (preSave.is_released && preSave.spotify_album_id) {
+        window.open(`https://open.spotify.com/album/${preSave.spotify_album_id}`, '_blank');
+      } else if (preSave.is_released && preSave.spotify_uri) {
+        const spotifyId = preSave.spotify_uri.split(':').pop();
+        window.open(`https://open.spotify.com/album/${spotifyId}`, '_blank');
       } else {
-        // Show success message for pre-save
+        // Pre-save recorded - streaming links activate on release day
         setSaved(true);
-        toast.success("You're all set! We'll notify you when it drops.");
+        toast.success("Pre-save confirmed! Streaming links activate on release day.");
       }
     } catch (error) {
       console.error("Error saving:", error);
@@ -307,16 +310,18 @@ const PreSavePage = () => {
                 </motion.button>
               )}
 
-              {/* Notification Banner */}
+              {/* Pre-save Info Banner */}
               {!preSave.is_released && !saved && (
                 <motion.div
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.5 }}
-                  className="flex items-center justify-center gap-2 text-sm text-muted-foreground mt-6"
+                  className="flex flex-col items-center gap-2 text-sm text-muted-foreground mt-6"
                 >
-                  <Bell className="w-4 h-4 text-primary" />
-                  <span>Pre-save now and get notified on release day</span>
+                  <div className="flex items-center gap-2">
+                    <Bell className="w-4 h-4 text-primary" />
+                    <span>Pre-save available. Streaming links activate on release day.</span>
+                  </div>
                 </motion.div>
               )}
             </motion.div>
