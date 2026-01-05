@@ -383,20 +383,25 @@ const Dashboard = () => {
                         </div>
 
                         <div className="flex items-center gap-2">
-                          <Button variant="ghost" size="icon" asChild>
+                          <Button variant="ghost" size="icon" asChild title="Analytics">
+                            <Link to={`/analytics/fanlink/${link.id}`}>
+                              <BarChart3 className="w-4 h-4" />
+                            </Link>
+                          </Button>
+                          <Button variant="ghost" size="icon" asChild title="Edit">
                             <Link to={`/edit/fanlink/${link.id}`}>
                               <Edit className="w-4 h-4" />
                             </Link>
                           </Button>
-                          <Button variant="ghost" size="icon" asChild>
+                          <Button variant="ghost" size="icon" asChild title="View">
                             <Link to={`/${link.artist_slug}/${link.slug}`} target="_blank">
                               <ExternalLink className="w-4 h-4" />
                             </Link>
                           </Button>
-                          <Button variant="ghost" size="icon" onClick={() => handleCopyFanlinkUrl(link.artist_slug, link.slug)}>
+                          <Button variant="ghost" size="icon" onClick={() => handleCopyFanlinkUrl(link.artist_slug, link.slug)} title="Copy Link">
                             <Copy className="w-4 h-4" />
                           </Button>
-                          <Button variant="ghost" size="icon" className="text-destructive" onClick={() => handleDeleteFanlink(link.id)}>
+                          <Button variant="ghost" size="icon" className="text-destructive" onClick={() => handleDeleteFanlink(link.id)} title="Delete">
                             <Trash2 className="w-4 h-4" />
                           </Button>
                         </div>
@@ -478,20 +483,25 @@ const Dashboard = () => {
                         </div>
 
                         <div className="flex items-center gap-2">
-                          <Button variant="ghost" size="icon" asChild>
+                          <Button variant="ghost" size="icon" asChild title="Analytics">
+                            <Link to={`/analytics/presave/${ps.id}`}>
+                              <BarChart3 className="w-4 h-4" />
+                            </Link>
+                          </Button>
+                          <Button variant="ghost" size="icon" asChild title="Edit">
                             <Link to={`/edit/presave/${ps.id}`}>
                               <Edit className="w-4 h-4" />
                             </Link>
                           </Button>
-                          <Button variant="ghost" size="icon" asChild>
+                          <Button variant="ghost" size="icon" asChild title="View">
                             <Link to={`/presave/${ps.artist_slug}/${ps.slug}`} target="_blank">
                               <ExternalLink className="w-4 h-4" />
                             </Link>
                           </Button>
-                          <Button variant="ghost" size="icon" onClick={() => handleCopyPreSaveUrl(ps.artist_slug, ps.slug)}>
+                          <Button variant="ghost" size="icon" onClick={() => handleCopyPreSaveUrl(ps.artist_slug, ps.slug)} title="Copy Link">
                             <Copy className="w-4 h-4" />
                           </Button>
-                          <Button variant="ghost" size="icon" className="text-destructive" onClick={() => handleDeletePreSave(ps.id)}>
+                          <Button variant="ghost" size="icon" className="text-destructive" onClick={() => handleDeletePreSave(ps.id)} title="Delete">
                             <Trash2 className="w-4 h-4" />
                           </Button>
                         </div>

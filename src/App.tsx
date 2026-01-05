@@ -13,6 +13,8 @@ import CreateFanlink from "./pages/CreateFanlink";
 import CreatePreSave from "./pages/CreatePreSave";
 import EditFanlink from "./pages/EditFanlink";
 import EditPreSave from "./pages/EditPreSave";
+import FanlinkAnalytics from "./pages/FanlinkAnalytics";
+import PreSaveAnalytics from "./pages/PreSaveAnalytics";
 import Login from "./pages/Login";
 import FanlinkPage from "./pages/FanlinkPage";
 import PreSavePage from "./pages/PreSavePage";
@@ -49,6 +51,8 @@ const App = () => {
               <Route path="/create" element={<CreateFanlink />} />
               <Route path="/edit/fanlink/:id" element={<EditFanlink />} />
               <Route path="/edit/presave/:id" element={<EditPreSave />} />
+              <Route path="/analytics/fanlink/:id" element={<FanlinkAnalytics />} />
+              <Route path="/analytics/presave/:id" element={<PreSaveAnalytics />} />
               <Route path="/presave/create" element={<CreatePreSave />} />
               <Route path="/login" element={<Login />} />
               <Route path="/demo" element={<DemoPage />} />
