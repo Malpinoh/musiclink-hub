@@ -51,6 +51,12 @@ interface ClickCount {
   count: number;
 }
 
+interface PreSaveStats {
+  totalActions: number;
+  librarySaves: number;
+  artistFollows: number;
+}
+
 const Dashboard = () => {
   const navigate = useNavigate();
   const { user, loading: authLoading } = useAuth();
@@ -58,6 +64,7 @@ const Dashboard = () => {
   const [fanlinks, setFanlinks] = useState<Fanlink[]>([]);
   const [preSaves, setPreSaves] = useState<PreSave[]>([]);
   const [clickCounts, setClickCounts] = useState<Record<string, number>>({});
+  const [preSaveStats, setPreSaveStats] = useState<Record<string, PreSaveStats>>({});
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("fanlinks");
 
@@ -116,6 +123,24 @@ const Dashboard = () => {
 
       if (error) throw error;
       setPreSaves(data || []);
+
+      // Fetch pre-save action stats for each pre-save
+      if (data && data.length > 0) {
+        const stats: Record<string, PreSaveStats> = {};
+        for (const ps of data) {
+          const { data: actions } = await supabase
+            .from("pre_save_actions")
+            .select("action_type, library_saved")
+            .eq("pre_save_id", ps.id);
+          
+          const totalActions = actions?.length || 0;
+          const librarySaves = actions?.filter(a => a.library_saved).length || 0;
+          const artistFollows = actions?.filter(a => a.action_type === "follow").length || 0;
+          
+          stats[ps.id] = { totalActions, librarySaves, artistFollows };
+        }
+        setPreSaveStats(stats);
+      }
     } catch (error) {
       console.error("Error fetching pre-saves:", error);
     }
@@ -174,6 +199,8 @@ const Dashboard = () => {
   );
 
   const totalClicks = Object.values(clickCounts).reduce((sum, count) => sum + count, 0);
+  const totalPreSaveActions = Object.values(preSaveStats).reduce((sum, s) => sum + s.totalActions, 0);
+  const totalLibrarySaves = Object.values(preSaveStats).reduce((sum, s) => sum + s.librarySaves, 0);
 
   if (authLoading || loading) {
     return (
@@ -217,7 +244,7 @@ const Dashboard = () => {
 
           {/* Stats Cards */}
           <motion.div
-            className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8"
+            className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
@@ -240,8 +267,8 @@ const Dashboard = () => {
                   <Clock className="w-6 h-6 text-accent" />
                 </div>
                 <div>
-                  <p className="text-sm text-muted-foreground">Pre-Saves</p>
-                  <p className="font-display text-2xl font-bold">{preSaves.length}</p>
+                  <p className="text-sm text-muted-foreground">Fan Pre-Saves</p>
+                  <p className="font-display text-2xl font-bold">{totalPreSaveActions.toLocaleString()}</p>
                 </div>
               </div>
             </div>
@@ -249,7 +276,19 @@ const Dashboard = () => {
             <div className="glass-card p-6">
               <div className="flex items-center gap-4">
                 <div className="w-12 h-12 rounded-xl bg-spotify/20 flex items-center justify-center">
-                  <BarChart3 className="w-6 h-6 text-spotify" />
+                  <Music2 className="w-6 h-6 text-spotify" />
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">Library Saves</p>
+                  <p className="font-display text-2xl font-bold">{totalLibrarySaves.toLocaleString()}</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="glass-card p-6">
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 rounded-xl bg-primary/20 flex items-center justify-center">
+                  <BarChart3 className="w-6 h-6 text-primary" />
                 </div>
                 <div>
                   <p className="text-sm text-muted-foreground">Total Clicks</p>
@@ -425,6 +464,14 @@ const Dashboard = () => {
                         </div>
 
                         <div className="hidden md:flex items-center gap-6">
+                          <div className="text-right">
+                            <p className="font-display font-semibold">{(preSaveStats[ps.id]?.totalActions || 0).toLocaleString()}</p>
+                            <p className="text-xs text-muted-foreground">pre-saves</p>
+                          </div>
+                          <div className="text-right">
+                            <p className="font-display font-semibold">{(preSaveStats[ps.id]?.librarySaves || 0).toLocaleString()}</p>
+                            <p className="text-xs text-muted-foreground">saved</p>
+                          </div>
                           <div className={`px-3 py-1 rounded-full text-xs font-medium ${ps.is_released ? 'bg-green-500/20 text-green-400' : 'bg-primary/20 text-primary'}`}>
                             {ps.is_released ? 'Released' : 'Upcoming'}
                           </div>
