@@ -150,7 +150,9 @@ export type Database = {
       pre_save_actions: {
         Row: {
           action_type: string
+          city: string | null
           completed: boolean | null
+          country: string | null
           created_at: string
           email: string | null
           id: string
@@ -164,7 +166,9 @@ export type Database = {
         }
         Insert: {
           action_type: string
+          city?: string | null
           completed?: boolean | null
+          country?: string | null
           created_at?: string
           email?: string | null
           id?: string
@@ -178,7 +182,9 @@ export type Database = {
         }
         Update: {
           action_type?: string
+          city?: string | null
           completed?: boolean | null
+          country?: string | null
           created_at?: string
           email?: string | null
           id?: string

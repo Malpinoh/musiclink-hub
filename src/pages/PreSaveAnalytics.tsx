@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { motion } from "framer-motion";
-import { ArrowLeft, Loader2, Music2, ExternalLink, TrendingUp, Users, Library, UserPlus, RefreshCw } from "lucide-react";
+import { ArrowLeft, Loader2, Music2, ExternalLink, TrendingUp, Users, Library, UserPlus, RefreshCw, Globe, MapPin } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from "recharts";
@@ -31,6 +31,11 @@ interface ActionBreakdown {
   value: number;
 }
 
+interface GeoData {
+  name: string;
+  count: number;
+}
+
 const PreSaveAnalytics = () => {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -42,6 +47,8 @@ const PreSaveAnalytics = () => {
   const [librarySaves, setLibrarySaves] = useState(0);
   const [artistFollows, setArtistFollows] = useState(0);
   const [conversionRate, setConversionRate] = useState(0);
+  const [countryData, setCountryData] = useState<GeoData[]>([]);
+  const [cityData, setCityData] = useState<GeoData[]>([]);
   const [loading, setLoading] = useState(true);
   const [isLive, setIsLive] = useState(true);
   const isMobile = useIsMobile();
@@ -64,12 +71,22 @@ const PreSaveAnalytics = () => {
     setConversionRate(rate);
 
     const dailyMap: Record<string, number> = {};
+    const countryMap: Record<string, number> = {};
+    const cityMap: Record<string, number> = {};
+
     actionsData.forEach((action) => {
       const date = new Date(action.created_at).toLocaleDateString("en-US", {
         month: "short",
         day: "numeric",
       });
       dailyMap[date] = (dailyMap[date] || 0) + 1;
+
+      if (action.country) {
+        countryMap[action.country] = (countryMap[action.country] || 0) + 1;
+      }
+      if (action.city) {
+        cityMap[action.city] = (cityMap[action.city] || 0) + 1;
+      }
     });
 
     const last14Days: DailyAction[] = [];
@@ -83,6 +100,19 @@ const PreSaveAnalytics = () => {
       last14Days.push({ date: dateStr, count: dailyMap[dateStr] || 0 });
     }
     setDailyActions(last14Days);
+
+    const countries = Object.entries(countryMap)
+      .map(([name, count]) => ({ name, count }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 10);
+
+    const cities = Object.entries(cityMap)
+      .map(([name, count]) => ({ name, count }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 10);
+
+    setCountryData(countries);
+    setCityData(cities);
 
     const saveAndFollow = actionsData.filter((a) => a.action_type === "save_and_follow").length;
     const saveOnly = actionsData.filter((a) => a.action_type === "save").length;
@@ -397,6 +427,80 @@ const PreSaveAnalytics = () => {
               </div>
             </div>
           </motion.div>
+          {/* Geographic Breakdown */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 mt-4 sm:mt-6">
+            {/* Countries */}
+            <motion.div
+              className="glass-card p-4 sm:p-6"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.5 }}
+            >
+              <h3 className="font-display text-base sm:text-lg font-semibold mb-4 flex items-center gap-2">
+                <Globe className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />
+                Top Countries
+              </h3>
+              <div className="space-y-2 sm:space-y-3">
+                {countryData.length > 0 ? (
+                  countryData.map((country, index) => (
+                    <div key={country.name} className="flex items-center gap-2 sm:gap-3">
+                      <span className="text-xs sm:text-sm text-muted-foreground w-4">{index + 1}</span>
+                      <div className="flex-1">
+                        <div className="flex justify-between items-center mb-1">
+                          <span className="text-sm sm:text-base truncate">{country.name}</span>
+                          <span className="font-semibold text-sm sm:text-base ml-2">{country.count}</span>
+                        </div>
+                        <div className="h-1.5 bg-secondary rounded-full overflow-hidden">
+                          <div
+                            className="h-full bg-primary rounded-full transition-all"
+                            style={{ width: `${(country.count / (countryData[0]?.count || 1)) * 100}%` }}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <p className="text-muted-foreground text-center py-4 text-sm">No geographic data yet</p>
+                )}
+              </div>
+            </motion.div>
+
+            {/* Cities */}
+            <motion.div
+              className="glass-card p-4 sm:p-6"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.6 }}
+            >
+              <h3 className="font-display text-base sm:text-lg font-semibold mb-4 flex items-center gap-2">
+                <MapPin className="w-4 h-4 sm:w-5 sm:h-5 text-accent" />
+                Top Cities
+              </h3>
+              <div className="space-y-2 sm:space-y-3">
+                {cityData.length > 0 ? (
+                  cityData.map((city, index) => (
+                    <div key={city.name} className="flex items-center gap-2 sm:gap-3">
+                      <span className="text-xs sm:text-sm text-muted-foreground w-4">{index + 1}</span>
+                      <div className="flex-1">
+                        <div className="flex justify-between items-center mb-1">
+                          <span className="text-sm sm:text-base truncate">{city.name}</span>
+                          <span className="font-semibold text-sm sm:text-base ml-2">{city.count}</span>
+                        </div>
+                        <div className="h-1.5 bg-secondary rounded-full overflow-hidden">
+                          <div
+                            className="h-full bg-accent rounded-full transition-all"
+                            style={{ width: `${(city.count / (cityData[0]?.count || 1)) * 100}%` }}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <p className="text-muted-foreground text-center py-4 text-sm">No geographic data yet</p>
+                )}
+              </div>
+            </motion.div>
+          </div>
         </div>
       </main>
 
