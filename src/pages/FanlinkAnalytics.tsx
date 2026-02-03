@@ -36,14 +36,42 @@ interface GeoData {
 
 const PLATFORM_COLORS: Record<string, string> = {
   Spotify: "#1DB954",
+  spotify: "#1DB954",
   "Apple Music": "#FA2D48",
+  apple_music: "#FA2D48",
   Deezer: "#FEAA2D",
+  deezer: "#FEAA2D",
   Tidal: "#000000",
+  tidal: "#000000",
   "YouTube Music": "#FF0000",
+  youtube: "#FF0000",
   "Amazon Music": "#FF9900",
+  amazon: "#FF9900",
   Audiomack: "#FFA500",
+  audiomack: "#FFA500",
   Boomplay: "#E21A22",
-  Other: "#6B7280",
+  boomplay: "#E21A22",
+  SoundCloud: "#FF5500",
+  soundcloud: "#FF5500",
+  Shazam: "#0088FF",
+  shazam: "#0088FF",
+  "Fan Link": "#8B5CF6",
+};
+
+const formatPlatformName = (name: string): string => {
+  const names: Record<string, string> = {
+    spotify: "Spotify",
+    apple_music: "Apple Music",
+    youtube: "YouTube Music",
+    audiomack: "Audiomack",
+    boomplay: "Boomplay",
+    deezer: "Deezer",
+    tidal: "Tidal",
+    amazon: "Amazon Music",
+    soundcloud: "SoundCloud",
+    shazam: "Shazam",
+  };
+  return names[name] || name;
 };
 
 const FanlinkAnalytics = () => {
@@ -73,7 +101,7 @@ const FanlinkAnalytics = () => {
     const cityMap: Record<string, number> = {};
 
     clicks.forEach((click) => {
-      const platform = click.platform_name || "Other";
+      const platform = click.platform_name ? formatPlatformName(click.platform_name) : "Fan Link";
       platformMap[platform] = (platformMap[platform] || 0) + 1;
 
       const date = new Date(click.clicked_at).toLocaleDateString("en-US", {

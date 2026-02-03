@@ -123,12 +123,26 @@ const FanlinkPage = () => {
       if (linksError) throw linksError;
       setPlatformLinks(linksData || []);
 
-      // Log click
-      await supabase.from("clicks").insert({
-        fanlink_id: fanlinkData.id,
-        user_agent: navigator.userAgent,
-        device_type: /mobile/i.test(navigator.userAgent) ? "mobile" : "desktop",
-      });
+      // Log page view click with geo tracking via edge function
+      try {
+        await supabase.functions.invoke("track-geo", {
+          body: {
+            type: "click",
+            id: fanlinkData.id,
+            platform_name: null, // Page view, not platform click
+            user_agent: navigator.userAgent,
+            device_type: /mobile/i.test(navigator.userAgent) ? "mobile" : "desktop",
+          },
+        });
+      } catch (geoError) {
+        console.error("Geo tracking error:", geoError);
+        // Fallback to direct insert without geo
+        await supabase.from("clicks").insert({
+          fanlink_id: fanlinkData.id,
+          user_agent: navigator.userAgent,
+          device_type: /mobile/i.test(navigator.userAgent) ? "mobile" : "desktop",
+        });
+      }
 
     } catch (error) {
       console.error("Error fetching fanlink:", error);
@@ -140,12 +154,26 @@ const FanlinkPage = () => {
 
   const handlePlatformClick = async (platformName: string) => {
     if (fanlink) {
-      await supabase.from("clicks").insert({
-        fanlink_id: fanlink.id,
-        platform_name: platformName,
-        user_agent: navigator.userAgent,
-        device_type: /mobile/i.test(navigator.userAgent) ? "mobile" : "desktop",
-      });
+      try {
+        await supabase.functions.invoke("track-geo", {
+          body: {
+            type: "click",
+            id: fanlink.id,
+            platform_name: platformName,
+            user_agent: navigator.userAgent,
+            device_type: /mobile/i.test(navigator.userAgent) ? "mobile" : "desktop",
+          },
+        });
+      } catch (geoError) {
+        console.error("Geo tracking error:", geoError);
+        // Fallback to direct insert
+        await supabase.from("clicks").insert({
+          fanlink_id: fanlink.id,
+          platform_name: platformName,
+          user_agent: navigator.userAgent,
+          device_type: /mobile/i.test(navigator.userAgent) ? "mobile" : "desktop",
+        });
+      }
     }
   };
 
