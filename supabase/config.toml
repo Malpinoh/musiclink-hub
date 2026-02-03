@@ -47,3 +47,6 @@ verify_jwt = false
 
 [functions.execute-presave-library-saves]
 verify_jwt = false
+
+[functions.track-geo]
+verify_jwt = false

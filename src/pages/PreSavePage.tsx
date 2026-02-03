@@ -132,14 +132,24 @@ const PreSavePage = () => {
     if (!preSave?.spotify_artist_id) return;
 
     try {
-      await supabase.from("pre_save_actions").insert({
-        pre_save_id: preSave.id,
-        action_type: 'follow_artist'
+      // Track with geo data via edge function
+      await supabase.functions.invoke("track-geo", {
+        body: {
+          type: "presave_action",
+          id: preSave.id,
+          action_type: "follow_artist",
+        },
       });
 
       window.open(`https://open.spotify.com/artist/${preSave.spotify_artist_id}`, '_blank');
     } catch (error) {
       console.error("Error following artist:", error);
+      // Fallback to direct insert
+      await supabase.from("pre_save_actions").insert({
+        pre_save_id: preSave.id,
+        action_type: 'follow_artist'
+      });
+      window.open(`https://open.spotify.com/artist/${preSave.spotify_artist_id}`, '_blank');
     }
   };
 
