@@ -3,6 +3,7 @@ import { useParams, Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
+import FanLocationMap from "@/components/FanLocationMap";
 import { motion } from "framer-motion";
 import { ArrowLeft, Loader2, Music2, ExternalLink, TrendingUp, RefreshCw, Globe, MapPin } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
@@ -414,6 +415,10 @@ const FanlinkAnalytics = () => {
               )}
             </div>
           </motion.div>
+
+          {/* World Map Visualization */}
+          <FanLocationMap countryData={countryData} title="Fan Locations Worldwide" />
+
           {/* Geographic Breakdown */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 mt-4 sm:mt-6">
             {/* Countries */}
