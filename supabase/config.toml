@@ -50,3 +50,6 @@ verify_jwt = false
 
 [functions.track-geo]
 verify_jwt = false
+
+[functions.sitemap]
+verify_jwt = false

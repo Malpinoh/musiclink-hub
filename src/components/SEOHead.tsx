@@ -7,6 +7,7 @@ interface SEOHeadProps {
   imageUrl?: string;
   pageUrl: string;
   albumTitle?: string;
+  releaseDate?: string;
   type?: 'fanlink' | 'presave';
 }
 
@@ -17,13 +18,16 @@ const SEOHead = ({
   imageUrl, 
   pageUrl,
   albumTitle,
+  releaseDate,
   type = 'fanlink'
 }: SEOHeadProps) => {
-  const fullTitle = `${title} – ${artist}`;
+  const siteUrl = 'https://md.malpinohdistro.com.ng';
+  const fullTitle = `${title} – ${artist} | MDistro Link`;
   const defaultDescription = type === 'presave' 
-    ? `Pre-save ${title} by ${artist}. Be the first to listen when it drops!`
-    : `Listen to ${title} by ${artist} on Spotify, Apple Music, Boomplay, Audiomack and more.`;
+    ? `Pre-save "${title}" by ${artist}. Be the first to listen when it drops! Save to your Spotify library automatically on release day.`
+    : `Listen to "${title}" by ${artist} on Spotify, Apple Music, Boomplay, Audiomack, YouTube Music, Deezer, Tidal, and more streaming platforms.`;
   const metaDescription = description || defaultDescription;
+  const defaultImage = `${siteUrl}/og-image.png`;
 
   useEffect(() => {
     // Update document title
@@ -64,6 +68,8 @@ const SEOHead = ({
     // Standard SEO meta tags
     updateMetaTag('meta[name="title"]', fullTitle);
     updateMetaTag('meta[name="description"]', metaDescription);
+    updateMetaTag('meta[name="keywords"]', `${title}, ${artist}, music, stream, listen, ${type === 'presave' ? 'pre-save, pre-add' : 'fanlink, smart link'}, spotify, apple music, audiomack, boomplay`);
+    updateMetaTag('meta[name="robots"]', 'index, follow, max-image-preview:large');
     
     // Canonical URL
     updateLinkTag('canonical', pageUrl);
@@ -73,21 +79,36 @@ const SEOHead = ({
     updateMetaTag('meta[property="og:title"]', fullTitle);
     updateMetaTag('meta[property="og:description"]', metaDescription);
     updateMetaTag('meta[property="og:url"]', pageUrl);
-    if (imageUrl) {
-      updateMetaTag('meta[property="og:image"]', imageUrl);
-      updateMetaTag('meta[property="og:image:width"]', '640');
-      updateMetaTag('meta[property="og:image:height"]', '640');
+    updateMetaTag('meta[property="og:site_name"]', 'MDistro Link');
+    updateMetaTag('meta[property="og:locale"]', 'en_US');
+    
+    const ogImage = imageUrl || defaultImage;
+    updateMetaTag('meta[property="og:image"]', ogImage);
+    updateMetaTag('meta[property="og:image:secure_url"]', ogImage);
+    updateMetaTag('meta[property="og:image:width"]', '640');
+    updateMetaTag('meta[property="og:image:height"]', '640');
+    updateMetaTag('meta[property="og:image:alt"]', `${title} by ${artist} - Album Artwork`);
+    updateMetaTag('meta[property="og:image:type"]', 'image/jpeg');
+
+    // Music-specific OG tags
+    updateMetaTag('meta[property="music:musician"]', artist);
+    if (albumTitle) {
+      updateMetaTag('meta[property="music:album"]', albumTitle);
+    }
+    if (releaseDate) {
+      updateMetaTag('meta[property="music:release_date"]', releaseDate);
     }
 
     // Twitter Card tags
     updateMetaTag('meta[name="twitter:card"]', 'summary_large_image');
+    updateMetaTag('meta[name="twitter:site"]', '@MalpinohDistro');
+    updateMetaTag('meta[name="twitter:creator"]', '@MalpinohDistro');
     updateMetaTag('meta[name="twitter:title"]', fullTitle);
     updateMetaTag('meta[name="twitter:description"]', metaDescription);
-    if (imageUrl) {
-      updateMetaTag('meta[name="twitter:image"]', imageUrl);
-    }
+    updateMetaTag('meta[name="twitter:image"]', ogImage);
+    updateMetaTag('meta[name="twitter:image:alt"]', `${title} by ${artist}`);
 
-    // JSON-LD Structured Data
+    // JSON-LD Structured Data for MusicRecording
     const jsonLd = {
       '@context': 'https://schema.org',
       '@type': 'MusicRecording',
@@ -96,9 +117,23 @@ const SEOHead = ({
         '@type': 'MusicGroup',
         'name': artist
       },
-      'image': imageUrl,
+      'image': imageUrl || defaultImage,
       'url': pageUrl,
-      ...(albumTitle && { 'inAlbum': { '@type': 'MusicAlbum', 'name': albumTitle } })
+      'description': metaDescription,
+      ...(albumTitle && { 
+        'inAlbum': { 
+          '@type': 'MusicAlbum', 
+          'name': albumTitle 
+        } 
+      }),
+      ...(releaseDate && { 'datePublished': releaseDate }),
+      'potentialAction': {
+        '@type': 'ListenAction',
+        'target': {
+          '@type': 'EntryPoint',
+          'urlTemplate': pageUrl
+        }
+      }
     };
 
     let scriptElement = document.querySelector('script[type="application/ld+json"][data-seo="music"]') as HTMLScriptElement | null;
@@ -112,12 +147,54 @@ const SEOHead = ({
       document.head.appendChild(scriptElement);
     }
 
+    // BreadcrumbList for better navigation in search
+    const breadcrumbJsonLd = {
+      '@context': 'https://schema.org',
+      '@type': 'BreadcrumbList',
+      'itemListElement': [
+        {
+          '@type': 'ListItem',
+          'position': 1,
+          'name': 'Home',
+          'item': siteUrl
+        },
+        {
+          '@type': 'ListItem',
+          'position': 2,
+          'name': artist,
+          'item': pageUrl
+        },
+        {
+          '@type': 'ListItem',
+          'position': 3,
+          'name': title,
+          'item': pageUrl
+        }
+      ]
+    };
+
+    let breadcrumbScript = document.querySelector('script[type="application/ld+json"][data-seo="breadcrumb"]') as HTMLScriptElement | null;
+    if (breadcrumbScript) {
+      breadcrumbScript.textContent = JSON.stringify(breadcrumbJsonLd);
+    } else {
+      breadcrumbScript = document.createElement('script');
+      breadcrumbScript.type = 'application/ld+json';
+      breadcrumbScript.setAttribute('data-seo', 'breadcrumb');
+      breadcrumbScript.textContent = JSON.stringify(breadcrumbJsonLd);
+      document.head.appendChild(breadcrumbScript);
+    }
+
     // Cleanup function
     return () => {
-      // Reset title on unmount
       document.title = 'MDistro Link - One Link. All Platforms. Infinite Reach.';
+      // Clean up music-specific meta tags
+      const musicTags = document.querySelectorAll('meta[property^="music:"]');
+      musicTags.forEach(tag => tag.remove());
+      // Clean up breadcrumb
+      const breadcrumb = document.querySelector('script[data-seo="breadcrumb"]');
+      if (breadcrumb) breadcrumb.remove();
     };
-  }, [title, artist, metaDescription, imageUrl, pageUrl, albumTitle, fullTitle]);
+  }, [title, artist, metaDescription, imageUrl, pageUrl, albumTitle, releaseDate, fullTitle, defaultImage, type]);
 
   return null;
 };
