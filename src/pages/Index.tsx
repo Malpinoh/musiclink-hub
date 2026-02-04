@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
+import PageSEO from "@/components/PageSEO";
 import { motion } from "framer-motion";
 import { 
   ArrowRight, 
@@ -24,6 +25,25 @@ import {
   AudiomackIcon, 
   BoomplayIcon 
 } from "@/components/icons/PlatformIcons";
+
+const homeJsonLd = {
+  "@context": "https://schema.org",
+  "@type": "WebPage",
+  "name": "MDistro Link - One Link. All Platforms. Infinite Reach.",
+  "description": "Create stunning fanlinks that connect your audience to your music on every streaming platform.",
+  "url": "https://md.malpinohdistro.com.ng",
+  "mainEntity": {
+    "@type": "SoftwareApplication",
+    "name": "MDistro Link",
+    "applicationCategory": "MusicApplication",
+    "operatingSystem": "Web",
+    "offers": {
+      "@type": "Offer",
+      "price": "0",
+      "priceCurrency": "USD"
+    }
+  }
+};
 
 const Index = () => {
   const containerVariants = {
@@ -82,6 +102,13 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-background">
+      <PageSEO
+        title="MDistro Link - One Link. All Platforms. Infinite Reach."
+        description="Create stunning fanlinks that connect your audience to your music on Spotify, Apple Music, YouTube, Audiomack, Boomplay, and more. Auto-fetch metadata, track analytics, and grow your fanbase."
+        canonicalPath=""
+        keywords={["fanlink", "smart link", "music link", "spotify", "apple music", "audiomack", "boomplay", "music promotion"]}
+        jsonLd={homeJsonLd}
+      />
       <Header />
       
       {/* Hero Section */}
