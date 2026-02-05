@@ -21,7 +21,6 @@ import PreSavePage from "./pages/PreSavePage";
 import SpotifyCallback from "./pages/SpotifyCallback";
 import DemoPage from "./pages/DemoPage";
 import NotFound from "./pages/NotFound";
-import SitemapRedirect from "./pages/SitemapRedirect";
 
 const queryClient = new QueryClient();
 
@@ -57,7 +56,6 @@ const App = () => {
               <Route path="/presave/create" element={<CreatePreSave />} />
               <Route path="/login" element={<Login />} />
               <Route path="/demo" element={<DemoPage />} />
-              <Route path="/sitemap.xml" element={<SitemapRedirect />} />
               <Route path="/presave/:artist/:slug" element={<PreSavePage />} />
               <Route path="/callback/spotify" element={<SpotifyCallback />} />
               <Route path="/:artist/:song" element={<FanlinkPage />} />
