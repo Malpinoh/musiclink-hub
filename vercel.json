@@ -1,7 +1,11 @@
 {
   "rewrites": [
     {
-      "source": "/((?!api|_next|static|favicon.ico|robots.txt|assets|presave/create|dashboard|login|demo|create-fanlink).*)",
+      "source": "/sitemap.xml",
+      "destination": "https://uwzhhzkvqqvaqvkuocrz.supabase.co/functions/v1/sitemap"
+    },
+    {
+      "source": "/((?!api|_next|static|favicon.ico|robots.txt|sitemap.xml|assets|presave/create|dashboard|login|demo|create-fanlink).*)",
       "destination": "/index.html"
     }
   ]
