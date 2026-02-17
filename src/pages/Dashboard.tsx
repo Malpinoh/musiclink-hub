@@ -18,7 +18,8 @@ import {
   Loader2,
   Clock,
   Calendar,
-  Edit
+  Edit,
+  User
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -226,7 +227,13 @@ const Dashboard = () => {
               <h1 className="font-display text-3xl md:text-4xl font-bold mb-2">Dashboard</h1>
               <p className="text-muted-foreground">Manage your fanlinks and pre-saves</p>
             </div>
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2">
+              <Button variant="glass" asChild>
+                <Link to="/artist-bio/edit">
+                  <User className="w-4 h-4 mr-2" />
+                  Artist Bio
+                </Link>
+              </Button>
               <Button variant="outline" asChild>
                 <Link to="/presave/create">
                   <Clock className="w-5 h-5 mr-2" />
