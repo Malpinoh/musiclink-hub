@@ -21,6 +21,8 @@ import PreSavePage from "./pages/PreSavePage";
 import SpotifyCallback from "./pages/SpotifyCallback";
 import DemoPage from "./pages/DemoPage";
 import NotFound from "./pages/NotFound";
+import ArtistBioPage from "./pages/ArtistBioPage";
+import EditArtistBio from "./pages/EditArtistBio";
 
 const queryClient = new QueryClient();
 
@@ -58,6 +60,8 @@ const App = () => {
               <Route path="/demo" element={<DemoPage />} />
               <Route path="/presave/:artist/:slug" element={<PreSavePage />} />
               <Route path="/callback/spotify" element={<SpotifyCallback />} />
+              <Route path="/artist/:username" element={<ArtistBioPage />} />
+              <Route path="/artist-bio/edit" element={<EditArtistBio />} />
               <Route path="/:artist/:song" element={<FanlinkPage />} />
               <Route path="/link/:id" element={<FanlinkPage />} />
               <Route path="*" element={<NotFound />} />

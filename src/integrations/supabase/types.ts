@@ -14,6 +14,171 @@ export type Database = {
   }
   public: {
     Tables: {
+      artist_custom_buttons: {
+        Row: {
+          artist_profile_id: string
+          created_at: string
+          display_order: number | null
+          id: string
+          title: string
+          url: string
+        }
+        Insert: {
+          artist_profile_id: string
+          created_at?: string
+          display_order?: number | null
+          id?: string
+          title: string
+          url: string
+        }
+        Update: {
+          artist_profile_id?: string
+          created_at?: string
+          display_order?: number | null
+          id?: string
+          title?: string
+          url?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "artist_custom_buttons_artist_profile_id_fkey"
+            columns: ["artist_profile_id"]
+            isOneToOne: false
+            referencedRelation: "artist_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      artist_link_clicks: {
+        Row: {
+          artist_profile_id: string
+          clicked_at: string
+          country: string | null
+          id: string
+          ip_address: string | null
+          link_label: string | null
+          link_type: string
+          link_url: string | null
+        }
+        Insert: {
+          artist_profile_id: string
+          clicked_at?: string
+          country?: string | null
+          id?: string
+          ip_address?: string | null
+          link_label?: string | null
+          link_type: string
+          link_url?: string | null
+        }
+        Update: {
+          artist_profile_id?: string
+          clicked_at?: string
+          country?: string | null
+          id?: string
+          ip_address?: string | null
+          link_label?: string | null
+          link_type?: string
+          link_url?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "artist_link_clicks_artist_profile_id_fkey"
+            columns: ["artist_profile_id"]
+            isOneToOne: false
+            referencedRelation: "artist_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      artist_profile_views: {
+        Row: {
+          artist_profile_id: string
+          country: string | null
+          id: string
+          ip_address: string | null
+          user_agent: string | null
+          viewed_at: string
+        }
+        Insert: {
+          artist_profile_id: string
+          country?: string | null
+          id?: string
+          ip_address?: string | null
+          user_agent?: string | null
+          viewed_at?: string
+        }
+        Update: {
+          artist_profile_id?: string
+          country?: string | null
+          id?: string
+          ip_address?: string | null
+          user_agent?: string | null
+          viewed_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "artist_profile_views_artist_profile_id_fkey"
+            columns: ["artist_profile_id"]
+            isOneToOne: false
+            referencedRelation: "artist_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      artist_profiles: {
+        Row: {
+          bio: string | null
+          created_at: string
+          display_name: string
+          facebook_url: string | null
+          id: string
+          instagram_url: string | null
+          is_active: boolean | null
+          is_verified: boolean | null
+          profile_picture_url: string | null
+          tiktok_url: string | null
+          twitter_url: string | null
+          updated_at: string
+          user_id: string
+          username: string
+          youtube_url: string | null
+        }
+        Insert: {
+          bio?: string | null
+          created_at?: string
+          display_name: string
+          facebook_url?: string | null
+          id?: string
+          instagram_url?: string | null
+          is_active?: boolean | null
+          is_verified?: boolean | null
+          profile_picture_url?: string | null
+          tiktok_url?: string | null
+          twitter_url?: string | null
+          updated_at?: string
+          user_id: string
+          username: string
+          youtube_url?: string | null
+        }
+        Update: {
+          bio?: string | null
+          created_at?: string
+          display_name?: string
+          facebook_url?: string | null
+          id?: string
+          instagram_url?: string | null
+          is_active?: boolean | null
+          is_verified?: boolean | null
+          profile_picture_url?: string | null
+          tiktok_url?: string | null
+          twitter_url?: string | null
+          updated_at?: string
+          user_id?: string
+          username?: string
+          youtube_url?: string | null
+        }
+        Relationships: []
+      }
       clicks: {
         Row: {
           city: string | null
