@@ -24,6 +24,9 @@ import {
   MousePointerClick,
   Upload,
   X,
+  Copy,
+  Check,
+  TrendingUp,
 } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
@@ -56,6 +59,13 @@ interface Analytics {
   clicksByType: Record<string, number>;
 }
 
+const CLICK_TYPE_COLORS: Record<string, string> = {
+  social: "hsl(187 100% 50%)",
+  custom: "hsl(280 100% 65%)",
+  release: "hsl(142 76% 36%)",
+  streaming: "hsl(32 100% 50%)",
+};
+
 const EditArtistBio = () => {
   const navigate = useNavigate();
   const { user, loading: authLoading } = useAuth();
@@ -63,6 +73,7 @@ const EditArtistBio = () => {
   const [saving, setSaving] = useState(false);
   const [profileId, setProfileId] = useState<string | null>(null);
   const [uploadingImage, setUploadingImage] = useState(false);
+  const [copiedLink, setCopiedLink] = useState(false);
   const [analytics, setAnalytics] = useState<Analytics>({
     totalViews: 0,
     totalClicks: 0,
@@ -297,6 +308,14 @@ const EditArtistBio = () => {
     ? `${window.location.origin}/artist/${form.username}`
     : null;
 
+  const handleCopyBioLink = async () => {
+    if (!bioUrl) return;
+    await navigator.clipboard.writeText(bioUrl);
+    setCopiedLink(true);
+    toast.success("Bio link copied!");
+    setTimeout(() => setCopiedLink(false), 2000);
+  };
+
   return (
     <div className="min-h-screen bg-background">
       <Header />
@@ -304,39 +323,47 @@ const EditArtistBio = () => {
         <div className="container mx-auto max-w-3xl">
           {/* Page header */}
           <motion.div
-            className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-8"
+            className="mb-8"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
           >
-            <div>
-              <h1 className="font-display text-3xl font-bold mb-1">Artist Bio Page</h1>
-              <p className="text-muted-foreground text-sm">Your public artist page for fans</p>
-              {bioUrl && (
-                <a
-                  href={bioUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center gap-1.5 text-xs text-primary mt-1 hover:underline"
-                >
-                  <ExternalLink className="w-3 h-3" />
+            <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
+              <div>
+                <h1 className="font-display text-3xl font-bold mb-1">Artist Bio Page</h1>
+                <p className="text-muted-foreground text-sm">Your public artist page for fans</p>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {bioUrl && (
+                  <>
+                    <Button variant="outline" size="sm" onClick={handleCopyBioLink}>
+                      {copiedLink ? (
+                        <><Check className="w-4 h-4 mr-2 text-primary" />Copied!</>
+                      ) : (
+                        <><Copy className="w-4 h-4 mr-2" />Copy Link</>
+                      )}
+                    </Button>
+                    <Button variant="outline" size="sm" asChild>
+                      <Link to={`/artist/${form.username}`} target="_blank">
+                        <ExternalLink className="w-4 h-4 mr-2" />
+                        Preview
+                      </Link>
+                    </Button>
+                  </>
+                )}
+                <Button variant="hero" onClick={handleSave} disabled={saving}>
+                  {saving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Save className="w-4 h-4 mr-2" />}
+                  {profileId ? "Save Changes" : "Create Page"}
+                </Button>
+              </div>
+            </div>
+            {bioUrl && (
+              <div className="mt-3 flex items-center gap-2 px-3 py-2 bg-primary/5 border border-primary/20 rounded-xl w-fit">
+                <TrendingUp className="w-3.5 h-3.5 text-primary flex-shrink-0" />
+                <a href={bioUrl} target="_blank" rel="noopener noreferrer" className="text-xs text-primary hover:underline font-medium truncate max-w-xs">
                   {bioUrl}
                 </a>
-              )}
-            </div>
-            <div className="flex gap-2">
-              {bioUrl && (
-                <Button variant="outline" asChild>
-                  <Link to={`/artist/${form.username}`} target="_blank">
-                    <ExternalLink className="w-4 h-4 mr-2" />
-                    Preview
-                  </Link>
-                </Button>
-              )}
-              <Button variant="hero" onClick={handleSave} disabled={saving}>
-                {saving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Save className="w-4 h-4 mr-2" />}
-                {profileId ? "Save Changes" : "Create Page"}
-              </Button>
-            </div>
+              </div>
+            )}
           </motion.div>
 
           <Tabs defaultValue="profile" className="w-full">
@@ -553,52 +580,87 @@ const EditArtistBio = () => {
                     {/* Stats */}
                     <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                       {[
-                        { label: "Total Views", value: analytics.totalViews, icon: Eye, color: "text-primary" },
-                        { label: "Total Clicks", value: analytics.totalClicks, icon: MousePointerClick, color: "text-accent" },
-                        { label: "Views (7 days)", value: analytics.recentViews, icon: BarChart3, color: "text-green-400" },
-                      ].map(({ label, value, icon: Icon, color }) => (
+                        { label: "Total Views", value: analytics.totalViews, icon: Eye, bg: "bg-primary/15", color: "text-primary" },
+                        { label: "Total Clicks", value: analytics.totalClicks, icon: MousePointerClick, bg: "bg-accent/15", color: "text-accent" },
+                        { label: "Views (7 days)", value: analytics.recentViews, icon: TrendingUp, bg: "bg-green-500/15", color: "text-green-400" },
+                      ].map(({ label, value, icon: Icon, bg, color }) => (
                         <div key={label} className="glass-card p-5">
-                          <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-xl bg-secondary flex items-center justify-center">
-                              <Icon className={`w-5 h-5 ${color}`} />
-                            </div>
-                            <div>
-                              <p className="text-xs text-muted-foreground">{label}</p>
-                              <p className="font-display text-xl font-bold">{value.toLocaleString()}</p>
-                            </div>
+                          <div className={`w-10 h-10 rounded-xl ${bg} flex items-center justify-center mb-3`}>
+                            <Icon className={`w-5 h-5 ${color}`} />
                           </div>
+                          <p className="font-display text-2xl font-bold">{value.toLocaleString()}</p>
+                          <p className="text-xs text-muted-foreground mt-0.5">{label}</p>
                         </div>
                       ))}
                     </div>
 
+                    {/* Conversion rate */}
+                    {analytics.totalViews > 0 && (
+                      <div className="glass-card p-5">
+                        <div className="flex items-center justify-between mb-1">
+                          <span className="text-sm font-medium">Engagement Rate</span>
+                          <span className="font-display font-bold text-primary text-lg">
+                            {Math.round((analytics.totalClicks / analytics.totalViews) * 100)}%
+                          </span>
+                        </div>
+                        <p className="text-xs text-muted-foreground">
+                          {analytics.totalClicks} clicks from {analytics.totalViews} profile views
+                        </p>
+                        <div className="mt-3 h-2 bg-secondary rounded-full overflow-hidden">
+                          <motion.div
+                            className="h-full rounded-full"
+                            style={{ background: "hsl(187 100% 50%)" }}
+                            initial={{ width: 0 }}
+                            animate={{ width: `${Math.min(100, Math.round((analytics.totalClicks / analytics.totalViews) * 100))}%` }}
+                            transition={{ duration: 0.8 }}
+                          />
+                        </div>
+                      </div>
+                    )}
+
                     {/* Clicks by type */}
-                    {Object.keys(analytics.clicksByType).length > 0 && (
+                    {Object.keys(analytics.clicksByType).length > 0 ? (
                       <div className="glass-card p-6">
                         <h3 className="font-display font-semibold mb-4">Clicks by Type</h3>
-                        <div className="space-y-3">
+                        <div className="space-y-4">
                           {Object.entries(analytics.clicksByType)
                             .sort(([, a], [, b]) => b - a)
                             .map(([type, count]) => {
                               const total = analytics.totalClicks || 1;
                               const pct = Math.round((count / total) * 100);
+                              const color = CLICK_TYPE_COLORS[type] || "hsl(187 100% 50%)";
                               return (
                                 <div key={type}>
-                                  <div className="flex justify-between text-sm mb-1">
-                                    <span className="capitalize font-medium">{type}</span>
-                                    <span className="text-muted-foreground">{count} ({pct}%)</span>
+                                  <div className="flex justify-between text-sm mb-2">
+                                    <div className="flex items-center gap-2">
+                                      <div className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ background: color }} />
+                                      <span className="capitalize font-medium">{type}</span>
+                                    </div>
+                                    <span className="text-muted-foreground tabular-nums">{count} <span className="text-muted-foreground/60">({pct}%)</span></span>
                                   </div>
                                   <div className="h-2 bg-secondary rounded-full overflow-hidden">
                                     <motion.div
-                                      className="h-full rounded-full bg-primary"
+                                      className="h-full rounded-full"
+                                      style={{ background: color }}
                                       initial={{ width: 0 }}
                                       animate={{ width: `${pct}%` }}
-                                      transition={{ duration: 0.6 }}
+                                      transition={{ duration: 0.6, delay: 0.1 }}
                                     />
                                   </div>
                                 </div>
                               );
                             })}
                         </div>
+                      </div>
+                    ) : (
+                      <div className="glass-card p-8 text-center">
+                        <MousePointerClick className="w-10 h-10 mx-auto text-muted-foreground mb-3" />
+                        <p className="text-sm text-muted-foreground">No link clicks yet. Share your bio page to start tracking!</p>
+                        {bioUrl && (
+                          <Button variant="outline" size="sm" className="mt-3" onClick={handleCopyBioLink}>
+                            <Copy className="w-3.5 h-3.5 mr-2" /> Copy Bio Link
+                          </Button>
+                        )}
                       </div>
                     )}
                   </div>

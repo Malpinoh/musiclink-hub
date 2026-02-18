@@ -1,9 +1,10 @@
 import { useState, useEffect, useRef } from "react";
 import { useParams, Link } from "react-router-dom";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
-import { BadgeCheck, Music2, ExternalLink, Instagram, Youtube } from "lucide-react";
-import { getPlatformIcon } from "@/components/icons/PlatformIcons";
+import { BadgeCheck, Music2, ExternalLink, Instagram, Youtube, Share2, Copy, Check, ChevronDown, ChevronUp } from "lucide-react";
+import { getPlatformIcon, getPlatformDisplayName } from "@/components/icons/PlatformIcons";
+import logo from "@/assets/logo.png";
 
 // Social icons
 const TikTokIcon = () => (
@@ -65,7 +66,121 @@ const SOCIAL_PLATFORMS = [
   { key: "youtube_url", label: "YouTube", icon: Youtube, color: "#FF0000" },
 ] as const;
 
-const STREAMING_PLATFORMS = ["spotify", "apple music", "boomplay", "audiomack", "youtube music", "youtube"];
+const STREAMING_PLATFORMS = ["spotify", "apple_music", "apple music", "boomplay", "audiomack", "youtube music", "youtube", "deezer", "tidal", "amazon", "soundcloud"];
+
+// Music release card with expandable streaming links
+const ReleaseCard = ({
+  release,
+  index,
+  onTrackClick,
+}: {
+  release: Release;
+  index: number;
+  onTrackClick: (type: string, label: string, url: string) => void;
+}) => {
+  const [expanded, setExpanded] = useState(index === 0);
+
+  return (
+    <motion.div
+      className="rounded-2xl overflow-hidden border border-border/50 bg-card/40 backdrop-blur-sm hover:border-primary/30 transition-all duration-300"
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: 0.3 + index * 0.08 }}
+    >
+      {/* Release header */}
+      <div className="flex items-center gap-4 p-4">
+        <div className="relative flex-shrink-0">
+          <div className="w-16 h-16 rounded-xl overflow-hidden bg-secondary shadow-lg">
+            {release.artwork_url ? (
+              <img src={release.artwork_url} alt={release.title} className="w-full h-full object-cover" />
+            ) : (
+              <div className="w-full h-full flex items-center justify-center">
+                <Music2 className="w-7 h-7 text-muted-foreground" />
+              </div>
+            )}
+          </div>
+        </div>
+
+        <div className="flex-1 min-w-0">
+          <Link
+            to={`/${release.artist_slug}/${release.slug}`}
+            target="_blank"
+            className="block group"
+            onClick={() => onTrackClick("release", release.title, `/${release.artist_slug}/${release.slug}`)}
+          >
+            <h3 className="font-display font-semibold truncate group-hover:text-primary transition-colors">
+              {release.title}
+            </h3>
+          </Link>
+          <div className="flex items-center gap-2 mt-1 flex-wrap">
+            {release.release_type && (
+              <span className="text-xs px-2 py-0.5 rounded-full bg-primary/15 text-primary font-medium">
+                {release.release_type}
+              </span>
+            )}
+            {release.release_date && (
+              <span className="text-xs text-muted-foreground">{release.release_date}</span>
+            )}
+          </div>
+        </div>
+
+        <div className="flex items-center gap-1 flex-shrink-0">
+          <Link
+            to={`/${release.artist_slug}/${release.slug}`}
+            target="_blank"
+            className="p-2 rounded-lg hover:bg-secondary/60 transition-colors text-muted-foreground hover:text-primary"
+            onClick={() => onTrackClick("release", release.title, `/${release.artist_slug}/${release.slug}`)}
+          >
+            <ExternalLink className="w-4 h-4" />
+          </Link>
+          {release.platform_links.length > 0 && (
+            <button
+              onClick={() => setExpanded(!expanded)}
+              className="p-2 rounded-lg hover:bg-secondary/60 transition-colors text-muted-foreground hover:text-foreground"
+            >
+              {expanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* Streaming links */}
+      <AnimatePresence>
+        {expanded && release.platform_links.length > 0 && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: "auto", opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            className="overflow-hidden"
+          >
+            <div className="px-4 pb-4 grid grid-cols-2 gap-2">
+              {release.platform_links.map((pl) => {
+                const IconComp = getPlatformIcon(pl.platform_name);
+                const displayName = getPlatformDisplayName(pl.platform_name);
+                return (
+                  <a
+                    key={pl.platform_name}
+                    href={pl.platform_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={() => onTrackClick("streaming", pl.platform_name, pl.platform_url)}
+                    className="flex items-center gap-2 px-3 py-2.5 rounded-xl bg-secondary/60 border border-border/50 hover:border-primary/40 hover:bg-secondary transition-all duration-200 group"
+                  >
+                    <IconComp className="w-4 h-4 flex-shrink-0" />
+                    <span className="text-xs font-medium truncate group-hover:text-primary transition-colors">
+                      {displayName}
+                    </span>
+                  </a>
+                );
+              })}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </motion.div>
+  );
+};
 
 const ArtistBioPage = () => {
   const { username } = useParams<{ username: string }>();
@@ -74,7 +189,7 @@ const ArtistBioPage = () => {
   const [releases, setReleases] = useState<Release[]>([]);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
-  const [viewCounted, setViewCounted] = useState(false);
+  const [copied, setCopied] = useState(false);
   const hasCounted = useRef(false);
 
   useEffect(() => {
@@ -98,7 +213,7 @@ const ArtistBioPage = () => {
 
       setProfile(profileData);
 
-      // Fetch custom buttons, releases and platform links in parallel
+      // Fetch custom buttons + releases in parallel
       const [buttonsResult, releasesResult] = await Promise.all([
         supabase
           .from("artist_custom_buttons")
@@ -125,20 +240,20 @@ const ArtistBioPage = () => {
           .eq("is_active", true);
 
         const streamingLinks = (links || []).filter(l =>
-          STREAMING_PLATFORMS.includes(l.platform_name.toLowerCase())
+          STREAMING_PLATFORMS.includes(l.platform_name.toLowerCase().replace(/\s+/g, "_"))
+          || STREAMING_PLATFORMS.includes(l.platform_name.toLowerCase())
         );
         releasesWithLinks.push({ ...rel, platform_links: streamingLinks });
       }
       setReleases(releasesWithLinks);
 
-      // Count profile view (once per mount)
+      // Count profile view once
       if (!hasCounted.current) {
         hasCounted.current = true;
         await supabase.from("artist_profile_views").insert({
           artist_profile_id: profileData.id,
           user_agent: navigator.userAgent,
         });
-        setViewCounted(true);
       }
     } catch (err) {
       console.error(err);
@@ -156,6 +271,19 @@ const ArtistBioPage = () => {
       link_label: label,
       link_url: url,
     });
+  };
+
+  const handleShare = async () => {
+    const url = window.location.href;
+    if (navigator.share && profile) {
+      try {
+        await navigator.share({ title: profile.display_name, url });
+        return;
+      } catch {}
+    }
+    await navigator.clipboard.writeText(url);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
   };
 
   if (loading) {
@@ -180,14 +308,56 @@ const ArtistBioPage = () => {
   const socialLinks = SOCIAL_PLATFORMS.filter(s => profile[s.key as keyof ArtistProfile]);
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* Hero gradient */}
-      <div className="absolute inset-0 pointer-events-none">
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[400px] rounded-full opacity-20"
-          style={{ background: "radial-gradient(ellipse, hsl(187 100% 50% / 0.4) 0%, transparent 70%)" }} />
+    <div className="min-h-screen bg-background relative overflow-x-hidden">
+      {/* Blurred background from profile picture */}
+      {profile.profile_picture_url && (
+        <div className="fixed inset-0 z-0 pointer-events-none">
+          <img
+            src={profile.profile_picture_url}
+            alt=""
+            className="w-full h-full object-cover blur-3xl scale-110 opacity-10"
+          />
+          <div className="absolute inset-0 bg-background/85" />
+        </div>
+      )}
+
+      {/* Top ambient glow */}
+      <div className="fixed inset-0 z-0 pointer-events-none">
+        <div
+          className="absolute top-0 left-1/2 -translate-x-1/2 w-[700px] h-[500px] rounded-full opacity-25"
+          style={{ background: "radial-gradient(ellipse, hsl(187 100% 50% / 0.35) 0%, transparent 70%)" }}
+        />
       </div>
 
-      <div className="relative max-w-lg mx-auto px-4 py-12 pb-20">
+      {/* Sticky top bar */}
+      <header className="sticky top-0 z-50 bg-background/70 backdrop-blur-xl border-b border-border/30">
+        <div className="max-w-lg mx-auto px-4 h-14 flex items-center justify-between">
+          <Link to="/" className="flex items-center gap-2 opacity-60 hover:opacity-100 transition-opacity">
+            <img src={logo} alt="MDistro Link" className="w-6 h-6 rounded" />
+            <span className="font-display font-semibold text-sm hidden sm:block">MDistro Link</span>
+          </Link>
+          <div className="flex items-center gap-1">
+            <button
+              onClick={handleShare}
+              className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-secondary/60 hover:bg-secondary border border-border/40 transition-all text-sm font-medium"
+            >
+              {copied ? (
+                <>
+                  <Check className="w-3.5 h-3.5 text-primary" />
+                  <span className="text-primary text-xs">Copied!</span>
+                </>
+              ) : (
+                <>
+                  <Share2 className="w-3.5 h-3.5" />
+                  <span className="text-xs hidden sm:block">Share</span>
+                </>
+              )}
+            </button>
+          </div>
+        </div>
+      </header>
+
+      <div className="relative z-10 max-w-lg mx-auto px-4 pt-8 pb-24">
         {/* Profile Header */}
         <motion.div
           className="flex flex-col items-center text-center mb-8"
@@ -195,12 +365,22 @@ const ArtistBioPage = () => {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
         >
-          {/* Avatar */}
+          {/* Avatar with glow ring */}
           <div className="relative mb-5">
-            <div className="w-28 h-28 rounded-full overflow-hidden border-2 border-primary/40 shadow-lg"
-              style={{ boxShadow: "0 0 40px hsl(187 100% 50% / 0.3)" }}>
+            <div
+              className="absolute -inset-2 rounded-full opacity-60"
+              style={{
+                background: "conic-gradient(from 0deg, hsl(187 100% 50%), hsl(280 100% 65%), hsl(187 100% 50%))",
+                filter: "blur(8px)",
+              }}
+            />
+            <div className="relative w-28 h-28 rounded-full overflow-hidden border-2 border-primary/40 shadow-xl">
               {profile.profile_picture_url ? (
-                <img src={profile.profile_picture_url} alt={profile.display_name} className="w-full h-full object-cover" />
+                <img
+                  src={profile.profile_picture_url}
+                  alt={profile.display_name}
+                  className="w-full h-full object-cover"
+                />
               ) : (
                 <div className="w-full h-full bg-secondary flex items-center justify-center">
                   <span className="font-display text-3xl font-bold text-primary">
@@ -210,17 +390,17 @@ const ArtistBioPage = () => {
               )}
             </div>
             {profile.is_verified && (
-              <div className="absolute -bottom-1 -right-1 w-8 h-8 rounded-full bg-primary flex items-center justify-center shadow-lg">
+              <div className="absolute -bottom-1 -right-1 w-8 h-8 rounded-full bg-primary flex items-center justify-center shadow-lg ring-2 ring-background">
                 <BadgeCheck className="w-5 h-5 text-primary-foreground" />
               </div>
             )}
           </div>
 
           {/* Name */}
-          <div className="flex items-center gap-2 mb-2">
-            <h1 className="font-display text-2xl md:text-3xl font-bold">{profile.display_name}</h1>
-          </div>
-          <p className="text-sm text-muted-foreground mb-3">@{profile.username}</p>
+          <h1 className="font-display text-2xl md:text-3xl font-bold mb-1 flex items-center gap-2">
+            {profile.display_name}
+          </h1>
+          <p className="text-sm text-muted-foreground mb-4">@{profile.username}</p>
 
           {/* Bio */}
           {profile.bio && (
@@ -246,7 +426,7 @@ const ArtistBioPage = () => {
                   target="_blank"
                   rel="noopener noreferrer"
                   onClick={() => trackLinkClick("social", s.label, url)}
-                  className="w-11 h-11 rounded-full bg-secondary border border-border hover:border-primary/50 flex items-center justify-center transition-all duration-200 hover:scale-110"
+                  className="w-11 h-11 rounded-full bg-secondary/70 border border-border/50 hover:border-primary/50 hover:bg-secondary flex items-center justify-center transition-all duration-200 hover:scale-110 hover:shadow-lg"
                   style={{ color: s.color }}
                   title={s.label}
                 >
@@ -265,18 +445,23 @@ const ArtistBioPage = () => {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2 }}
           >
-            {customButtons.map((btn) => (
-              <a
+            {customButtons.map((btn, i) => (
+              <motion.a
                 key={btn.id}
                 href={btn.url}
                 target="_blank"
                 rel="noopener noreferrer"
                 onClick={() => trackLinkClick("custom", btn.title, btn.url)}
-                className="flex items-center justify-between w-full px-5 py-4 rounded-xl bg-secondary border border-border hover:border-primary/50 hover:bg-secondary/80 transition-all duration-200 group"
+                className="flex items-center justify-between w-full px-5 py-4 rounded-2xl bg-secondary/60 border border-border/50 hover:border-primary/50 hover:bg-secondary/80 transition-all duration-200 group"
+                whileHover={{ scale: 1.01 }}
+                whileTap={{ scale: 0.99 }}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.2 + i * 0.05 }}
               >
-                <span className="font-medium">{btn.title}</span>
-                <ExternalLink className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors" />
-              </a>
+                <span className="font-semibold group-hover:text-primary transition-colors">{btn.title}</span>
+                <ExternalLink className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors flex-shrink-0" />
+              </motion.a>
             ))}
           </motion.div>
         )}
@@ -288,87 +473,50 @@ const ArtistBioPage = () => {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.25 }}
           >
-            <h2 className="font-display text-lg font-semibold mb-4 text-center text-muted-foreground uppercase tracking-widest text-xs">
-              Music
-            </h2>
-            <div className="space-y-4">
-              {releases.map((release, i) => (
-                <motion.div
-                  key={release.id}
-                  className="bg-card border border-border rounded-2xl overflow-hidden hover:border-primary/30 transition-all duration-300"
-                  initial={{ opacity: 0, y: 15 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.3 + i * 0.06 }}
-                >
-                  {/* Release header */}
-                  <Link
-                    to={`/${release.artist_slug}/${release.slug}`}
-                    target="_blank"
-                    className="flex items-center gap-4 p-4 hover:bg-secondary/40 transition-colors group"
-                    onClick={() => trackLinkClick("release", release.title, `/${release.artist_slug}/${release.slug}`)}
-                  >
-                    <div className="w-16 h-16 rounded-xl overflow-hidden bg-secondary flex-shrink-0">
-                      {release.artwork_url ? (
-                        <img src={release.artwork_url} alt={release.title} className="w-full h-full object-cover" />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center">
-                          <Music2 className="w-7 h-7 text-muted-foreground" />
-                        </div>
-                      )}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <h3 className="font-display font-semibold truncate group-hover:text-primary transition-colors">
-                        {release.title}
-                      </h3>
-                      <div className="flex items-center gap-2 mt-1">
-                        {release.release_type && (
-                          <span className="text-xs px-2 py-0.5 rounded-full bg-primary/20 text-primary font-medium">
-                            {release.release_type}
-                          </span>
-                        )}
-                        {release.release_date && (
-                          <span className="text-xs text-muted-foreground">{release.release_date}</span>
-                        )}
-                      </div>
-                    </div>
-                    <ExternalLink className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors flex-shrink-0" />
-                  </Link>
+            <div className="flex items-center gap-3 mb-4">
+              <div className="h-px flex-1 bg-border/50" />
+              <span className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Music</span>
+              <div className="h-px flex-1 bg-border/50" />
+            </div>
 
-                  {/* Streaming links */}
-                  {release.platform_links.length > 0 && (
-                    <div className="px-4 pb-4 flex flex-wrap gap-2">
-                      {release.platform_links.map((pl) => {
-                        const IconComp = getPlatformIcon(pl.platform_name);
-                        return (
-                          <a
-                            key={pl.platform_name}
-                            href={pl.platform_url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            onClick={() => trackLinkClick("streaming", pl.platform_name, pl.platform_url)}
-                            className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-full bg-secondary border border-border hover:border-primary/50 hover:bg-secondary/80 transition-all duration-200 font-medium"
-                          >
-                            <IconComp className="w-3.5 h-3.5" />
-                            {pl.platform_name}
-                          </a>
-                        );
-                      })}
-                    </div>
-                  )}
-                </motion.div>
+            <div className="space-y-3">
+              {releases.map((release, i) => (
+                <ReleaseCard
+                  key={release.id}
+                  release={release}
+                  index={i}
+                  onTrackClick={trackLinkClick}
+                />
               ))}
             </div>
           </motion.div>
         )}
 
+        {/* Empty state */}
+        {releases.length === 0 && customButtons.length === 0 && socialLinks.length === 0 && (
+          <motion.div
+            className="text-center py-12"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.4 }}
+          >
+            <Music2 className="w-12 h-12 mx-auto text-muted-foreground mb-3" />
+            <p className="text-muted-foreground">This artist hasn't added any content yet.</p>
+          </motion.div>
+        )}
+
         {/* Footer branding */}
         <motion.div
-          className="mt-12 text-center"
+          className="mt-16 text-center"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          transition={{ delay: 0.5 }}
+          transition={{ delay: 0.6 }}
         >
-          <Link to="/" className="text-xs text-muted-foreground/50 hover:text-muted-foreground transition-colors">
+          <Link
+            to="/"
+            className="inline-flex items-center gap-2 text-xs text-muted-foreground/40 hover:text-muted-foreground transition-colors"
+          >
+            <img src={logo} alt="MDistro Link" className="w-4 h-4 rounded" />
             Powered by MDistro Link
           </Link>
         </motion.div>
