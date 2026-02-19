@@ -5,7 +5,7 @@ import { Share2, Copy, Check, ExternalLink, Loader2, Music2 } from "lucide-react
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase } from "@/integrations/malpinohdistro/client";
 import demoArtwork from "@/assets/demo-artwork.jpg";
 import SEOHead from "@/components/SEOHead";
 import { getShareableFanlinkUrl } from "@/lib/shareUrl";

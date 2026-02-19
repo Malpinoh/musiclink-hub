@@ -7,7 +7,7 @@ import FanLocationMap from "@/components/FanLocationMap";
 import { motion } from "framer-motion";
 import { ArrowLeft, Loader2, Music2, ExternalLink, TrendingUp, Users, Library, UserPlus, RefreshCw, Globe, MapPin } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase } from "@/integrations/malpinohdistro/client";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from "recharts";
 import { useIsMobile } from "@/hooks/use-mobile";
 
