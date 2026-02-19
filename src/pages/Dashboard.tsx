@@ -22,7 +22,7 @@ import {
   User
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase } from "@/integrations/malpinohdistro/client";
 import { toast } from "sonner";
 
 interface Fanlink {

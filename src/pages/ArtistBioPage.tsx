@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useParams, Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase } from "@/integrations/malpinohdistro/client";
 import { BadgeCheck, Music2, ExternalLink, Instagram, Youtube, Share2, Copy, Check, ChevronDown, ChevronUp } from "lucide-react";
 import { getPlatformIcon, getPlatformDisplayName } from "@/components/icons/PlatformIcons";
 import logo from "@/assets/logo.png";
@@ -56,6 +56,20 @@ interface Release {
   release_type: string | null;
   release_date: string | null;
   platform_links: { platform_name: string; platform_url: string }[];
+  source: "fanlink" | "malpinohdistro";
+}
+
+// Release from MALPINOHDISTRO releases table
+interface MALPINOHDISTRORelease {
+  id: string;
+  title: string;
+  cover_art_url: string | null;
+  release_date: string | null;
+  release_type: string | null;
+  platforms: string[] | null;
+  upc: string | null;
+  isrc: string | null;
+  artist_name: string | null;
 }
 
 const SOCIAL_PLATFORMS = [
@@ -213,8 +227,8 @@ const ArtistBioPage = () => {
 
       setProfile(profileData);
 
-      // Fetch custom buttons + releases in parallel
-      const [buttonsResult, releasesResult] = await Promise.all([
+      // Fetch custom buttons + fanlinks + approved releases in parallel
+      const [buttonsResult, releasesResult, approvedReleasesResult] = await Promise.all([
         supabase
           .from("artist_custom_buttons")
           .select("*")
@@ -226,11 +240,17 @@ const ArtistBioPage = () => {
           .eq("user_id", profileData.user_id)
           .eq("is_published", true)
           .order("created_at", { ascending: false }),
+        // Fetch approved releases from MALPINOHDISTRO using artist_id linked to user
+        supabase
+          .from("releases")
+          .select("id, title, cover_art_url, release_date, release_type, platforms, upc, isrc, artist_name")
+          .eq("status", "approved")
+          .order("release_date", { ascending: false }),
       ]);
 
       setCustomButtons(buttonsResult.data || []);
 
-      // Fetch platform links for each release
+      // Fetch platform links for fanlink-based releases
       const releasesWithLinks: Release[] = [];
       for (const rel of releasesResult.data || []) {
         const { data: links } = await supabase
@@ -243,8 +263,32 @@ const ArtistBioPage = () => {
           STREAMING_PLATFORMS.includes(l.platform_name.toLowerCase().replace(/\s+/g, "_"))
           || STREAMING_PLATFORMS.includes(l.platform_name.toLowerCase())
         );
-        releasesWithLinks.push({ ...rel, platform_links: streamingLinks });
+        releasesWithLinks.push({ ...rel, platform_links: streamingLinks, source: "fanlink" });
       }
+
+      // Map MALPINOHDISTRO approved releases (those not already in fanlinks by UPC/title)
+      const fanlinkTitles = new Set(releasesWithLinks.map(r => r.title.toLowerCase()));
+      for (const ar of (approvedReleasesResult.data as MALPINOHDISTRORelease[] | null) || []) {
+        if (fanlinkTitles.has(ar.title.toLowerCase())) continue; // already present as fanlink
+        const artistSlug = (profileData.username || "artist").toLowerCase().replace(/\s+/g, "-");
+        const slug = ar.title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+        const platformLinks = (ar.platforms || []).map((p: string) => ({
+          platform_name: p.toLowerCase().replace(/\s+/g, "_"),
+          platform_url: "#",
+        }));
+        releasesWithLinks.push({
+          id: ar.id,
+          title: ar.title,
+          artwork_url: ar.cover_art_url,
+          slug,
+          artist_slug: artistSlug,
+          release_type: ar.release_type,
+          release_date: ar.release_date,
+          platform_links: platformLinks,
+          source: "malpinohdistro",
+        });
+      }
+
       setReleases(releasesWithLinks);
 
       // Count profile view once
