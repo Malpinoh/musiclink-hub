@@ -82,9 +82,9 @@ Deno.serve(async (req: Request) => {
     const geoData = await getGeoFromIP(clientIP);
     console.log("GeoData:", geoData);
 
-    // Initialize Supabase client
-    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    // Initialize Supabase client pointing to MALPINOHDISTRO
+    const supabaseUrl = Deno.env.get("MD_SUPABASE_URL") || Deno.env.get("SUPABASE_URL")!;
+    const supabaseServiceKey = Deno.env.get("MD_SUPABASE_SERVICE_ROLE_KEY") || Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
     let result;

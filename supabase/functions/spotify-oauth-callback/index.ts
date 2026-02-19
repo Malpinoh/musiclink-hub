@@ -63,8 +63,8 @@ serve(async (req) => {
 
     const clientId = Deno.env.get("SPOTIFY_CLIENT_ID");
     const clientSecret = Deno.env.get("SPOTIFY_CLIENT_SECRET");
-    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-    const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const supabaseUrl = Deno.env.get("MD_SUPABASE_URL") || Deno.env.get("SUPABASE_URL")!;
+    const supabaseKey = Deno.env.get("MD_SUPABASE_SERVICE_ROLE_KEY") || Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
     if (!clientId || !clientSecret) {
       console.error("Spotify credentials not configured");
