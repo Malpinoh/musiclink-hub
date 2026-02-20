@@ -1,7 +1,6 @@
 -- ============================================================
 -- MDISTRO LINK → MALPINOHDISTRO MERGER MIGRATION
 -- Run this SQL in your MALPINOHDISTRO Supabase SQL editor
--- (Settings > SQL Editor > New Query)
 -- ============================================================
 
 -- ========================
@@ -18,11 +17,16 @@ CREATE TABLE IF NOT EXISTS public.profiles (
 
 ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
 
-CREATE POLICY IF NOT EXISTS "Users can view their own profile" ON public.profiles
+DROP POLICY IF EXISTS "Users can view their own profile" ON public.profiles;
+CREATE POLICY "Users can view their own profile" ON public.profiles
   FOR SELECT USING (auth.uid() = user_id);
-CREATE POLICY IF NOT EXISTS "Users can insert their own profile" ON public.profiles
+
+DROP POLICY IF EXISTS "Users can insert their own profile" ON public.profiles;
+CREATE POLICY "Users can insert their own profile" ON public.profiles
   FOR INSERT WITH CHECK (auth.uid() = user_id);
-CREATE POLICY IF NOT EXISTS "Users can update their own profile" ON public.profiles
+
+DROP POLICY IF EXISTS "Users can update their own profile" ON public.profiles;
+CREATE POLICY "Users can update their own profile" ON public.profiles
   FOR UPDATE USING (auth.uid() = user_id);
 
 -- Auto-create profile on signup
@@ -64,15 +68,24 @@ CREATE TABLE IF NOT EXISTS public.artist_profiles (
 
 ALTER TABLE public.artist_profiles ENABLE ROW LEVEL SECURITY;
 
-CREATE POLICY IF NOT EXISTS "Anyone can view active artist profiles" ON public.artist_profiles
+DROP POLICY IF EXISTS "Anyone can view active artist profiles" ON public.artist_profiles;
+CREATE POLICY "Anyone can view active artist profiles" ON public.artist_profiles
   FOR SELECT USING (is_active = true);
-CREATE POLICY IF NOT EXISTS "Users can view their own artist profile" ON public.artist_profiles
+
+DROP POLICY IF EXISTS "Users can view their own artist profile" ON public.artist_profiles;
+CREATE POLICY "Users can view their own artist profile" ON public.artist_profiles
   FOR SELECT USING (auth.uid() = user_id);
-CREATE POLICY IF NOT EXISTS "Users can create their own artist profile" ON public.artist_profiles
+
+DROP POLICY IF EXISTS "Users can create their own artist profile" ON public.artist_profiles;
+CREATE POLICY "Users can create their own artist profile" ON public.artist_profiles
   FOR INSERT WITH CHECK (auth.uid() = user_id);
-CREATE POLICY IF NOT EXISTS "Users can update their own artist profile" ON public.artist_profiles
+
+DROP POLICY IF EXISTS "Users can update their own artist profile" ON public.artist_profiles;
+CREATE POLICY "Users can update their own artist profile" ON public.artist_profiles
   FOR UPDATE USING (auth.uid() = user_id);
-CREATE POLICY IF NOT EXISTS "Users can delete their own artist profile" ON public.artist_profiles
+
+DROP POLICY IF EXISTS "Users can delete their own artist profile" ON public.artist_profiles;
+CREATE POLICY "Users can delete their own artist profile" ON public.artist_profiles
   FOR DELETE USING (auth.uid() = user_id);
 
 -- ========================
@@ -89,11 +102,14 @@ CREATE TABLE IF NOT EXISTS public.artist_custom_buttons (
 
 ALTER TABLE public.artist_custom_buttons ENABLE ROW LEVEL SECURITY;
 
-CREATE POLICY IF NOT EXISTS "Anyone can view custom buttons for active profiles" ON public.artist_custom_buttons
+DROP POLICY IF EXISTS "Anyone can view custom buttons for active profiles" ON public.artist_custom_buttons;
+CREATE POLICY "Anyone can view custom buttons for active profiles" ON public.artist_custom_buttons
   FOR SELECT USING (
     EXISTS (SELECT 1 FROM public.artist_profiles WHERE id = artist_profile_id AND is_active = true)
   );
-CREATE POLICY IF NOT EXISTS "Users can manage their own custom buttons" ON public.artist_custom_buttons
+
+DROP POLICY IF EXISTS "Users can manage their own custom buttons" ON public.artist_custom_buttons;
+CREATE POLICY "Users can manage their own custom buttons" ON public.artist_custom_buttons
   FOR ALL USING (
     EXISTS (SELECT 1 FROM public.artist_profiles WHERE id = artist_profile_id AND user_id = auth.uid())
   );
@@ -121,15 +137,24 @@ CREATE TABLE IF NOT EXISTS public.fanlinks (
 
 ALTER TABLE public.fanlinks ENABLE ROW LEVEL SECURITY;
 
-CREATE POLICY IF NOT EXISTS "Anyone can view published fanlinks" ON public.fanlinks
+DROP POLICY IF EXISTS "Anyone can view published fanlinks" ON public.fanlinks;
+CREATE POLICY "Anyone can view published fanlinks" ON public.fanlinks
   FOR SELECT USING (is_published = true);
-CREATE POLICY IF NOT EXISTS "Users can view their own fanlinks" ON public.fanlinks
+
+DROP POLICY IF EXISTS "Users can view their own fanlinks" ON public.fanlinks;
+CREATE POLICY "Users can view their own fanlinks" ON public.fanlinks
   FOR SELECT USING (auth.uid() = user_id);
-CREATE POLICY IF NOT EXISTS "Users can create their own fanlinks" ON public.fanlinks
+
+DROP POLICY IF EXISTS "Users can create their own fanlinks" ON public.fanlinks;
+CREATE POLICY "Users can create their own fanlinks" ON public.fanlinks
   FOR INSERT WITH CHECK (auth.uid() = user_id);
-CREATE POLICY IF NOT EXISTS "Users can update their own fanlinks" ON public.fanlinks
+
+DROP POLICY IF EXISTS "Users can update their own fanlinks" ON public.fanlinks;
+CREATE POLICY "Users can update their own fanlinks" ON public.fanlinks
   FOR UPDATE USING (auth.uid() = user_id);
-CREATE POLICY IF NOT EXISTS "Users can delete their own fanlinks" ON public.fanlinks
+
+DROP POLICY IF EXISTS "Users can delete their own fanlinks" ON public.fanlinks;
+CREATE POLICY "Users can delete their own fanlinks" ON public.fanlinks
   FOR DELETE USING (auth.uid() = user_id);
 
 -- ========================
@@ -147,11 +172,14 @@ CREATE TABLE IF NOT EXISTS public.platform_links (
 
 ALTER TABLE public.platform_links ENABLE ROW LEVEL SECURITY;
 
-CREATE POLICY IF NOT EXISTS "Anyone can view platform links for published fanlinks" ON public.platform_links
+DROP POLICY IF EXISTS "Anyone can view platform links for published fanlinks" ON public.platform_links;
+CREATE POLICY "Anyone can view platform links for published fanlinks" ON public.platform_links
   FOR SELECT USING (
     EXISTS (SELECT 1 FROM public.fanlinks WHERE id = fanlink_id AND is_published = true)
   );
-CREATE POLICY IF NOT EXISTS "Users can manage platform links for their fanlinks" ON public.platform_links
+
+DROP POLICY IF EXISTS "Users can manage platform links for their fanlinks" ON public.platform_links;
+CREATE POLICY "Users can manage platform links for their fanlinks" ON public.platform_links
   FOR ALL USING (
     EXISTS (SELECT 1 FROM public.fanlinks WHERE id = fanlink_id AND user_id = auth.uid())
   );
@@ -173,9 +201,12 @@ CREATE TABLE IF NOT EXISTS public.clicks (
 
 ALTER TABLE public.clicks ENABLE ROW LEVEL SECURITY;
 
-CREATE POLICY IF NOT EXISTS "Anyone can insert clicks" ON public.clicks
+DROP POLICY IF EXISTS "Anyone can insert clicks" ON public.clicks;
+CREATE POLICY "Anyone can insert clicks" ON public.clicks
   FOR INSERT WITH CHECK (true);
-CREATE POLICY IF NOT EXISTS "Users can view clicks for their fanlinks" ON public.clicks
+
+DROP POLICY IF EXISTS "Users can view clicks for their fanlinks" ON public.clicks;
+CREATE POLICY "Users can view clicks for their fanlinks" ON public.clicks
   FOR SELECT USING (
     EXISTS (SELECT 1 FROM public.fanlinks WHERE id = fanlink_id AND user_id = auth.uid())
   );
@@ -209,15 +240,24 @@ CREATE TABLE IF NOT EXISTS public.pre_saves (
 
 ALTER TABLE public.pre_saves ENABLE ROW LEVEL SECURITY;
 
-CREATE POLICY IF NOT EXISTS "Anyone can view active pre-saves" ON public.pre_saves
+DROP POLICY IF EXISTS "Anyone can view active pre-saves" ON public.pre_saves;
+CREATE POLICY "Anyone can view active pre-saves" ON public.pre_saves
   FOR SELECT USING (is_active = true);
-CREATE POLICY IF NOT EXISTS "Users can view their own pre-saves" ON public.pre_saves
+
+DROP POLICY IF EXISTS "Users can view their own pre-saves" ON public.pre_saves;
+CREATE POLICY "Users can view their own pre-saves" ON public.pre_saves
   FOR SELECT USING (auth.uid() = user_id);
-CREATE POLICY IF NOT EXISTS "Users can create their own pre-saves" ON public.pre_saves
+
+DROP POLICY IF EXISTS "Users can create their own pre-saves" ON public.pre_saves;
+CREATE POLICY "Users can create their own pre-saves" ON public.pre_saves
   FOR INSERT WITH CHECK (auth.uid() = user_id);
-CREATE POLICY IF NOT EXISTS "Users can update their own pre-saves" ON public.pre_saves
+
+DROP POLICY IF EXISTS "Users can update their own pre-saves" ON public.pre_saves;
+CREATE POLICY "Users can update their own pre-saves" ON public.pre_saves
   FOR UPDATE USING (auth.uid() = user_id);
-CREATE POLICY IF NOT EXISTS "Users can delete their own pre-saves" ON public.pre_saves
+
+DROP POLICY IF EXISTS "Users can delete their own pre-saves" ON public.pre_saves;
+CREATE POLICY "Users can delete their own pre-saves" ON public.pre_saves
   FOR DELETE USING (auth.uid() = user_id);
 
 -- ========================
@@ -242,9 +282,12 @@ CREATE TABLE IF NOT EXISTS public.pre_save_actions (
 
 ALTER TABLE public.pre_save_actions ENABLE ROW LEVEL SECURITY;
 
-CREATE POLICY IF NOT EXISTS "Anyone can create pre-save actions" ON public.pre_save_actions
+DROP POLICY IF EXISTS "Anyone can create pre-save actions" ON public.pre_save_actions;
+CREATE POLICY "Anyone can create pre-save actions" ON public.pre_save_actions
   FOR INSERT WITH CHECK (true);
-CREATE POLICY IF NOT EXISTS "Users can view their pre-save actions" ON public.pre_save_actions
+
+DROP POLICY IF EXISTS "Users can view their pre-save actions" ON public.pre_save_actions;
+CREATE POLICY "Users can view their pre-save actions" ON public.pre_save_actions
   FOR SELECT USING (
     EXISTS (SELECT 1 FROM public.pre_saves WHERE id = pre_save_id AND user_id = auth.uid())
   );
@@ -263,9 +306,12 @@ CREATE TABLE IF NOT EXISTS public.artist_profile_views (
 
 ALTER TABLE public.artist_profile_views ENABLE ROW LEVEL SECURITY;
 
-CREATE POLICY IF NOT EXISTS "Anyone can insert profile views" ON public.artist_profile_views
+DROP POLICY IF EXISTS "Anyone can insert profile views" ON public.artist_profile_views;
+CREATE POLICY "Anyone can insert profile views" ON public.artist_profile_views
   FOR INSERT WITH CHECK (true);
-CREATE POLICY IF NOT EXISTS "Users can view their own profile views" ON public.artist_profile_views
+
+DROP POLICY IF EXISTS "Users can view their own profile views" ON public.artist_profile_views;
+CREATE POLICY "Users can view their own profile views" ON public.artist_profile_views
   FOR SELECT USING (
     EXISTS (SELECT 1 FROM public.artist_profiles WHERE id = artist_profile_id AND user_id = auth.uid())
   );
@@ -283,9 +329,12 @@ CREATE TABLE IF NOT EXISTS public.artist_link_clicks (
 
 ALTER TABLE public.artist_link_clicks ENABLE ROW LEVEL SECURITY;
 
-CREATE POLICY IF NOT EXISTS "Anyone can insert link clicks" ON public.artist_link_clicks
+DROP POLICY IF EXISTS "Anyone can insert link clicks" ON public.artist_link_clicks;
+CREATE POLICY "Anyone can insert link clicks" ON public.artist_link_clicks
   FOR INSERT WITH CHECK (true);
-CREATE POLICY IF NOT EXISTS "Users can view their own link clicks" ON public.artist_link_clicks
+
+DROP POLICY IF EXISTS "Users can view their own link clicks" ON public.artist_link_clicks;
+CREATE POLICY "Users can view their own link clicks" ON public.artist_link_clicks
   FOR SELECT USING (
     EXISTS (SELECT 1 FROM public.artist_profiles WHERE id = artist_profile_id AND user_id = auth.uid())
   );
@@ -323,26 +372,29 @@ INSERT INTO storage.buckets (id, name, public)
 VALUES ('artwork', 'artwork', true)
 ON CONFLICT (id) DO NOTHING;
 
-CREATE POLICY IF NOT EXISTS "Anyone can view artwork" ON storage.objects
+DROP POLICY IF EXISTS "Anyone can view artwork" ON storage.objects;
+CREATE POLICY "Anyone can view artwork" ON storage.objects
   FOR SELECT USING (bucket_id = 'artwork');
-CREATE POLICY IF NOT EXISTS "Authenticated users can upload artwork" ON storage.objects
+
+DROP POLICY IF EXISTS "Authenticated users can upload artwork" ON storage.objects;
+CREATE POLICY "Authenticated users can upload artwork" ON storage.objects
   FOR INSERT WITH CHECK (bucket_id = 'artwork' AND auth.role() = 'authenticated');
-CREATE POLICY IF NOT EXISTS "Users can update their artwork" ON storage.objects
+
+DROP POLICY IF EXISTS "Users can update their artwork" ON storage.objects;
+CREATE POLICY "Users can update their artwork" ON storage.objects
   FOR UPDATE USING (bucket_id = 'artwork' AND auth.uid()::text = (storage.foldername(name))[1]);
-CREATE POLICY IF NOT EXISTS "Users can delete their artwork" ON storage.objects
+
+DROP POLICY IF EXISTS "Users can delete their artwork" ON storage.objects;
+CREATE POLICY "Users can delete their artwork" ON storage.objects
   FOR DELETE USING (bucket_id = 'artwork' AND auth.uid()::text = (storage.foldername(name))[1]);
 
 -- ========================
 -- 12. RLS: Allow MDISTRO LINK to read approved releases
---     (The releases table already exists in MALPINOHDISTRO)
 -- ========================
-
--- Allow public read of approved releases (for Artist Bio page)
 DROP POLICY IF EXISTS "Public can read approved releases" ON public.releases;
 CREATE POLICY "Public can read approved releases" ON public.releases
   FOR SELECT USING (status = 'approved');
 
 -- ========================
--- DONE! 
--- MDISTRO LINK is now merged into MALPINOHDISTRO.
+-- DONE!
 -- ========================
