@@ -687,7 +687,7 @@ const CreatePreSave = () => {
             <div className="mt-4 p-4 bg-secondary/50 rounded-lg">
               <p className="text-sm text-muted-foreground mb-1">Smart Link Preview</p>
               <code className="text-sm text-primary">
-                https://md.malpinohdistro.com.ng/presave/{slugify(metadata.artist)}/{slugify(metadata.title)}
+                https://md.malpinohdistro.com.ng/pre/{slugify(metadata.artist)}-{slugify(metadata.title)}
               </code>
             </div>
 
