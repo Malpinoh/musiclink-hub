@@ -294,7 +294,8 @@ const CreatePreSave = () => {
           isrc: metadata.isrc || null,
           upc: metadata.upc || null,
           album_title: metadata.album,
-          is_released: false
+          is_released: false,
+          description: manualData.description?.trim() || null
         })
         .select()
         .single();
