@@ -67,7 +67,8 @@ const CreatePreSave = () => {
     upc: "",
     isrc: "",
     releaseDate: "",
-    artworkUrl: ""
+    artworkUrl: "",
+    description: ""
   });
   
   // Artwork upload state
@@ -293,7 +294,8 @@ const CreatePreSave = () => {
           isrc: metadata.isrc || null,
           upc: metadata.upc || null,
           album_title: metadata.album,
-          is_released: false
+          is_released: false,
+          description: manualData.description?.trim() || null
         })
         .select()
         .single();
@@ -440,6 +442,19 @@ const CreatePreSave = () => {
                   value={manualData.releaseDate}
                   onChange={(e) => handleManualChange("releaseDate", e.target.value)}
                   className="mt-1"
+                />
+              </div>
+              
+              {/* Description */}
+              <div className="md:col-span-2">
+                <Label htmlFor="description">Description (Optional)</Label>
+                <Input
+                  id="description"
+                  placeholder="Tell fans about this release..."
+                  value={manualData.description}
+                  onChange={(e) => handleManualChange("description", e.target.value)}
+                  className="mt-1"
+                  maxLength={500}
                 />
               </div>
               
@@ -673,7 +688,7 @@ const CreatePreSave = () => {
             <div className="mt-4 p-4 bg-secondary/50 rounded-lg">
               <p className="text-sm text-muted-foreground mb-1">Smart Link Preview</p>
               <code className="text-sm text-primary">
-                https://md.malpinohdistro.com.ng/presave/{slugify(metadata.artist)}/{slugify(metadata.title)}
+                https://md.malpinohdistro.com.ng/pre/{slugify(metadata.artist)}-{slugify(metadata.title)}
               </code>
             </div>
 

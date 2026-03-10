@@ -18,6 +18,7 @@ import PreSaveAnalytics from "./pages/PreSaveAnalytics";
 import Login from "./pages/Login";
 import FanlinkPage from "./pages/FanlinkPage";
 import PreSavePage from "./pages/PreSavePage";
+import PreSaveCampaignRoute from "./pages/PreSaveCampaignRoute";
 import SpotifyCallback from "./pages/SpotifyCallback";
 import DemoPage from "./pages/DemoPage";
 import NotFound from "./pages/NotFound";
@@ -59,6 +60,7 @@ const App = () => {
               <Route path="/login" element={<Login />} />
               <Route path="/demo" element={<DemoPage />} />
               <Route path="/presave/:artist/:slug" element={<PreSavePage />} />
+              <Route path="/pre/:slug" element={<PreSaveCampaignRoute />} />
               <Route path="/callback/spotify" element={<SpotifyCallback />} />
               <Route path="/artist/:username" element={<ArtistBioPage />} />
               <Route path="/artist-bio/edit" element={<EditArtistBio />} />
