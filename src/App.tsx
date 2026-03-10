@@ -60,6 +60,7 @@ const App = () => {
               <Route path="/login" element={<Login />} />
               <Route path="/demo" element={<DemoPage />} />
               <Route path="/presave/:artist/:slug" element={<PreSavePage />} />
+              <Route path="/pre/:slug" element={<PreSaveCampaignRoute />} />
               <Route path="/callback/spotify" element={<SpotifyCallback />} />
               <Route path="/artist/:username" element={<ArtistBioPage />} />
               <Route path="/artist-bio/edit" element={<EditArtistBio />} />
