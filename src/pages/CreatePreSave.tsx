@@ -67,7 +67,8 @@ const CreatePreSave = () => {
     upc: "",
     isrc: "",
     releaseDate: "",
-    artworkUrl: ""
+    artworkUrl: "",
+    description: ""
   });
   
   // Artwork upload state
