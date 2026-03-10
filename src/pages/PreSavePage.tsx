@@ -1,13 +1,14 @@
 import { useParams, Link } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Music2, Bell, Heart, UserPlus, Loader2, ExternalLink, Calendar, Share2, Copy, Check } from "lucide-react";
+import { Music2, Bell, Loader2, Calendar, Share2, Copy, Check, Mail, User, Disc3 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import demoArtwork from "@/assets/demo-artwork.jpg";
 import SEOHead from "@/components/SEOHead";
-import { SpotifyIcon, AppleMusicIcon } from "@/components/icons/PlatformIcons";
 import { getShareablePresaveUrl } from "@/lib/shareUrl";
 import logo from "@/assets/logo.png";
 
@@ -23,36 +24,24 @@ interface PreSave {
   album_title: string | null;
   is_released: boolean;
   apple_music_url: string | null;
+  description: string | null;
 }
-
-// Generate Spotify OAuth URL
-const getSpotifyAuthUrl = (preSaveId: string, action: string, returnUrl: string): string => {
-  const clientId = import.meta.env.VITE_SPOTIFY_CLIENT_ID || "your-client-id";
-  const redirectUri = `${window.location.origin}/callback/spotify`;
-  const scopes = "user-library-modify user-follow-modify user-read-email";
-  const state = btoa(JSON.stringify({ preSaveId, action, returnUrl }));
-  
-  return `https://accounts.spotify.com/authorize?client_id=${clientId}&response_type=code&redirect_uri=${encodeURIComponent(redirectUri)}&scope=${encodeURIComponent(scopes)}&state=${state}`;
-};
-
-// Generate Apple Music pre-add URL (placeholder that resolves on release)
-const getAppleMusicPreAddUrl = (artist: string, title: string): string => {
-  const query = encodeURIComponent(`${artist} ${title}`);
-  return `https://music.apple.com/search?term=${query}`;
-};
 
 const PreSavePage = () => {
   const { artist, slug } = useParams();
   const [loading, setLoading] = useState(true);
   const [preSave, setPreSave] = useState<PreSave | null>(null);
   const [notFound, setNotFound] = useState(false);
-  const [saving, setSaving] = useState(false);
-  const [saved, setSaved] = useState(false);
   const [copied, setCopied] = useState(false);
+  
+  // Fan form state
+  const [fanName, setFanName] = useState("");
+  const [fanEmail, setFanEmail] = useState("");
+  const [spotifyEmail, setSpotifyEmail] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
 
   const currentUrl = typeof window !== 'undefined' ? window.location.href : '';
-  
-  // Generate shareable URL that works with social media crawlers
   const shareableUrl = artist && slug 
     ? getShareablePresaveUrl(artist, slug) 
     : currentUrl;
@@ -72,13 +61,11 @@ const PreSavePage = () => {
         .maybeSingle();
 
       if (error) throw error;
-      
       if (!data) {
         setNotFound(true);
         setLoading(false);
         return;
       }
-
       setPreSave(data);
     } catch (error) {
       console.error("Error fetching pre-save:", error);
@@ -88,85 +75,74 @@ const PreSavePage = () => {
     }
   };
 
-  const handlePreSave = async () => {
-    if (!preSave) return;
+  const handleFanSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!preSave || !fanName.trim() || !fanEmail.trim()) return;
 
-    setSaving(true);
+    // Basic email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(fanEmail.trim())) {
+      toast.error("Please enter a valid email address");
+      return;
+    }
+    if (spotifyEmail.trim() && !emailRegex.test(spotifyEmail.trim())) {
+      toast.error("Please enter a valid Spotify email");
+      return;
+    }
+
+    setSubmitting(true);
     try {
-      // If released with a resolved Spotify album, redirect directly
-      if (preSave.is_released && preSave.spotify_album_id) {
-        window.open(`https://open.spotify.com/album/${preSave.spotify_album_id}`, '_blank');
-      } else if (preSave.is_released && preSave.spotify_uri) {
-        const spotifyId = preSave.spotify_uri.split(':').pop();
-        window.open(`https://open.spotify.com/album/${spotifyId}`, '_blank');
-      } else {
-        // For unreleased content, initiate Spotify OAuth to get library-modify permission
-        const returnUrl = window.location.pathname;
-        const authUrl = getSpotifyAuthUrl(preSave.id, "presave", returnUrl);
-        window.location.href = authUrl;
-        return; // Don't set saved state, OAuth flow will handle it
+      const { error } = await supabase
+        .from("presave_fans")
+        .insert({
+          pre_save_id: preSave.id,
+          name: fanName.trim(),
+          email: fanEmail.trim().toLowerCase(),
+          spotify_email: spotifyEmail.trim().toLowerCase() || null,
+        });
+
+      if (error) {
+        if (error.code === "23505") {
+          toast.info("You're already signed up! We'll notify you on release day.");
+          setSubmitted(true);
+          return;
+        }
+        throw error;
       }
+
+      setSubmitted(true);
+      toast.success("You're on the list! We'll notify you when it drops.");
     } catch (error) {
-      console.error("Error saving:", error);
+      console.error("Error submitting fan signup:", error);
       toast.error("Something went wrong. Please try again.");
     } finally {
-      setSaving(false);
+      setSubmitting(false);
     }
   };
 
-  const handleAppleMusicPreAdd = () => {
-    if (!preSave) return;
+  const getCountdown = () => {
+    if (!preSave?.release_date) return null;
+    const release = new Date(preSave.release_date);
+    const now = new Date();
+    const diff = release.getTime() - now.getTime();
+    if (diff <= 0) return null;
     
-    // If released and we have Apple Music URL, use it
-    if (preSave.is_released && preSave.apple_music_url) {
-      window.open(preSave.apple_music_url, '_blank');
-    } else {
-      // For unreleased, open Apple Music search
-      const searchUrl = getAppleMusicPreAddUrl(preSave.artist, preSave.title);
-      window.open(searchUrl, '_blank');
-      toast.info("Apple Music link opens on release day. Search for the track when it's live!");
-    }
-  };
-
-  const handleFollowArtist = async () => {
-    if (!preSave?.spotify_artist_id) return;
-
-    try {
-      // Track with geo data via edge function
-      await supabase.functions.invoke("track-geo", {
-        body: {
-          type: "presave_action",
-          id: preSave.id,
-          action_type: "follow_artist",
-        },
-      });
-
-      window.open(`https://open.spotify.com/artist/${preSave.spotify_artist_id}`, '_blank');
-    } catch (error) {
-      console.error("Error following artist:", error);
-      // Fallback to direct insert
-      await supabase.from("pre_save_actions").insert({
-        pre_save_id: preSave.id,
-        action_type: 'follow_artist'
-      });
-      window.open(`https://open.spotify.com/artist/${preSave.spotify_artist_id}`, '_blank');
-    }
+    const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+    const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+    const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+    return { days, hours, minutes };
   };
 
   const formatReleaseDate = (dateString: string | null) => {
     if (!dateString) return null;
     const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', { 
-      month: 'long', 
-      day: 'numeric', 
-      year: 'numeric' 
-    });
+    return date.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
   };
 
   const handleCopyLink = async () => {
     await navigator.clipboard.writeText(shareableUrl);
     setCopied(true);
-    toast.success("Link copied! This link works with social media previews.");
+    toast.success("Link copied!");
     setTimeout(() => setCopied(false), 2000);
   };
 
@@ -175,7 +151,7 @@ const PreSavePage = () => {
       try {
         await navigator.share({
           title: `${preSave.title} by ${preSave.artist}`,
-          text: `Pre-save ${preSave.title} on Spotify`,
+          text: `${preSave.title} is dropping soon! Get notified.`,
           url: shareableUrl,
         });
       } catch {
@@ -185,6 +161,8 @@ const PreSavePage = () => {
       handleCopyLink();
     }
   };
+
+  const countdown = preSave ? getCountdown() : null;
 
   if (loading) {
     return (
@@ -209,7 +187,6 @@ const PreSavePage = () => {
 
   return (
     <div className="min-h-screen bg-background relative overflow-hidden">
-      {/* SEO Head */}
       <SEOHead
         title={preSave.title}
         artist={preSave.artist}
@@ -236,7 +213,6 @@ const PreSavePage = () => {
             <img src={logo} alt="MDistro Link" className="w-8 h-8 rounded-lg" />
             <span className="font-display font-semibold text-sm">MDistro Link</span>
           </Link>
-
           <div className="flex gap-2">
             <Button variant="ghost" size="icon" onClick={handleShare}>
               <Share2 className="w-5 h-5" />
@@ -267,8 +243,6 @@ const PreSavePage = () => {
                 alt={`${preSave.title} artwork`}
                 className="relative w-56 h-56 md:w-64 md:h-64 mx-auto rounded-2xl shadow-2xl object-cover"
               />
-              
-              {/* Pre-save Badge */}
               {!preSave.is_released && (
                 <div className="absolute -bottom-3 left-1/2 -translate-x-1/2 bg-gradient-to-r from-primary to-accent px-4 py-1 rounded-full">
                   <span className="text-xs font-semibold text-primary-foreground">PRE-SAVE</span>
@@ -281,13 +255,15 @@ const PreSavePage = () => {
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.2 }}
-              className="mb-8"
+              className="mb-6"
             >
-              <h1 className="font-display text-2xl md:text-3xl font-bold mb-2">
-                {preSave.title}
-              </h1>
+              <h1 className="font-display text-2xl md:text-3xl font-bold mb-2">{preSave.title}</h1>
               <p className="text-lg text-muted-foreground">{preSave.artist}</p>
               
+              {preSave.description && (
+                <p className="text-sm text-muted-foreground mt-3 max-w-sm mx-auto">{preSave.description}</p>
+              )}
+
               {preSave.release_date && !preSave.is_released && (
                 <div className="flex items-center justify-center gap-2 mt-4 text-sm text-muted-foreground">
                   <Calendar className="w-4 h-4 text-primary" />
@@ -296,84 +272,113 @@ const PreSavePage = () => {
               )}
             </motion.div>
 
-            {/* Pre-save Actions */}
+            {/* Countdown Timer */}
+            {countdown && !preSave.is_released && (
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ delay: 0.25 }}
+                className="mb-8"
+              >
+                <p className="text-xs uppercase tracking-widest text-muted-foreground mb-3">Drops in</p>
+                <div className="flex justify-center gap-4">
+                  {[
+                    { value: countdown.days, label: "Days" },
+                    { value: countdown.hours, label: "Hours" },
+                    { value: countdown.minutes, label: "Min" },
+                  ].map((item) => (
+                    <div key={item.label} className="flex flex-col items-center">
+                      <div className="w-16 h-16 rounded-xl bg-secondary/80 border border-border/50 flex items-center justify-center">
+                        <span className="font-display text-2xl font-bold text-primary">{item.value}</span>
+                      </div>
+                      <span className="text-[10px] uppercase tracking-wider text-muted-foreground mt-1">{item.label}</span>
+                    </div>
+                  ))}
+                </div>
+              </motion.div>
+            )}
+
+            {/* Fan Notification Form */}
             <motion.div
-              className="space-y-4"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.3 }}
             >
-              {/* Main Pre-save Button */}
-              <motion.button
-                onClick={handlePreSave}
-                disabled={saving || saved}
-                className={`w-full flex items-center justify-center gap-4 p-4 rounded-xl font-medium transition-all duration-300 ${
-                  saved 
-                    ? 'bg-green-500/20 border-green-500/50 text-green-400' 
-                    : 'bg-[#1DB954]/20 hover:bg-[#1DB954]/30 border-[#1DB954]/50'
-                } border`}
-                whileHover={{ scale: saved ? 1 : 1.02 }}
-                whileTap={{ scale: saved ? 1 : 0.98 }}
-              >
-                {saving ? (
-                  <Loader2 className="w-6 h-6 animate-spin" />
-                ) : saved ? (
-                  <>
-                    <Heart className="w-6 h-6 fill-current" />
-                    <span>You're on the list!</span>
-                  </>
-                ) : (
-                  <>
-                    <SpotifyIcon />
-                    <span className="flex-1 text-left">
-                      {preSave.is_released ? 'Listen on Spotify' : 'Pre-Save to Spotify'}
-                    </span>
-                    <ExternalLink className="w-4 h-4 opacity-50" />
-                  </>
-                )}
-              </motion.button>
-
-              {/* Apple Music Pre-Add Button */}
-              <motion.button
-                onClick={handleAppleMusicPreAdd}
-                className="w-full flex items-center gap-4 p-4 rounded-xl font-medium transition-all duration-300 bg-gradient-to-r from-[#FA233B]/20 to-[#FB5C74]/20 hover:from-[#FA233B]/30 hover:to-[#FB5C74]/30 border border-[#FA233B]/50"
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-              >
-                <AppleMusicIcon />
-                <span className="flex-1 text-left">
-                  {preSave.is_released ? 'Listen on Apple Music' : 'Pre-Add on Apple Music'}
-                </span>
-                <ExternalLink className="w-4 h-4 opacity-50" />
-              </motion.button>
-
-              {/* Follow Artist Button */}
-              {preSave.spotify_artist_id && (
-                <motion.button
-                  onClick={handleFollowArtist}
-                  className="w-full flex items-center gap-4 p-4 rounded-xl font-medium transition-all duration-300 bg-secondary/50 hover:bg-secondary/70 border border-border/30 hover:border-primary/30"
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                >
-                  <UserPlus className="w-6 h-6 text-primary" />
-                  <span className="flex-1 text-left">Follow {preSave.artist}</span>
-                  <ExternalLink className="w-4 h-4 opacity-50" />
-                </motion.button>
-              )}
-
-              {/* Pre-save Info Banner */}
-              {!preSave.is_released && !saved && (
-                <motion.div
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.5 }}
-                  className="flex flex-col items-center gap-2 text-sm text-muted-foreground mt-6"
-                >
-                  <div className="flex items-center gap-2">
-                    <Bell className="w-4 h-4 text-primary" />
-                    <span>Pre-save available. Streaming links activate on release day.</span>
+              {submitted ? (
+                <div className="glass-card p-6 text-center">
+                  <div className="w-16 h-16 mx-auto rounded-full bg-primary/20 flex items-center justify-center mb-4">
+                    <Bell className="w-8 h-8 text-primary" />
                   </div>
-                </motion.div>
+                  <h3 className="font-display text-lg font-semibold mb-2">You're on the list! 🎉</h3>
+                  <p className="text-sm text-muted-foreground">
+                    We'll send you a notification as soon as <strong>{preSave.title}</strong> drops.
+                  </p>
+                </div>
+              ) : (
+                <form onSubmit={handleFanSubmit} className="glass-card p-6 text-left space-y-4">
+                  <div className="text-center mb-2">
+                    <h3 className="font-display font-semibold text-lg">Get notified when it drops</h3>
+                    <p className="text-xs text-muted-foreground mt-1">Be the first to listen on release day</p>
+                  </div>
+
+                  <div>
+                    <Label htmlFor="fan-name" className="flex items-center gap-1.5 mb-1">
+                      <User className="w-3.5 h-3.5" /> Name
+                    </Label>
+                    <Input
+                      id="fan-name"
+                      placeholder="Your name"
+                      value={fanName}
+                      onChange={(e) => setFanName(e.target.value)}
+                      required
+                      maxLength={100}
+                    />
+                  </div>
+
+                  <div>
+                    <Label htmlFor="fan-email" className="flex items-center gap-1.5 mb-1">
+                      <Mail className="w-3.5 h-3.5" /> Email
+                    </Label>
+                    <Input
+                      id="fan-email"
+                      type="email"
+                      placeholder="you@email.com"
+                      value={fanEmail}
+                      onChange={(e) => setFanEmail(e.target.value)}
+                      required
+                      maxLength={255}
+                    />
+                  </div>
+
+                  <div>
+                    <Label htmlFor="spotify-email" className="flex items-center gap-1.5 mb-1">
+                      <Disc3 className="w-3.5 h-3.5" /> Spotify Email (optional)
+                    </Label>
+                    <Input
+                      id="spotify-email"
+                      type="email"
+                      placeholder="your-spotify@email.com"
+                      value={spotifyEmail}
+                      onChange={(e) => setSpotifyEmail(e.target.value)}
+                      maxLength={255}
+                    />
+                  </div>
+
+                  <Button
+                    type="submit"
+                    variant="hero"
+                    size="lg"
+                    className="w-full"
+                    disabled={submitting}
+                  >
+                    {submitting ? (
+                      <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                    ) : (
+                      <Bell className="w-4 h-4 mr-2" />
+                    )}
+                    Notify me when it drops
+                  </Button>
+                </form>
               )}
             </motion.div>
           </motion.div>
