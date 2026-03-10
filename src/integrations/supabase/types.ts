@@ -380,6 +380,7 @@ export type Database = {
           artist_slug: string
           artwork_url: string | null
           created_at: string
+          description: string | null
           id: string
           is_active: boolean | null
           is_released: boolean | null
@@ -402,6 +403,7 @@ export type Database = {
           artist_slug: string
           artwork_url?: string | null
           created_at?: string
+          description?: string | null
           id?: string
           is_active?: boolean | null
           is_released?: boolean | null
@@ -424,6 +426,7 @@ export type Database = {
           artist_slug?: string
           artwork_url?: string | null
           created_at?: string
+          description?: string | null
           id?: string
           is_active?: boolean | null
           is_released?: boolean | null
@@ -439,6 +442,86 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      presave_fans: {
+        Row: {
+          created_at: string
+          email: string
+          id: string
+          name: string
+          pre_save_id: string
+          spotify_email: string | null
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          id?: string
+          name: string
+          pre_save_id: string
+          spotify_email?: string | null
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          id?: string
+          name?: string
+          pre_save_id?: string
+          spotify_email?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "presave_fans_pre_save_id_fkey"
+            columns: ["pre_save_id"]
+            isOneToOne: false
+            referencedRelation: "pre_saves"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      presave_notifications: {
+        Row: {
+          email: string
+          error_message: string | null
+          fan_id: string
+          id: string
+          pre_save_id: string
+          sent_at: string
+          status: string
+        }
+        Insert: {
+          email: string
+          error_message?: string | null
+          fan_id: string
+          id?: string
+          pre_save_id: string
+          sent_at?: string
+          status?: string
+        }
+        Update: {
+          email?: string
+          error_message?: string | null
+          fan_id?: string
+          id?: string
+          pre_save_id?: string
+          sent_at?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "presave_notifications_fan_id_fkey"
+            columns: ["fan_id"]
+            isOneToOne: false
+            referencedRelation: "presave_fans"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "presave_notifications_pre_save_id_fkey"
+            columns: ["pre_save_id"]
+            isOneToOne: false
+            referencedRelation: "pre_saves"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       profiles: {
         Row: {
