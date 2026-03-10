@@ -444,6 +444,19 @@ const CreatePreSave = () => {
                 />
               </div>
               
+              {/* Description */}
+              <div className="md:col-span-2">
+                <Label htmlFor="description">Description (Optional)</Label>
+                <Input
+                  id="description"
+                  placeholder="Tell fans about this release..."
+                  value={manualData.description}
+                  onChange={(e) => handleManualChange("description", e.target.value)}
+                  className="mt-1"
+                  maxLength={500}
+                />
+              </div>
+              
               {/* Artwork Upload */}
               <div className="md:col-span-2">
                 <Label>Cover Artwork</Label>
