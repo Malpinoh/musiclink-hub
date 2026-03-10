@@ -182,7 +182,7 @@ const Dashboard = () => {
   };
 
   const handleCopyPreSaveUrl = async (artistSlug: string, slug: string) => {
-    const url = `${window.location.origin}/presave/${artistSlug}/${slug}`;
+    const url = `${window.location.origin}/pre/${artistSlug}-${slug}`;
     await navigator.clipboard.writeText(url);
     toast.success("Link copied to clipboard!");
   };
