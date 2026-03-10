@@ -17,7 +17,7 @@ import FanlinkAnalytics from "./pages/FanlinkAnalytics";
 import PreSaveAnalytics from "./pages/PreSaveAnalytics";
 import Login from "./pages/Login";
 import FanlinkPage from "./pages/FanlinkPage";
-import PreSavePage, { PreSaveContent } from "./pages/PreSavePage";
+import PreSavePage from "./pages/PreSavePage";
 import PreSaveCampaignRoute from "./pages/PreSaveCampaignRoute";
 import SpotifyCallback from "./pages/SpotifyCallback";
 import DemoPage from "./pages/DemoPage";
