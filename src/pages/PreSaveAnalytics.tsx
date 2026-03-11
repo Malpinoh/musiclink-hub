@@ -5,7 +5,7 @@ import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import FanLocationMap from "@/components/FanLocationMap";
 import { motion } from "framer-motion";
-import { ArrowLeft, Loader2, Music2, ExternalLink, TrendingUp, Users, Library, UserPlus, RefreshCw, Globe, MapPin } from "lucide-react";
+import { ArrowLeft, Loader2, Music2, ExternalLink, TrendingUp, Users, Library, UserPlus, RefreshCw, Globe, MapPin, Download, Mail } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from "recharts";
@@ -37,6 +37,15 @@ interface GeoData {
   count: number;
 }
 
+interface FanSignup {
+  id: string;
+  name: string;
+  email: string;
+  spotify_email: string | null;
+  created_at: string;
+}
+
+
 const PreSaveAnalytics = () => {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -52,7 +61,27 @@ const PreSaveAnalytics = () => {
   const [cityData, setCityData] = useState<GeoData[]>([]);
   const [loading, setLoading] = useState(true);
   const [isLive, setIsLive] = useState(true);
+  const [fanSignups, setFanSignups] = useState<FanSignup[]>([]);
   const isMobile = useIsMobile();
+
+  const downloadFansCSV = () => {
+    if (fanSignups.length === 0) return;
+    const headers = ["Name", "Email", "Spotify Email", "Signed Up"];
+    const rows = fanSignups.map((f) => [
+      f.name,
+      f.email,
+      f.spotify_email || "",
+      new Date(f.created_at).toLocaleDateString(),
+    ]);
+    const csv = [headers, ...rows].map((r) => r.map((c) => `"${c.replace(/"/g, '""')}"`).join(",")).join("\n");
+    const blob = new Blob([csv], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${preSave?.title || "presave"}-fans.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -151,6 +180,15 @@ const PreSaveAnalytics = () => {
 
       if (actionsError) throw actionsError;
       processActions(actions || []);
+
+      // Fetch fan signups
+      const { data: fans } = await supabase
+        .from("presave_fans")
+        .select("id, name, email, spotify_email, created_at")
+        .eq("pre_save_id", id)
+        .order("created_at", { ascending: false });
+
+      setFanSignups(fans || []);
     } catch (error) {
       console.error("Error fetching analytics:", error);
     } finally {
@@ -427,6 +465,51 @@ const PreSaveAnalytics = () => {
                 </div>
               </div>
             </div>
+          </motion.div>
+
+          {/* Fan Signups Table */}
+          <motion.div
+            className="glass-card p-4 sm:p-6 mt-4 sm:mt-6"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.45 }}
+          >
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="font-display text-base sm:text-lg font-semibold flex items-center gap-2">
+                <Mail className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />
+                Fan Signups ({fanSignups.length})
+              </h3>
+              <Button variant="outline" size="sm" onClick={downloadFansCSV} disabled={fanSignups.length === 0}>
+                <Download className="w-4 h-4 mr-2" />
+                Export CSV
+              </Button>
+            </div>
+            {fanSignups.length > 0 ? (
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-border">
+                      <th className="text-left py-2 px-2 text-muted-foreground font-medium">Name</th>
+                      <th className="text-left py-2 px-2 text-muted-foreground font-medium">Email</th>
+                      <th className="text-left py-2 px-2 text-muted-foreground font-medium hidden sm:table-cell">Spotify Email</th>
+                      <th className="text-left py-2 px-2 text-muted-foreground font-medium">Date</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {fanSignups.map((fan) => (
+                      <tr key={fan.id} className="border-b border-border/50 hover:bg-secondary/30 transition-colors">
+                        <td className="py-2 px-2 font-medium">{fan.name}</td>
+                        <td className="py-2 px-2 text-muted-foreground">{fan.email}</td>
+                        <td className="py-2 px-2 text-muted-foreground hidden sm:table-cell">{fan.spotify_email || "—"}</td>
+                        <td className="py-2 px-2 text-muted-foreground">{new Date(fan.created_at).toLocaleDateString()}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              <p className="text-muted-foreground text-center py-8 text-sm">No fan signups yet</p>
+            )}
           </motion.div>
 
           {/* World Map Visualization */}
