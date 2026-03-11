@@ -19,7 +19,28 @@ const PreSaveCampaignRoute = () => {
         .select("artist_slug, slug")
         .eq("is_active", true);
       
-      const match = data?.find((ps) => `${ps.artist_slug}-${ps.slug}` === combinedSlug);
+      if (!data || data.length === 0) { setLoading(false); return; }
+
+      // Try exact combined match first
+      let match = data.find((ps) => `${ps.artist_slug}-${ps.slug}` === combinedSlug);
+      
+      // Try matching by slug alone (for cases where combined slug matches just the slug)
+      if (!match) {
+        match = data.find((ps) => ps.slug === combinedSlug);
+      }
+
+      // Try partial matching: find a pre-save where the combined slug starts with the artist_slug
+      if (!match) {
+        match = data.find((ps) => {
+          const prefix = ps.artist_slug + "-";
+          if (combinedSlug.startsWith(prefix)) {
+            const remainder = combinedSlug.slice(prefix.length);
+            return remainder === ps.slug;
+          }
+          return false;
+        });
+      }
+
       if (match) setResolved({ artist: match.artist_slug, slug: match.slug });
       setLoading(false);
     })();

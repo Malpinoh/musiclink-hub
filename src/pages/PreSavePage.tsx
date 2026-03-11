@@ -45,7 +45,17 @@ const useCombinedSlugLookup = (combinedSlug: string | undefined) => {
         .select("artist_slug, slug")
         .eq("is_active", true);
       
-      const match = data?.find((ps) => `${ps.artist_slug}-${ps.slug}` === combinedSlug);
+      if (!data || data.length === 0) { setLoading(false); return; }
+
+      let match = data.find((ps) => `${ps.artist_slug}-${ps.slug}` === combinedSlug);
+      if (!match) match = data.find((ps) => ps.slug === combinedSlug);
+      if (!match) {
+        match = data.find((ps) => {
+          const prefix = ps.artist_slug + "-";
+          return combinedSlug.startsWith(prefix) && combinedSlug.slice(prefix.length) === ps.slug;
+        });
+      }
+
       if (match) setResolved({ artist: match.artist_slug, slug: match.slug });
       setLoading(false);
     })();
