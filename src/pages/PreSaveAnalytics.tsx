@@ -32,6 +32,11 @@ interface ActionBreakdown {
   value: number;
 }
 
+interface GeoData {
+  name: string;
+  count: number;
+}
+
 interface FanSignup {
   id: string;
   name: string;
@@ -39,8 +44,6 @@ interface FanSignup {
   spotify_email: string | null;
   created_at: string;
 }
-
-export type { FanSignup };
 
 
 const PreSaveAnalytics = () => {
