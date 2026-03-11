@@ -180,6 +180,15 @@ const PreSaveAnalytics = () => {
 
       if (actionsError) throw actionsError;
       processActions(actions || []);
+
+      // Fetch fan signups
+      const { data: fans } = await supabase
+        .from("presave_fans")
+        .select("id, name, email, spotify_email, created_at")
+        .eq("pre_save_id", id)
+        .order("created_at", { ascending: false });
+
+      setFanSignups(fans || []);
     } catch (error) {
       console.error("Error fetching analytics:", error);
     } finally {
