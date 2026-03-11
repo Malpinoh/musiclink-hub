@@ -467,6 +467,51 @@ const PreSaveAnalytics = () => {
             </div>
           </motion.div>
 
+          {/* Fan Signups Table */}
+          <motion.div
+            className="glass-card p-4 sm:p-6 mt-4 sm:mt-6"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.45 }}
+          >
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="font-display text-base sm:text-lg font-semibold flex items-center gap-2">
+                <Mail className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />
+                Fan Signups ({fanSignups.length})
+              </h3>
+              <Button variant="outline" size="sm" onClick={downloadFansCSV} disabled={fanSignups.length === 0}>
+                <Download className="w-4 h-4 mr-2" />
+                Export CSV
+              </Button>
+            </div>
+            {fanSignups.length > 0 ? (
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-border">
+                      <th className="text-left py-2 px-2 text-muted-foreground font-medium">Name</th>
+                      <th className="text-left py-2 px-2 text-muted-foreground font-medium">Email</th>
+                      <th className="text-left py-2 px-2 text-muted-foreground font-medium hidden sm:table-cell">Spotify Email</th>
+                      <th className="text-left py-2 px-2 text-muted-foreground font-medium">Date</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {fanSignups.map((fan) => (
+                      <tr key={fan.id} className="border-b border-border/50 hover:bg-secondary/30 transition-colors">
+                        <td className="py-2 px-2 font-medium">{fan.name}</td>
+                        <td className="py-2 px-2 text-muted-foreground">{fan.email}</td>
+                        <td className="py-2 px-2 text-muted-foreground hidden sm:table-cell">{fan.spotify_email || "—"}</td>
+                        <td className="py-2 px-2 text-muted-foreground">{new Date(fan.created_at).toLocaleDateString()}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              <p className="text-muted-foreground text-center py-8 text-sm">No fan signups yet</p>
+            )}
+          </motion.div>
+
           {/* World Map Visualization */}
           <FanLocationMap countryData={countryData} title="Fan Locations Worldwide" />
 
