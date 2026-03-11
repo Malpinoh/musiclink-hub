@@ -61,7 +61,27 @@ const PreSaveAnalytics = () => {
   const [cityData, setCityData] = useState<GeoData[]>([]);
   const [loading, setLoading] = useState(true);
   const [isLive, setIsLive] = useState(true);
+  const [fanSignups, setFanSignups] = useState<FanSignup[]>([]);
   const isMobile = useIsMobile();
+
+  const downloadFansCSV = () => {
+    if (fanSignups.length === 0) return;
+    const headers = ["Name", "Email", "Spotify Email", "Signed Up"];
+    const rows = fanSignups.map((f) => [
+      f.name,
+      f.email,
+      f.spotify_email || "",
+      new Date(f.created_at).toLocaleDateString(),
+    ]);
+    const csv = [headers, ...rows].map((r) => r.map((c) => `"${c.replace(/"/g, '""')}"`).join(",")).join("\n");
+    const blob = new Blob([csv], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${preSave?.title || "presave"}-fans.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
 
   useEffect(() => {
     if (!authLoading && !user) {
