@@ -32,10 +32,16 @@ interface ActionBreakdown {
   value: number;
 }
 
-interface GeoData {
+interface FanSignup {
+  id: string;
   name: string;
-  count: number;
+  email: string;
+  spotify_email: string | null;
+  created_at: string;
 }
+
+export type { FanSignup };
+
 
 const PreSaveAnalytics = () => {
   const { id } = useParams();
