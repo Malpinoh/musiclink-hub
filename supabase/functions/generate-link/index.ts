@@ -485,17 +485,94 @@ serve(async (req) => {
       track = await searchByQuery(token, trimmedInput);
     }
 
+    // If Spotify didn't find the track, try iTunes as fallback
     if (!track) {
-      // IMPORTANT: return a 200 here so clients can display the suggestions without treating it as
-      // a transport-level failure (which shows up as "Edge function returned 404" in the UI).
+      console.log("Spotify returned no results, trying iTunes fallback...");
+      let itunesResult = null;
+
+      if (isUPC) {
+        try {
+          const itunesResp = await fetch(`https://itunes.apple.com/lookup?upc=${encodeURIComponent(trimmedInput)}&entity=song`);
+          const itunesData = await itunesResp.json();
+          const song = itunesData.results?.find((r: any) => r.wrapperType === "track");
+          const collection = itunesData.results?.find((r: any) => r.wrapperType === "collection");
+          if (song || collection) {
+            itunesResult = { song, collection };
+          }
+        } catch (e) { console.error("iTunes UPC fallback error:", e); }
+      } else if (isISRC) {
+        // iTunes doesn't support ISRC, but try a text search with the ISRC
+        // No good fallback here
+      }
+
+      if (itunesResult) {
+        const song = itunesResult.song;
+        const collection = itunesResult.collection;
+        const title = song?.trackName || collection?.collectionName || "Unknown";
+        const artist = song?.artistName || collection?.artistName || "Unknown";
+        const artworkUrl = (song?.artworkUrl100 || collection?.artworkUrl100 || "").replace("100x100", "600x600");
+        const releaseDate = song?.releaseDate || collection?.releaseDate || null;
+        const appleMusicUrl = song?.trackViewUrl || collection?.collectionViewUrl || null;
+        const query = encodeURIComponent(`${artist} ${title}`);
+
+        const result: LinkResult = {
+          metadata: {
+            title,
+            artist,
+            album: song?.collectionName || collection?.collectionName || "",
+            album_id: "",
+            artist_id: "",
+            isrc: null,
+            upc: isUPC ? trimmedInput : null,
+            release_date: releaseDate ? releaseDate.split("T")[0] : null,
+            artwork: {
+              large: artworkUrl || null,
+              medium: artworkUrl ? artworkUrl.replace("600x600", "300x300") : null,
+              small: artworkUrl ? artworkUrl.replace("600x600", "64x64") : null,
+            },
+            spotify_track_url: null,
+            spotify_artist_url: null,
+            spotify_album_url: null,
+          },
+          streaming_links: {
+            spotify: `https://open.spotify.com/search/${query}`,
+            apple_music: appleMusicUrl || `https://music.apple.com/search?term=${query}`,
+            youtube: `https://music.youtube.com/search?q=${query}`,
+            deezer: `https://www.deezer.com/search/${query}`,
+            audiomack: `https://audiomack.com/search?q=${query}`,
+            boomplay: `https://www.boomplay.com/search/default/${query}`,
+            tidal: `https://tidal.com/search?q=${query}`,
+            amazon: `https://music.amazon.com/search/${query}`,
+            soundcloud: `https://soundcloud.com/search?q=${query}`,
+            shazam: `https://www.shazam.com/search/${encodeURIComponent(artist)}-${encodeURIComponent(title)}`,
+          },
+          accuracy_score: 70,
+          accuracy_breakdown: {
+            isrc_match: false,
+            upc_match: isUPC,
+            artist_similarity: 100,
+            title_similarity: 100,
+            album_match: true,
+          },
+        };
+
+        console.log("iTunes fallback result:", { title, artist });
+
+        return new Response(
+          JSON.stringify({ success: true, source: "itunes", ...result }),
+          { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      // No results from any source
       return new Response(
         JSON.stringify({
           not_found: true,
-          error: "No track found. Please try a different search term, UPC, ISRC, or Spotify link.",
+          error: "No track found on Spotify or Apple Music. The track may not be distributed to stores yet.",
           suggestions: [
-            "Try using the exact track title and artist name",
-            "Use an ISRC code for the most accurate results",
-            "Paste a direct Spotify track URL",
+            "Try using a direct Spotify track or album URL",
+            "Use a different UPC or ISRC code",
+            "The track may not be available on streaming platforms yet",
           ],
         }),
         { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
