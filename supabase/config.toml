@@ -53,3 +53,6 @@ verify_jwt = false
 
 [functions.sitemap]
 verify_jwt = false
+
+[functions.send-presave-notification]
+verify_jwt = false
