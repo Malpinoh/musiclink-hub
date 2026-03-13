@@ -377,6 +377,82 @@ const EditPreSave = () => {
               </div>
             </div>
           </motion.div>
+
+          {/* Streaming Links */}
+          <motion.div
+            className="glass-card p-6 mt-6"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.4 }}
+          >
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="font-display font-semibold text-lg flex items-center gap-2">
+                <Link2 className="w-5 h-5" />
+                Streaming Links
+              </h2>
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleResolveLinks}
+                  disabled={resolvingLinks || (!preSave.upc && !preSave.isrc)}
+                >
+                  {resolvingLinks ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : <RefreshCw className="w-4 h-4 mr-1" />}
+                  Auto-Generate
+                </Button>
+                <Button variant="outline" size="sm" onClick={handleAddLink}>
+                  <Plus className="w-4 h-4 mr-1" /> Add Link
+                </Button>
+              </div>
+            </div>
+
+            {streamingLinks.length === 0 ? (
+              <div className="text-center py-6 text-muted-foreground text-sm">
+                <Link2 className="w-8 h-8 mx-auto mb-2 opacity-50" />
+                <p>No streaming links yet. Click "Auto-Generate" to resolve links from UPC/ISRC, or add manually.</p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {streamingLinks.map((link, index) => (
+                  <div key={index} className="flex gap-3 items-end">
+                    <div className="w-40">
+                      <Label className="text-xs">Platform</Label>
+                      <Input
+                        value={link.platform_name}
+                        onChange={(e) => handleUpdateLink(index, "platform_name", e.target.value)}
+                        placeholder="e.g. Spotify"
+                      />
+                    </div>
+                    <div className="flex-1">
+                      <Label className="text-xs">URL</Label>
+                      <Input
+                        value={link.platform_url}
+                        onChange={(e) => handleUpdateLink(index, "platform_url", e.target.value)}
+                        placeholder="https://..."
+                      />
+                    </div>
+                    <Button variant="ghost" size="icon" onClick={() => handleRemoveLink(index)} className="shrink-0">
+                      <Trash2 className="w-4 h-4 text-destructive" />
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {preSave.is_released && streamingLinks.length > 0 && (
+              <div className="mt-4 p-3 rounded-lg bg-primary/10 border border-primary/20 text-sm">
+                <p className="text-primary font-medium">🎧 Listen page live at:</p>
+                <a
+                  href={`/listen/${preSave.artist_slug}-${preSave.slug}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-primary underline text-xs"
+                >
+                  md.malpinohdistro.com.ng/listen/{preSave.artist_slug}-{preSave.slug}
+                </a>
+              </div>
+            )}
+          </motion.div>
         </div>
       </main>
     </div>
