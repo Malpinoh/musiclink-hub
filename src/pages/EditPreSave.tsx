@@ -10,7 +10,11 @@ import {
   Loader2, 
   Music2,
   ArrowLeft,
-  Calendar
+  Calendar,
+  Link2,
+  RefreshCw,
+  Plus,
+  Trash2
 } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
@@ -32,6 +36,14 @@ interface PreSave {
   spotify_artist_id: string | null;
   is_active: boolean | null;
   is_released: boolean | null;
+  links_resolved: boolean | null;
+}
+
+interface StreamingLink {
+  id?: string;
+  platform_name: string;
+  platform_url: string;
+  display_order: number;
 }
 
 const EditPreSave = () => {
