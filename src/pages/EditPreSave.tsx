@@ -79,6 +79,14 @@ const EditPreSave = () => {
 
       if (error) throw error;
       setPreSave(data);
+
+      // Fetch streaming links
+      const { data: links } = await supabase
+        .from("presave_streaming_links")
+        .select("*")
+        .eq("pre_save_id", id!)
+        .order("display_order");
+      setStreamingLinks(links || []);
     } catch (error) {
       console.error("Error fetching pre-save:", error);
       toast.error("Pre-save not found");
@@ -86,6 +94,48 @@ const EditPreSave = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleResolveLinks = async () => {
+    if (!preSave) return;
+    setResolvingLinks(true);
+    try {
+      const { error } = await supabase.functions.invoke("resolve-presave-streaming-links", {
+        body: { pre_save_id: preSave.id },
+      });
+      if (error) throw error;
+      toast.success("Streaming links resolved!");
+      // Refetch
+      const { data: links } = await supabase
+        .from("presave_streaming_links")
+        .select("*")
+        .eq("pre_save_id", preSave.id)
+        .order("display_order");
+      setStreamingLinks(links || []);
+    } catch (error) {
+      console.error("Error resolving links:", error);
+      toast.error("Failed to resolve streaming links");
+    } finally {
+      setResolvingLinks(false);
+    }
+  };
+
+  const handleAddLink = () => {
+    setStreamingLinks([...streamingLinks, { platform_name: "", platform_url: "", display_order: streamingLinks.length + 1 }]);
+  };
+
+  const handleRemoveLink = async (index: number) => {
+    const link = streamingLinks[index];
+    if (link.id) {
+      await supabase.from("presave_streaming_links").delete().eq("id", link.id);
+    }
+    setStreamingLinks(streamingLinks.filter((_, i) => i !== index));
+  };
+
+  const handleUpdateLink = (index: number, field: keyof StreamingLink, value: string) => {
+    const updated = [...streamingLinks];
+    (updated[index] as any)[field] = value;
+    setStreamingLinks(updated);
   };
 
   const handleSave = async () => {
