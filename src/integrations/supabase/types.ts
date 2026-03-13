@@ -385,6 +385,7 @@ export type Database = {
           is_active: boolean | null
           is_released: boolean | null
           isrc: string | null
+          links_resolved: boolean | null
           release_date: string | null
           slug: string
           spotify_album_id: string | null
@@ -408,6 +409,7 @@ export type Database = {
           is_active?: boolean | null
           is_released?: boolean | null
           isrc?: string | null
+          links_resolved?: boolean | null
           release_date?: string | null
           slug: string
           spotify_album_id?: string | null
@@ -431,6 +433,7 @@ export type Database = {
           is_active?: boolean | null
           is_released?: boolean | null
           isrc?: string | null
+          links_resolved?: boolean | null
           release_date?: string | null
           slug?: string
           spotify_album_id?: string | null
@@ -516,6 +519,44 @@ export type Database = {
           },
           {
             foreignKeyName: "presave_notifications_pre_save_id_fkey"
+            columns: ["pre_save_id"]
+            isOneToOne: false
+            referencedRelation: "pre_saves"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      presave_streaming_links: {
+        Row: {
+          created_at: string
+          display_order: number | null
+          id: string
+          platform_name: string
+          platform_url: string
+          pre_save_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          display_order?: number | null
+          id?: string
+          platform_name: string
+          platform_url: string
+          pre_save_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          display_order?: number | null
+          id?: string
+          platform_name?: string
+          platform_url?: string
+          pre_save_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "presave_streaming_links_pre_save_id_fkey"
             columns: ["pre_save_id"]
             isOneToOne: false
             referencedRelation: "pre_saves"
