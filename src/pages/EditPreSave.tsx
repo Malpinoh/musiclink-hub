@@ -53,6 +53,8 @@ const EditPreSave = () => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [preSave, setPreSave] = useState<PreSave | null>(null);
+  const [streamingLinks, setStreamingLinks] = useState<StreamingLink[]>([]);
+  const [resolvingLinks, setResolvingLinks] = useState(false);
 
   useEffect(() => {
     if (!authLoading && !user) {
