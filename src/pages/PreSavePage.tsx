@@ -95,6 +95,7 @@ export default PreSaveCampaignPage;
 
 function PreSaveContent({ artistParam, slugParam }: { artistParam?: string; slugParam?: string }) {
   const routeParams = useParams<{ artist: string; slug: string }>();
+  const navigate = useNavigate();
   const artist = artistParam || routeParams.artist;
   const slug = slugParam || routeParams.slug;
 
