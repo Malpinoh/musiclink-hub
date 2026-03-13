@@ -10,7 +10,11 @@ import {
   Loader2, 
   Music2,
   ArrowLeft,
-  Calendar
+  Calendar,
+  Link2,
+  RefreshCw,
+  Plus,
+  Trash2
 } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
@@ -32,6 +36,14 @@ interface PreSave {
   spotify_artist_id: string | null;
   is_active: boolean | null;
   is_released: boolean | null;
+  links_resolved: boolean | null;
+}
+
+interface StreamingLink {
+  id?: string;
+  platform_name: string;
+  platform_url: string;
+  display_order: number;
 }
 
 const EditPreSave = () => {
@@ -41,6 +53,8 @@ const EditPreSave = () => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [preSave, setPreSave] = useState<PreSave | null>(null);
+  const [streamingLinks, setStreamingLinks] = useState<StreamingLink[]>([]);
+  const [resolvingLinks, setResolvingLinks] = useState(false);
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -65,6 +79,14 @@ const EditPreSave = () => {
 
       if (error) throw error;
       setPreSave(data);
+
+      // Fetch streaming links
+      const { data: links } = await supabase
+        .from("presave_streaming_links")
+        .select("*")
+        .eq("pre_save_id", id!)
+        .order("display_order");
+      setStreamingLinks(links || []);
     } catch (error) {
       console.error("Error fetching pre-save:", error);
       toast.error("Pre-save not found");
@@ -72,6 +94,48 @@ const EditPreSave = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleResolveLinks = async () => {
+    if (!preSave) return;
+    setResolvingLinks(true);
+    try {
+      const { error } = await supabase.functions.invoke("resolve-presave-streaming-links", {
+        body: { pre_save_id: preSave.id },
+      });
+      if (error) throw error;
+      toast.success("Streaming links resolved!");
+      // Refetch
+      const { data: links } = await supabase
+        .from("presave_streaming_links")
+        .select("*")
+        .eq("pre_save_id", preSave.id)
+        .order("display_order");
+      setStreamingLinks(links || []);
+    } catch (error) {
+      console.error("Error resolving links:", error);
+      toast.error("Failed to resolve streaming links");
+    } finally {
+      setResolvingLinks(false);
+    }
+  };
+
+  const handleAddLink = () => {
+    setStreamingLinks([...streamingLinks, { platform_name: "", platform_url: "", display_order: streamingLinks.length + 1 }]);
+  };
+
+  const handleRemoveLink = async (index: number) => {
+    const link = streamingLinks[index];
+    if (link.id) {
+      await supabase.from("presave_streaming_links").delete().eq("id", link.id);
+    }
+    setStreamingLinks(streamingLinks.filter((_, i) => i !== index));
+  };
+
+  const handleUpdateLink = (index: number, field: keyof StreamingLink, value: string) => {
+    const updated = [...streamingLinks];
+    (updated[index] as any)[field] = value;
+    setStreamingLinks(updated);
   };
 
   const handleSave = async () => {
@@ -97,6 +161,25 @@ const EditPreSave = () => {
         .eq("id", id);
 
       if (error) throw error;
+
+      // Save streaming links
+      for (const link of streamingLinks) {
+        if (!link.platform_name || !link.platform_url) continue;
+        if (link.id) {
+          await supabase.from("presave_streaming_links").update({
+            platform_name: link.platform_name,
+            platform_url: link.platform_url,
+            display_order: link.display_order,
+          }).eq("id", link.id);
+        } else {
+          await supabase.from("presave_streaming_links").insert({
+            pre_save_id: preSave.id,
+            platform_name: link.platform_name,
+            platform_url: link.platform_url,
+            display_order: link.display_order,
+          });
+        }
+      }
 
       toast.success("Pre-save updated successfully!");
       navigate("/dashboard");
@@ -293,6 +376,82 @@ const EditPreSave = () => {
                 />
               </div>
             </div>
+          </motion.div>
+
+          {/* Streaming Links */}
+          <motion.div
+            className="glass-card p-6 mt-6"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.4 }}
+          >
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="font-display font-semibold text-lg flex items-center gap-2">
+                <Link2 className="w-5 h-5" />
+                Streaming Links
+              </h2>
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleResolveLinks}
+                  disabled={resolvingLinks || (!preSave.upc && !preSave.isrc)}
+                >
+                  {resolvingLinks ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : <RefreshCw className="w-4 h-4 mr-1" />}
+                  Auto-Generate
+                </Button>
+                <Button variant="outline" size="sm" onClick={handleAddLink}>
+                  <Plus className="w-4 h-4 mr-1" /> Add Link
+                </Button>
+              </div>
+            </div>
+
+            {streamingLinks.length === 0 ? (
+              <div className="text-center py-6 text-muted-foreground text-sm">
+                <Link2 className="w-8 h-8 mx-auto mb-2 opacity-50" />
+                <p>No streaming links yet. Click "Auto-Generate" to resolve links from UPC/ISRC, or add manually.</p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {streamingLinks.map((link, index) => (
+                  <div key={index} className="flex gap-3 items-end">
+                    <div className="w-40">
+                      <Label className="text-xs">Platform</Label>
+                      <Input
+                        value={link.platform_name}
+                        onChange={(e) => handleUpdateLink(index, "platform_name", e.target.value)}
+                        placeholder="e.g. Spotify"
+                      />
+                    </div>
+                    <div className="flex-1">
+                      <Label className="text-xs">URL</Label>
+                      <Input
+                        value={link.platform_url}
+                        onChange={(e) => handleUpdateLink(index, "platform_url", e.target.value)}
+                        placeholder="https://..."
+                      />
+                    </div>
+                    <Button variant="ghost" size="icon" onClick={() => handleRemoveLink(index)} className="shrink-0">
+                      <Trash2 className="w-4 h-4 text-destructive" />
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {preSave.is_released && streamingLinks.length > 0 && (
+              <div className="mt-4 p-3 rounded-lg bg-primary/10 border border-primary/20 text-sm">
+                <p className="text-primary font-medium">🎧 Listen page live at:</p>
+                <a
+                  href={`/listen/${preSave.artist_slug}-${preSave.slug}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-primary underline text-xs"
+                >
+                  md.malpinohdistro.com.ng/listen/{preSave.artist_slug}-{preSave.slug}
+                </a>
+              </div>
+            )}
           </motion.div>
         </div>
       </main>

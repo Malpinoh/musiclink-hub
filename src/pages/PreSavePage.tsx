@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useParams, Link } from "react-router-dom";
+import { useParams, Link, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Music2, Bell, Loader2, Calendar, Share2, Copy, Check, Mail, User, Disc3 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -95,6 +95,7 @@ export default PreSaveCampaignPage;
 
 function PreSaveContent({ artistParam, slugParam }: { artistParam?: string; slugParam?: string }) {
   const routeParams = useParams<{ artist: string; slug: string }>();
+  const navigate = useNavigate();
   const artist = artistParam || routeParams.artist;
   const slug = slugParam || routeParams.slug;
 
@@ -127,6 +128,11 @@ function PreSaveContent({ artistParam, slugParam }: { artistParam?: string; slug
 
         if (error) throw error;
         if (!data) { setNotFound(true); return; }
+        // If released, redirect to listen page
+        if (data.is_released) {
+          navigate(`/listen/${data.artist_slug}-${data.slug}`, { replace: true });
+          return;
+        }
         setPreSave(data);
       } catch {
         setNotFound(true);

@@ -56,3 +56,6 @@ verify_jwt = false
 
 [functions.send-presave-notification]
 verify_jwt = false
+
+[functions.resolve-presave-streaming-links]
+verify_jwt = false

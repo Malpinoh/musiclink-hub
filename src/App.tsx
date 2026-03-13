@@ -24,6 +24,7 @@ import DemoPage from "./pages/DemoPage";
 import NotFound from "./pages/NotFound";
 import ArtistBioPage from "./pages/ArtistBioPage";
 import EditArtistBio from "./pages/EditArtistBio";
+import ListenPage from "./pages/ListenPage";
 
 const queryClient = new QueryClient();
 
@@ -61,6 +62,7 @@ const App = () => {
               <Route path="/demo" element={<DemoPage />} />
               <Route path="/presave/:artist/:slug" element={<PreSavePage />} />
               <Route path="/pre/:slug" element={<PreSaveCampaignRoute />} />
+              <Route path="/listen/:slug" element={<ListenPage />} />
               <Route path="/callback/spotify" element={<SpotifyCallback />} />
               <Route path="/artist/:username" element={<ArtistBioPage />} />
               <Route path="/artist-bio/edit" element={<EditArtistBio />} />
