@@ -162,6 +162,25 @@ const EditPreSave = () => {
 
       if (error) throw error;
 
+      // Save streaming links
+      for (const link of streamingLinks) {
+        if (!link.platform_name || !link.platform_url) continue;
+        if (link.id) {
+          await supabase.from("presave_streaming_links").update({
+            platform_name: link.platform_name,
+            platform_url: link.platform_url,
+            display_order: link.display_order,
+          }).eq("id", link.id);
+        } else {
+          await supabase.from("presave_streaming_links").insert({
+            pre_save_id: preSave.id,
+            platform_name: link.platform_name,
+            platform_url: link.platform_url,
+            display_order: link.display_order,
+          });
+        }
+      }
+
       toast.success("Pre-save updated successfully!");
       navigate("/dashboard");
     } catch (error) {
