@@ -128,6 +128,11 @@ function PreSaveContent({ artistParam, slugParam }: { artistParam?: string; slug
 
         if (error) throw error;
         if (!data) { setNotFound(true); return; }
+        // If released, redirect to listen page
+        if (data.is_released) {
+          navigate(`/listen/${data.artist_slug}-${data.slug}`, { replace: true });
+          return;
+        }
         setPreSave(data);
       } catch {
         setNotFound(true);
