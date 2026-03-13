@@ -24,6 +24,7 @@ import DemoPage from "./pages/DemoPage";
 import NotFound from "./pages/NotFound";
 import ArtistBioPage from "./pages/ArtistBioPage";
 import EditArtistBio from "./pages/EditArtistBio";
+import ListenPage from "./pages/ListenPage";
 
 const queryClient = new QueryClient();
 
