@@ -128,16 +128,18 @@ const Dashboard = () => {
       if (data && data.length > 0) {
         const stats: Record<string, PreSaveStats> = {};
         for (const ps of data) {
-          const { data: actions } = await supabase
-            .from("pre_save_actions")
-            .select("action_type, library_saved")
+          const { count: fanCount } = await supabase
+            .from("presave_fans")
+            .select("*", { count: "exact", head: true })
             .eq("pre_save_id", ps.id);
           
-          const totalActions = actions?.length || 0;
-          const librarySaves = actions?.filter(a => a.library_saved).length || 0;
-          const artistFollows = actions?.filter(a => a.action_type === "follow").length || 0;
+          const { count: notifCount } = await supabase
+            .from("presave_notifications")
+            .select("*", { count: "exact", head: true })
+            .eq("pre_save_id", ps.id)
+            .eq("status", "sent");
           
-          stats[ps.id] = { totalActions, librarySaves, artistFollows };
+          stats[ps.id] = { fanSignups: fanCount || 0, notificationsSent: notifCount || 0 };
         }
         setPreSaveStats(stats);
       }
@@ -199,8 +201,8 @@ const Dashboard = () => {
   );
 
   const totalClicks = Object.values(clickCounts).reduce((sum, count) => sum + count, 0);
-  const totalPreSaveActions = Object.values(preSaveStats).reduce((sum, s) => sum + s.totalActions, 0);
-  const totalLibrarySaves = Object.values(preSaveStats).reduce((sum, s) => sum + s.librarySaves, 0);
+  const totalFanSignups = Object.values(preSaveStats).reduce((sum, s) => sum + s.fanSignups, 0);
+  const totalNotifications = Object.values(preSaveStats).reduce((sum, s) => sum + s.notificationsSent, 0);
 
   if (authLoading || loading) {
     return (
@@ -273,8 +275,8 @@ const Dashboard = () => {
                   <Clock className="w-6 h-6 text-accent" />
                 </div>
                 <div>
-                  <p className="text-sm text-muted-foreground">Fan Pre-Saves</p>
-                  <p className="font-display text-2xl font-bold">{totalPreSaveActions.toLocaleString()}</p>
+                  <p className="text-sm text-muted-foreground">Fan Signups</p>
+                  <p className="font-display text-2xl font-bold">{totalFanSignups.toLocaleString()}</p>
                 </div>
               </div>
             </div>
@@ -285,8 +287,8 @@ const Dashboard = () => {
                   <Music2 className="w-6 h-6 text-spotify" />
                 </div>
                 <div>
-                  <p className="text-sm text-muted-foreground">Library Saves</p>
-                  <p className="font-display text-2xl font-bold">{totalLibrarySaves.toLocaleString()}</p>
+                  <p className="text-sm text-muted-foreground">Emails Sent</p>
+                  <p className="font-display text-2xl font-bold">{totalNotifications.toLocaleString()}</p>
                 </div>
               </div>
             </div>
@@ -476,12 +478,12 @@ const Dashboard = () => {
 
                         <div className="hidden md:flex items-center gap-6">
                           <div className="text-right">
-                            <p className="font-display font-semibold">{(preSaveStats[ps.id]?.totalActions || 0).toLocaleString()}</p>
-                            <p className="text-xs text-muted-foreground">pre-saves</p>
+                            <p className="font-display font-semibold">{(preSaveStats[ps.id]?.fanSignups || 0).toLocaleString()}</p>
+                            <p className="text-xs text-muted-foreground">fans</p>
                           </div>
                           <div className="text-right">
-                            <p className="font-display font-semibold">{(preSaveStats[ps.id]?.librarySaves || 0).toLocaleString()}</p>
-                            <p className="text-xs text-muted-foreground">saved</p>
+                            <p className="font-display font-semibold">{(preSaveStats[ps.id]?.notificationsSent || 0).toLocaleString()}</p>
+                            <p className="text-xs text-muted-foreground">emailed</p>
                           </div>
                           <div className={`px-3 py-1 rounded-full text-xs font-medium ${ps.is_released ? 'bg-green-500/20 text-green-400' : 'bg-primary/20 text-primary'}`}>
                             {ps.is_released ? 'Released' : 'Upcoming'}
@@ -500,7 +502,7 @@ const Dashboard = () => {
                             </Link>
                           </Button>
                           <Button variant="ghost" size="icon" asChild title="View">
-                            <Link to={`/presave/${ps.artist_slug}/${ps.slug}`} target="_blank">
+                            <Link to={ps.is_released ? `/listen/${ps.artist_slug}-${ps.slug}` : `/pre/${ps.artist_slug}-${ps.slug}`} target="_blank">
                               <ExternalLink className="w-4 h-4" />
                             </Link>
                           </Button>
