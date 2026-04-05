@@ -452,6 +452,7 @@ export type Database = {
           email: string
           id: string
           name: string
+          notification_sent: boolean | null
           pre_save_id: string
           spotify_email: string | null
         }
@@ -460,6 +461,7 @@ export type Database = {
           email: string
           id?: string
           name: string
+          notification_sent?: boolean | null
           pre_save_id: string
           spotify_email?: string | null
         }
@@ -468,6 +470,7 @@ export type Database = {
           email?: string
           id?: string
           name?: string
+          notification_sent?: boolean | null
           pre_save_id?: string
           spotify_email?: string | null
         }

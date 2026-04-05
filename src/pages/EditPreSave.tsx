@@ -14,7 +14,9 @@ import {
   Link2,
   RefreshCw,
   Plus,
-  Trash2
+  Trash2,
+  Mail,
+  Send
 } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
@@ -55,6 +57,9 @@ const EditPreSave = () => {
   const [preSave, setPreSave] = useState<PreSave | null>(null);
   const [streamingLinks, setStreamingLinks] = useState<StreamingLink[]>([]);
   const [resolvingLinks, setResolvingLinks] = useState(false);
+  const [sendingNotifications, setSendingNotifications] = useState(false);
+  const [fanCount, setFanCount] = useState(0);
+  const [notifCount, setNotifCount] = useState(0);
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -87,6 +92,20 @@ const EditPreSave = () => {
         .eq("pre_save_id", id!)
         .order("display_order");
       setStreamingLinks(links || []);
+
+      // Fetch fan/notification counts
+      const { count: fc } = await supabase
+        .from("presave_fans")
+        .select("*", { count: "exact", head: true })
+        .eq("pre_save_id", id!);
+      setFanCount(fc || 0);
+
+      const { count: nc } = await supabase
+        .from("presave_notifications")
+        .select("*", { count: "exact", head: true })
+        .eq("pre_save_id", id!)
+        .eq("status", "sent");
+      setNotifCount(nc || 0);
     } catch (error) {
       console.error("Error fetching pre-save:", error);
       toast.error("Pre-save not found");
@@ -451,6 +470,63 @@ const EditPreSave = () => {
                   md.malpinohdistro.com.ng/listen/{preSave.artist_slug}-{preSave.slug}
                 </a>
               </div>
+            )}
+          </motion.div>
+
+          {/* Notification Controls */}
+          <motion.div
+            className="glass-card p-6 mt-6"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.5 }}
+          >
+            <h2 className="font-display font-semibold text-lg flex items-center gap-2 mb-4">
+              <Mail className="w-5 h-5" />
+              Fan Notifications
+            </h2>
+            <div className="flex items-center gap-6 mb-4">
+              <div>
+                <p className="text-2xl font-bold font-display">{fanCount}</p>
+                <p className="text-xs text-muted-foreground">fan signups</p>
+              </div>
+              <div>
+                <p className="text-2xl font-bold font-display">{notifCount}</p>
+                <p className="text-xs text-muted-foreground">emails sent</p>
+              </div>
+            </div>
+            {fanCount > 0 && (
+              <Button
+                variant="hero"
+                onClick={async () => {
+                  setSendingNotifications(true);
+                  try {
+                    const { data, error } = await supabase.functions.invoke("send-presave-notification", {
+                      body: { pre_save_id: preSave.id },
+                    });
+                    if (error) throw error;
+                    toast.success(`Notifications processed: ${data?.sent || 0} sent, ${data?.errors || 0} errors, ${data?.skipped || 0} skipped`);
+                    // Refresh counts
+                    const { count: nc } = await supabase
+                      .from("presave_notifications")
+                      .select("*", { count: "exact", head: true })
+                      .eq("pre_save_id", preSave.id)
+                      .eq("status", "sent");
+                    setNotifCount(nc || 0);
+                  } catch (error) {
+                    console.error("Error sending notifications:", error);
+                    toast.error("Failed to send notifications");
+                  } finally {
+                    setSendingNotifications(false);
+                  }
+                }}
+                disabled={sendingNotifications}
+              >
+                {sendingNotifications ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Send className="w-4 h-4 mr-2" />}
+                Send Release Notifications
+              </Button>
+            )}
+            {fanCount === 0 && (
+              <p className="text-sm text-muted-foreground">No fans have signed up for this pre-save yet.</p>
             )}
           </motion.div>
         </div>
