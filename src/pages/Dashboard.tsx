@@ -19,7 +19,10 @@ import {
   Clock,
   Calendar,
   Edit,
-  User
+  User,
+  Mail,
+  MailCheck,
+  MailX
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -488,6 +491,22 @@ const Dashboard = () => {
                           <div className={`px-3 py-1 rounded-full text-xs font-medium ${ps.is_released ? 'bg-green-500/20 text-green-400' : 'bg-primary/20 text-primary'}`}>
                             {ps.is_released ? 'Released' : 'Upcoming'}
                           </div>
+                          {ps.is_released && (preSaveStats[ps.id]?.fanSignups || 0) > 0 && (
+                            <div className={`flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${
+                              (preSaveStats[ps.id]?.notificationsSent || 0) >= (preSaveStats[ps.id]?.fanSignups || 0)
+                                ? 'bg-green-500/20 text-green-400'
+                                : (preSaveStats[ps.id]?.notificationsSent || 0) > 0
+                                  ? 'bg-yellow-500/20 text-yellow-400'
+                                  : 'bg-destructive/20 text-destructive'
+                            }`}>
+                              {(preSaveStats[ps.id]?.notificationsSent || 0) >= (preSaveStats[ps.id]?.fanSignups || 0)
+                                ? <><MailCheck className="w-3 h-3" /> All sent</>
+                                : (preSaveStats[ps.id]?.notificationsSent || 0) > 0
+                                  ? <><Mail className="w-3 h-3" /> Partial</>
+                                  : <><MailX className="w-3 h-3" /> Not sent</>
+                              }
+                            </div>
+                          )}
                         </div>
 
                         <div className="flex items-center gap-2">
