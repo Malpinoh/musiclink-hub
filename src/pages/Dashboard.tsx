@@ -53,9 +53,8 @@ interface ClickCount {
 }
 
 interface PreSaveStats {
-  totalActions: number;
-  librarySaves: number;
-  artistFollows: number;
+  fanSignups: number;
+  notificationsSent: number;
 }
 
 const Dashboard = () => {

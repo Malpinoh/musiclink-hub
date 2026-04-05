@@ -117,17 +117,28 @@ serve(async (req) => {
 
     const today = new Date().toISOString().split("T")[0];
 
-    // Step 1: First resolve streaming links for releases due today that aren't resolved yet
-    const { data: unresolvedReleases } = await supabase
+    // Check for optional pre_save_id for manual trigger
+    let manualPreSaveId: string | null = null;
+    try {
+      const body = await req.json();
+      manualPreSaveId = body?.pre_save_id || null;
+    } catch { /* no body */ }
+
+    // Step 1: Resolve streaming links for unresolved releases
+    const unresolvedQuery = supabase
       .from("pre_saves")
       .select("id, upc, isrc, artist, title")
       .eq("is_active", true)
-      .eq("links_resolved", false)
-      .lte("release_date", today);
+      .eq("links_resolved", false);
+    if (manualPreSaveId) {
+      unresolvedQuery.eq("id", manualPreSaveId);
+    } else {
+      unresolvedQuery.lte("release_date", today);
+    }
+    const { data: unresolvedReleases } = await unresolvedQuery;
 
     if (unresolvedReleases && unresolvedReleases.length > 0) {
       console.log(`Found ${unresolvedReleases.length} unresolved releases, triggering link resolution...`);
-      // Call resolve function
       try {
         await fetch(`${supabaseUrl}/functions/v1/resolve-presave-streaming-links`, {
           method: "POST",
@@ -135,22 +146,25 @@ serve(async (req) => {
             "Content-Type": "application/json",
             Authorization: `Bearer ${supabaseKey}`,
           },
-          body: JSON.stringify({}),
+          body: JSON.stringify(manualPreSaveId ? { pre_save_id: manualPreSaveId } : {}),
         });
-        // Wait for resolution
         await new Promise((r) => setTimeout(r, 3000));
       } catch (e) {
         console.error("Link resolution failed, continuing with available links:", e);
       }
     }
 
-    // Step 2: Find pre-saves where release_date <= today and not yet marked released
-    const { data: releasingToday, error: fetchError } = await supabase
+    // Step 2: Find pre-saves to process
+    const releasingQuery = supabase
       .from("pre_saves")
       .select("id, title, artist, artwork_url, release_date, upc, slug, artist_slug, links_resolved")
-      .eq("is_active", true)
-      .eq("is_released", false)
-      .lte("release_date", today);
+      .eq("is_active", true);
+    if (manualPreSaveId) {
+      releasingQuery.eq("id", manualPreSaveId);
+    } else {
+      releasingQuery.eq("is_released", false).lte("release_date", today);
+    }
+    const { data: releasingToday, error: fetchError } = await releasingQuery;
 
     if (fetchError) throw fetchError;
 
