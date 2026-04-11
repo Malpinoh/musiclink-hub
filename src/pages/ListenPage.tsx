@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { trackEvent } from "@/lib/analytics";
 import { useParams, Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Music2, Loader2, Share2, Copy, Check } from "lucide-react";
@@ -143,6 +144,7 @@ const ListenPage = () => {
                     href={link.platform_url}
                     target="_blank"
                     rel="noopener noreferrer"
+                    onClick={() => trackEvent("link_clicked", { type: "listen", platform: link.platform_name, pre_save_id: preSave?.id })}
                     className="platform-btn bg-secondary hover:bg-secondary/80 w-full"
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}

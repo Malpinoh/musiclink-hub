@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { trackEvent } from "@/lib/analytics";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -200,6 +201,7 @@ const CreateFanlink = () => {
         if (platformError) throw platformError;
       }
 
+      trackEvent("fanlink_created", { title: metadata?.title, artist: metadata?.artist });
       toast.success("Fanlink created successfully!");
       navigate("/dashboard");
     } catch (error: unknown) {

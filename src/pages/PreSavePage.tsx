@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { trackEvent } from "@/lib/analytics";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Music2, Bell, Loader2, Calendar, Share2, Copy, Check, Mail, User, Disc3 } from "lucide-react";
@@ -163,6 +164,7 @@ function PreSaveContent({ artistParam, slugParam }: { artistParam?: string; slug
         if (error.code === "23505") { toast.info("You're already signed up!"); setSubmitted(true); return; }
         throw error;
       }
+      trackEvent("fan_collected", { pre_save_id: preSave.id });
       setSubmitted(true);
       toast.success("You're on the list! We'll notify you when it drops.");
     } catch {
@@ -196,6 +198,7 @@ function PreSaveContent({ artistParam, slugParam }: { artistParam?: string; slug
   };
 
   const handleShare = async () => {
+    trackEvent("share_clicked", { type: "presave", pre_save_id: preSave?.id });
     if (navigator.share && preSave) {
       try { await navigator.share({ title: `${preSave.title} by ${preSave.artist}`, text: `${preSave.title} is dropping soon!`, url: shareableUrl }); } catch { handleCopyLink(); }
     } else { handleCopyLink(); }

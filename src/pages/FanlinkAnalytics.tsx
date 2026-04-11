@@ -10,6 +10,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend } from "recharts";
 import { useIsMobile } from "@/hooks/use-mobile";
+import AnalyticsSkeleton from "@/components/AnalyticsSkeleton";
 
 interface Fanlink {
   id: string;
@@ -216,11 +217,7 @@ const FanlinkAnalytics = () => {
   }, [id, isLive, fetchAnalytics]);
 
   if (authLoading || loading) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <Loader2 className="w-8 h-8 animate-spin text-primary" />
-      </div>
-    );
+    return <AnalyticsSkeleton />;
   }
 
   if (!fanlink) return null;
