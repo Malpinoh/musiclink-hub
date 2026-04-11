@@ -1,4 +1,5 @@
 import { useParams, Link } from "react-router-dom";
+import { trackEvent } from "@/lib/analytics";
 import { motion } from "framer-motion";
 import { QRCodeSVG } from "qrcode.react";
 import { Share2, Copy, Check, ExternalLink, Loader2, Music2 } from "lucide-react";
