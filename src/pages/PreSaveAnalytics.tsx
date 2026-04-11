@@ -10,6 +10,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from "recharts";
 import { useIsMobile } from "@/hooks/use-mobile";
+import AnalyticsSkeleton from "@/components/AnalyticsSkeleton";
 
 interface PreSave {
   id: string;
@@ -228,11 +229,7 @@ const PreSaveAnalytics = () => {
   }, [id, isLive, fetchAnalytics]);
 
   if (authLoading || loading) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <Loader2 className="w-8 h-8 animate-spin text-primary" />
-      </div>
-    );
+    return <AnalyticsSkeleton />;
   }
 
   if (!preSave) return null;

@@ -25,6 +25,7 @@ import NotFound from "./pages/NotFound";
 import ArtistBioPage from "./pages/ArtistBioPage";
 import EditArtistBio from "./pages/EditArtistBio";
 import ListenPage from "./pages/ListenPage";
+import OfflineBanner from "./components/OfflineBanner";
 
 const queryClient = new QueryClient();
 
@@ -49,6 +50,7 @@ const App = () => {
           <Toaster />
           <Sonner />
           <BrowserRouter>
+            <OfflineBanner />
             <Routes>
               <Route path="/" element={<Index />} />
               <Route path="/dashboard" element={<Dashboard />} />

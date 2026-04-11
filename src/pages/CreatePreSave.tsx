@@ -302,6 +302,7 @@ const CreatePreSave = () => {
 
       if (error) throw error;
 
+      trackEvent("presave_created", { title: metadata?.title, artist: metadata?.artist });
       toast.success("Pre-save link created! Streaming links will activate on release day.");
       navigate("/dashboard");
     } catch (error: any) {

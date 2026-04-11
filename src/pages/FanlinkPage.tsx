@@ -155,6 +155,7 @@ const FanlinkPage = () => {
   const handlePlatformClick = async (platformName: string) => {
     if (fanlink) {
       try {
+        trackEvent("link_clicked", { type: "fanlink", platform: platformName, fanlink_id: fanlink.id });
         await supabase.functions.invoke("track-geo", {
           body: {
             type: "click",

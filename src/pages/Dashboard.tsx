@@ -27,6 +27,8 @@ import {
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import DashboardSkeleton from "@/components/DashboardSkeleton";
+import MobileStickyBar from "@/components/MobileStickyBar";
 
 interface Fanlink {
   id: string;
@@ -208,11 +210,7 @@ const Dashboard = () => {
   const totalNotifications = Object.values(preSaveStats).reduce((sum, s) => sum + s.notificationsSent, 0);
 
   if (authLoading || loading) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <Loader2 className="w-8 h-8 animate-spin text-primary" />
-      </div>
-    );
+    return <DashboardSkeleton />;
   }
 
   return (
@@ -543,6 +541,7 @@ const Dashboard = () => {
       </main>
 
       <Footer />
+      <MobileStickyBar />
     </div>
   );
 };

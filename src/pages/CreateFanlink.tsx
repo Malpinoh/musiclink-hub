@@ -200,6 +200,7 @@ const CreateFanlink = () => {
         if (platformError) throw platformError;
       }
 
+      trackEvent("fanlink_created", { title: metadata?.title, artist: metadata?.artist });
       toast.success("Fanlink created successfully!");
       navigate("/dashboard");
     } catch (error: unknown) {
