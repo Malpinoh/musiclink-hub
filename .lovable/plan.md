@@ -1,54 +1,98 @@
 
 
-## MDistro Platform Upgrades and Troubleshooting
+## MDistro UX Upgrades — 5 Features
 
-### Issues Found
+### 1. Loading Skeletons (replace spinners)
 
-1. **"Iwo Ori Mi" has 10 fans but 0 notification emails sent** — The release is marked `is_released: true` and `links_resolved: true`, but no notifications were sent. The `send-presave-notification` function likely marked it as released before sending emails, or the cron job timing missed it.
+**New file:** `src/components/DashboardSkeleton.tsx`
+- Skeleton cards for stats (4 shimmer rectangles matching the stats grid)
+- Skeleton rows for fanlink/pre-save lists (artwork placeholder + text lines + action buttons)
+- Uses existing `src/components/ui/skeleton.tsx`
 
-2. **Dashboard pre-save stats show `pre_save_actions` counts instead of `presave_fans` counts** — The dashboard fetches from `pre_save_actions` (the old DSP-based system) rather than `presave_fans` (the new notification model). This means fan signup counts show as 0.
+**New file:** `src/components/AnalyticsSkeleton.tsx`
+- Skeleton for chart areas, stat cards, and tables on analytics pages
 
-3. **Dashboard "View" button for released pre-saves goes to `/presave/` which redirects to `/listen/`** — Works but is indirect. Should link directly to `/listen/` for released items.
+**Modified files:**
+- `src/pages/Dashboard.tsx` — Replace the `Loader2` spinner (lines 210-216) with `<DashboardSkeleton />` that mirrors the real layout
+- `src/pages/FanlinkAnalytics.tsx` — Replace spinner with `<AnalyticsSkeleton />`
+- `src/pages/PreSaveAnalytics.tsx` — Same skeleton treatment
 
-4. **No fan count shown on dashboard pre-save cards** — Artists can't see how many fans signed up without going to analytics.
+### 2. Sticky Mobile CTA Bar
 
-5. **No "Send Now" / manual trigger for notifications** — If the cron missed a release, there's no way to retry from the dashboard.
+**New file:** `src/components/MobileStickyBar.tsx`
+- Fixed bottom bar with "Create Fanlink" and "Create Pre-save" buttons
+- Only renders on mobile (`md:hidden`)
+- Uses `env(safe-area-inset-bottom)` padding
+- Hides on scroll-down, shows on scroll-up (track `window.scrollY` delta)
+- Only visible on Dashboard route (or when user is authenticated)
 
-6. **ListenPage and PreSavePage import `logo` and `demoArtwork` from assets** — If these files don't exist in the build, pages will break.
+**Modified files:**
+- `src/pages/Dashboard.tsx` — Import and render `<MobileStickyBar />`, add bottom padding to main content to prevent overlap
+
+### 3. Safe-Area Padding (Global)
+
+**Modified file:** `src/index.css`
+- Add to `body`: `padding-top: env(safe-area-inset-top); padding-bottom: env(safe-area-inset-bottom);`
+- Or more targeted: apply safe-area insets to Header, Footer, and any fixed/sticky elements
+
+**Modified files:**
+- `src/components/Header.tsx` — Add `pt-[env(safe-area-inset-top)]` to the fixed header
+- `src/components/Footer.tsx` — Add `pb-[env(safe-area-inset-bottom)]`
+- `src/components/MobileStickyBar.tsx` — Already includes safe-area padding
+
+### 4. Offline / Slow Network Indicator
+
+**New file:** `src/components/OfflineBanner.tsx`
+- Listens to `window.addEventListener('online' | 'offline')`
+- Shows a top banner (below header) when offline: "You're offline. Changes will sync when connection returns."
+- Animated slide-in/out with framer-motion
+- Dismisses automatically when back online
+
+**Modified file:**
+- `src/App.tsx` — Render `<OfflineBanner />` globally inside the BrowserRouter
+
+### 5. Analytics Event Tracking
+
+**New file:** `src/lib/analytics.ts`
+- `trackEvent(eventName: string, properties?: Record<string, any>)` function
+- Events stored in a new `analytics_events` database table (id, user_id, event_name, properties jsonb, created_at)
+- Fires insert to Supabase; fails silently to never block UX
+
+**Database migration:**
+- Create `analytics_events` table with RLS policy allowing authenticated users to insert their own events
+
+**Modified files (add `trackEvent` calls):**
+- `src/pages/CreateFanlink.tsx` — `trackEvent('fanlink_created', { title, artist })`
+- `src/pages/CreatePreSave.tsx` — `trackEvent('presave_created', { title, artist })`
+- `src/pages/FanlinkPage.tsx` — `trackEvent('page_view', { type: 'fanlink' })`, `trackEvent('link_clicked', { platform })`
+- `src/pages/PreSavePage.tsx` — `trackEvent('fan_collected', { pre_save_id })`, `trackEvent('share_clicked')`
+- `src/pages/ListenPage.tsx` — `trackEvent('page_view', { type: 'listen' })`, `trackEvent('link_clicked', { platform })`
 
 ---
 
-### Plan
-
-#### Step 1: Fix Dashboard stats to use `presave_fans` instead of `pre_save_actions`
-- In `Dashboard.tsx`, update `fetchPreSaves` to query `presave_fans` count per pre-save instead of (or in addition to) `pre_save_actions`.
-- Show fan signup count on each pre-save card.
-- Update the stats cards to include total fan signups.
-
-#### Step 2: Fix Dashboard "View" button for released pre-saves
-- In `Dashboard.tsx`, change the "View" button for pre-saves: if `ps.is_released`, link to `/listen/${ps.artist_slug}-${ps.slug}` instead of `/presave/${ps.artist_slug}/${ps.slug}`.
-
-#### Step 3: Add "Send Notifications" button to EditPreSave page
-- Add a button on `EditPreSave.tsx` that manually triggers the `send-presave-notification` edge function for a specific pre-save ID.
-- This lets artists retry failed or missed notifications.
-
-#### Step 4: Update `send-presave-notification` to accept a specific `pre_save_id`
-- Modify the edge function to accept an optional `pre_save_id` in the request body.
-- When provided, process only that pre-save (regardless of `is_released` flag, but still require `links_resolved`).
-- This enables manual retrigger from the dashboard.
-
-#### Step 5: Send missed notifications for "Iwo Ori Mi"
-- After deploying the updated function, manually trigger it for the specific pre-save ID to send the 10 pending fan emails.
-
-#### Step 6: Verify asset imports
-- Check that `src/assets/logo.png` and `src/assets/demo-artwork.jpg` exist. If not, add fallbacks.
-
 ### Technical Details
 
-**Files to modify:**
-- `src/pages/Dashboard.tsx` — Fix stats query, fix View button link
-- `src/pages/EditPreSave.tsx` — Add "Send Notifications" button
-- `supabase/functions/send-presave-notification/index.ts` — Accept optional `pre_save_id` parameter for targeted sends
+**New files (4):**
+- `src/components/DashboardSkeleton.tsx`
+- `src/components/AnalyticsSkeleton.tsx`
+- `src/components/MobileStickyBar.tsx`
+- `src/components/OfflineBanner.tsx`
+- `src/lib/analytics.ts`
 
-**No database changes needed** — all tables and RLS policies are already in place.
+**Modified files (10):**
+- `src/pages/Dashboard.tsx`
+- `src/pages/FanlinkAnalytics.tsx`
+- `src/pages/PreSaveAnalytics.tsx`
+- `src/index.css`
+- `src/components/Header.tsx`
+- `src/components/Footer.tsx`
+- `src/App.tsx`
+- `src/pages/CreateFanlink.tsx`
+- `src/pages/CreatePreSave.tsx`
+- `src/pages/FanlinkPage.tsx`
+- `src/pages/PreSavePage.tsx`
+- `src/pages/ListenPage.tsx`
+
+**Database migration (1):**
+- Create `analytics_events` table with insert-only RLS for authenticated users
 
