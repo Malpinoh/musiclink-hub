@@ -1,4 +1,6 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
+import ThemeCustomizer, { type LinkTheme } from "@/components/ThemeCustomizer";
+import ThemePreview from "@/components/ThemePreview";
 import { useNavigate, useParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -78,6 +80,7 @@ const EditFanlink = () => {
   const [newPlatformUrl, setNewPlatformUrl] = useState("");
   const [draggedItem, setDraggedItem] = useState<string | null>(null);
   const [dragOverItem, setDragOverItem] = useState<string | null>(null);
+  const [currentTheme, setCurrentTheme] = useState<Partial<LinkTheme>>({});
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -457,6 +460,21 @@ const EditFanlink = () => {
               </div>
             </div>
           </motion.div>
+
+          {/* Theme Customization */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
+            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}>
+              <ThemeCustomizer linkId={id!} onChange={setCurrentTheme} />
+            </motion.div>
+            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.35 }}>
+              <ThemePreview
+                theme={currentTheme}
+                title={fanlink.title}
+                artist={fanlink.artist}
+                artworkUrl={fanlink.artwork_url}
+              />
+            </motion.div>
+          </div>
         </div>
       </main>
     </div>
