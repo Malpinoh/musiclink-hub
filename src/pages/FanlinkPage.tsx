@@ -71,6 +71,17 @@ interface PlatformLink {
   display_order: number;
 }
 
+interface LinkThemeData {
+  background_color: string;
+  button_color: string;
+  text_color: string;
+  font_family: string;
+  layout_style: string;
+  theme_mode: string;
+  logo_url: string | null;
+  background_image_url: string | null;
+}
+
 const FanlinkPage = () => {
   const { artist, song, id } = useParams();
   const [copied, setCopied] = useState(false);
@@ -79,6 +90,7 @@ const FanlinkPage = () => {
   const [fanlink, setFanlink] = useState<Fanlink | null>(null);
   const [platformLinks, setPlatformLinks] = useState<PlatformLink[]>([]);
   const [notFound, setNotFound] = useState(false);
+  const [theme, setTheme] = useState<LinkThemeData | null>(null);
 
   const currentUrl = window.location.href;
   
@@ -123,6 +135,15 @@ const FanlinkPage = () => {
 
       if (linksError) throw linksError;
       setPlatformLinks(linksData || []);
+
+      // Load theme
+      const { data: themeData } = await supabase
+        .from("link_themes")
+        .select("*")
+        .eq("link_id", fanlinkData.id)
+        .maybeSingle();
+
+      if (themeData) setTheme(themeData as LinkThemeData);
 
       // Log page view click with geo tracking via edge function
       try {
@@ -224,7 +245,14 @@ const FanlinkPage = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background relative overflow-hidden">
+    <div
+      className="min-h-screen relative overflow-hidden"
+      style={{
+        backgroundColor: theme?.background_color || undefined,
+        color: theme?.text_color || undefined,
+        fontFamily: theme?.font_family || undefined,
+      }}
+    >
       {/* SEO Head */}
       <SEOHead
         title={fanlink.title}
@@ -236,20 +264,28 @@ const FanlinkPage = () => {
 
       {/* Background with artwork blur */}
       <div className="absolute inset-0 z-0">
-        <img
-          src={fanlink.artwork_url || demoArtwork}
-          alt=""
-          className="w-full h-full object-cover opacity-20 blur-3xl scale-110"
-        />
-        <div className="absolute inset-0 bg-gradient-to-b from-background/80 via-background/90 to-background" />
+        {theme?.background_image_url ? (
+          <img src={theme.background_image_url} alt="" className="w-full h-full object-cover opacity-30" />
+        ) : (
+          <img
+            src={fanlink.artwork_url || demoArtwork}
+            alt=""
+            className="w-full h-full object-cover opacity-20 blur-3xl scale-110"
+          />
+        )}
+        <div className="absolute inset-0 bg-gradient-to-b from-background/80 via-background/90 to-background" style={theme ? { background: `linear-gradient(to bottom, ${theme.background_color}CC, ${theme.background_color}E6, ${theme.background_color})` } : undefined} />
       </div>
 
       <div className="relative z-10 min-h-screen flex flex-col">
         {/* Header */}
         <header className="p-4 flex justify-between items-center">
           <Link to="/" className="flex items-center gap-2 opacity-70 hover:opacity-100 transition-opacity">
-            <img src={logo} alt="MDistro Link" className="w-8 h-8 rounded-lg" />
-            <span className="font-display font-semibold text-sm">MDistro Link</span>
+            {theme?.logo_url ? (
+              <img src={theme.logo_url} alt="Logo" className="w-8 h-8 rounded-lg object-cover" />
+            ) : (
+              <img src={logo} alt="MDistro Link" className="w-8 h-8 rounded-lg" />
+            )}
+            <span className="font-display font-semibold text-sm" style={{ color: theme?.text_color }}>MDistro Link</span>
           </Link>
 
           <div className="flex gap-2">
