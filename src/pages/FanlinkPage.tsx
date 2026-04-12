@@ -375,30 +375,35 @@ const FanlinkPage = () => {
                     color: "#888" 
                   };
                   
-                  return (
-                    <motion.a
-                      key={link.id}
-                      href={link.platform_url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      onClick={() => handlePlatformClick(link.platform_name)}
-                      className="flex items-center gap-4 p-4 rounded-xl bg-secondary/50 backdrop-blur-sm border border-border/30 hover:bg-secondary/70 hover:border-primary/30 transition-all duration-300 group"
-                      initial={{ opacity: 0, x: -20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: 0.3 + index * 0.05 }}
-                      whileHover={{ scale: 1.02 }}
-                      whileTap={{ scale: 0.98 }}
-                      style={{ borderLeftColor: config.color, borderLeftWidth: "3px" }}
-                    >
-                      <span className="w-8 h-8 flex items-center justify-center" style={{ color: config.color }}>
-                        {config.icon}
-                      </span>
-                      <span className="flex-1 text-left font-medium">
-                        Listen on {formatPlatformName(link.platform_name)}
-                      </span>
-                      <ExternalLink className="w-4 h-4 text-muted-foreground group-hover:text-foreground transition-colors" />
-                    </motion.a>
-                  );
+                    return (
+                      <motion.a
+                        key={link.id}
+                        href={link.platform_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        onClick={() => handlePlatformClick(link.platform_name)}
+                        className="flex items-center gap-4 p-4 rounded-xl backdrop-blur-sm border border-border/30 hover:opacity-90 transition-all duration-300 group"
+                        initial={{ opacity: 0, x: -20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: 0.3 + index * 0.05 }}
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
+                        style={{
+                          backgroundColor: theme?.button_color || undefined,
+                          color: theme?.button_color ? getContrastColor(theme.button_color) : undefined,
+                          borderLeftColor: config.color,
+                          borderLeftWidth: "3px",
+                        }}
+                      >
+                        <span className="w-8 h-8 flex items-center justify-center" style={{ color: config.color }}>
+                          {config.icon}
+                        </span>
+                        <span className="flex-1 text-left font-medium">
+                          Listen on {formatPlatformName(link.platform_name)}
+                        </span>
+                        <ExternalLink className="w-4 h-4 opacity-60 group-hover:opacity-100 transition-colors" />
+                      </motion.a>
+                    );
                 })
               ) : (
                 <p className="text-muted-foreground">No streaming links available yet.</p>
