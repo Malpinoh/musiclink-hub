@@ -201,6 +201,9 @@ const CreateFanlink = () => {
         if (platformError) throw platformError;
       }
 
+      // Create default theme
+      await supabase.from("link_themes").insert({ link_id: fanlink.id });
+
       trackEvent("fanlink_created", { title: metadata?.title, artist: metadata?.artist });
       toast.success("Fanlink created successfully!");
       navigate("/dashboard");

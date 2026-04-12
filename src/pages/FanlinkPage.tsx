@@ -53,6 +53,14 @@ const formatPlatformName = (key: string) => {
   return names[key] || key;
 };
 
+function getContrastColor(hex: string): string {
+  const r = parseInt(hex.slice(1, 3), 16);
+  const g = parseInt(hex.slice(3, 5), 16);
+  const b = parseInt(hex.slice(5, 7), 16);
+  const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+  return luminance > 0.5 ? "#000000" : "#ffffff";
+}
+
 interface Fanlink {
   id: string;
   title: string;
@@ -71,6 +79,17 @@ interface PlatformLink {
   display_order: number;
 }
 
+interface LinkThemeData {
+  background_color: string;
+  button_color: string;
+  text_color: string;
+  font_family: string;
+  layout_style: string;
+  theme_mode: string;
+  logo_url: string | null;
+  background_image_url: string | null;
+}
+
 const FanlinkPage = () => {
   const { artist, song, id } = useParams();
   const [copied, setCopied] = useState(false);
@@ -79,6 +98,7 @@ const FanlinkPage = () => {
   const [fanlink, setFanlink] = useState<Fanlink | null>(null);
   const [platformLinks, setPlatformLinks] = useState<PlatformLink[]>([]);
   const [notFound, setNotFound] = useState(false);
+  const [theme, setTheme] = useState<LinkThemeData | null>(null);
 
   const currentUrl = window.location.href;
   
@@ -123,6 +143,15 @@ const FanlinkPage = () => {
 
       if (linksError) throw linksError;
       setPlatformLinks(linksData || []);
+
+      // Load theme
+      const { data: themeData } = await supabase
+        .from("link_themes")
+        .select("*")
+        .eq("link_id", fanlinkData.id)
+        .maybeSingle();
+
+      if (themeData) setTheme(themeData as LinkThemeData);
 
       // Log page view click with geo tracking via edge function
       try {
@@ -224,7 +253,14 @@ const FanlinkPage = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background relative overflow-hidden">
+    <div
+      className="min-h-screen relative overflow-hidden"
+      style={{
+        backgroundColor: theme?.background_color || undefined,
+        color: theme?.text_color || undefined,
+        fontFamily: theme?.font_family || undefined,
+      }}
+    >
       {/* SEO Head */}
       <SEOHead
         title={fanlink.title}
@@ -236,20 +272,28 @@ const FanlinkPage = () => {
 
       {/* Background with artwork blur */}
       <div className="absolute inset-0 z-0">
-        <img
-          src={fanlink.artwork_url || demoArtwork}
-          alt=""
-          className="w-full h-full object-cover opacity-20 blur-3xl scale-110"
-        />
-        <div className="absolute inset-0 bg-gradient-to-b from-background/80 via-background/90 to-background" />
+        {theme?.background_image_url ? (
+          <img src={theme.background_image_url} alt="" className="w-full h-full object-cover opacity-30" />
+        ) : (
+          <img
+            src={fanlink.artwork_url || demoArtwork}
+            alt=""
+            className="w-full h-full object-cover opacity-20 blur-3xl scale-110"
+          />
+        )}
+        <div className="absolute inset-0 bg-gradient-to-b from-background/80 via-background/90 to-background" style={theme ? { background: `linear-gradient(to bottom, ${theme.background_color}CC, ${theme.background_color}E6, ${theme.background_color})` } : undefined} />
       </div>
 
       <div className="relative z-10 min-h-screen flex flex-col">
         {/* Header */}
         <header className="p-4 flex justify-between items-center">
           <Link to="/" className="flex items-center gap-2 opacity-70 hover:opacity-100 transition-opacity">
-            <img src={logo} alt="MDistro Link" className="w-8 h-8 rounded-lg" />
-            <span className="font-display font-semibold text-sm">MDistro Link</span>
+            {theme?.logo_url ? (
+              <img src={theme.logo_url} alt="Logo" className="w-8 h-8 rounded-lg object-cover" />
+            ) : (
+              <img src={logo} alt="MDistro Link" className="w-8 h-8 rounded-lg" />
+            )}
+            <span className="font-display font-semibold text-sm" style={{ color: theme?.text_color }}>MDistro Link</span>
           </Link>
 
           <div className="flex gap-2">
@@ -339,30 +383,35 @@ const FanlinkPage = () => {
                     color: "#888" 
                   };
                   
-                  return (
-                    <motion.a
-                      key={link.id}
-                      href={link.platform_url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      onClick={() => handlePlatformClick(link.platform_name)}
-                      className="flex items-center gap-4 p-4 rounded-xl bg-secondary/50 backdrop-blur-sm border border-border/30 hover:bg-secondary/70 hover:border-primary/30 transition-all duration-300 group"
-                      initial={{ opacity: 0, x: -20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: 0.3 + index * 0.05 }}
-                      whileHover={{ scale: 1.02 }}
-                      whileTap={{ scale: 0.98 }}
-                      style={{ borderLeftColor: config.color, borderLeftWidth: "3px" }}
-                    >
-                      <span className="w-8 h-8 flex items-center justify-center" style={{ color: config.color }}>
-                        {config.icon}
-                      </span>
-                      <span className="flex-1 text-left font-medium">
-                        Listen on {formatPlatformName(link.platform_name)}
-                      </span>
-                      <ExternalLink className="w-4 h-4 text-muted-foreground group-hover:text-foreground transition-colors" />
-                    </motion.a>
-                  );
+                    return (
+                      <motion.a
+                        key={link.id}
+                        href={link.platform_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        onClick={() => handlePlatformClick(link.platform_name)}
+                        className="flex items-center gap-4 p-4 rounded-xl backdrop-blur-sm border border-border/30 hover:opacity-90 transition-all duration-300 group"
+                        initial={{ opacity: 0, x: -20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: 0.3 + index * 0.05 }}
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
+                        style={{
+                          backgroundColor: theme?.button_color || undefined,
+                          color: theme?.button_color ? getContrastColor(theme.button_color) : undefined,
+                          borderLeftColor: config.color,
+                          borderLeftWidth: "3px",
+                        }}
+                      >
+                        <span className="w-8 h-8 flex items-center justify-center" style={{ color: config.color }}>
+                          {config.icon}
+                        </span>
+                        <span className="flex-1 text-left font-medium">
+                          Listen on {formatPlatformName(link.platform_name)}
+                        </span>
+                        <ExternalLink className="w-4 h-4 opacity-60 group-hover:opacity-100 transition-colors" />
+                      </motion.a>
+                    );
                 })
               ) : (
                 <p className="text-muted-foreground">No streaming links available yet.</p>

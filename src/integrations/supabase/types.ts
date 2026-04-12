@@ -298,6 +298,59 @@ export type Database = {
         }
         Relationships: []
       }
+      link_themes: {
+        Row: {
+          background_color: string
+          background_image_url: string | null
+          button_color: string
+          created_at: string
+          font_family: string
+          id: string
+          layout_style: string
+          link_id: string
+          logo_url: string | null
+          text_color: string
+          theme_mode: string
+          updated_at: string
+        }
+        Insert: {
+          background_color?: string
+          background_image_url?: string | null
+          button_color?: string
+          created_at?: string
+          font_family?: string
+          id?: string
+          layout_style?: string
+          link_id: string
+          logo_url?: string | null
+          text_color?: string
+          theme_mode?: string
+          updated_at?: string
+        }
+        Update: {
+          background_color?: string
+          background_image_url?: string | null
+          button_color?: string
+          created_at?: string
+          font_family?: string
+          id?: string
+          layout_style?: string
+          link_id?: string
+          logo_url?: string | null
+          text_color?: string
+          theme_mode?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "link_themes_link_id_fkey"
+            columns: ["link_id"]
+            isOneToOne: true
+            referencedRelation: "fanlinks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       platform_links: {
         Row: {
           created_at: string
