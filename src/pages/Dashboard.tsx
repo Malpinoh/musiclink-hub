@@ -12,7 +12,6 @@ import {
   Link2, 
   BarChart3, 
   ExternalLink, 
-  Copy, 
   Trash2,
   Music2,
   Loader2,
@@ -24,6 +23,7 @@ import {
   MailCheck,
   MailX
 } from "lucide-react";
+import ShareButtons from "@/components/ShareButtons";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -38,6 +38,8 @@ interface Fanlink {
   slug: string;
   artist_slug: string;
   created_at: string;
+  is_published: boolean | null;
+  expires_at: string | null;
 }
 
 interface PreSave {
@@ -181,17 +183,17 @@ const Dashboard = () => {
     }
   };
 
-  const handleCopyFanlinkUrl = async (artistSlug: string, slug: string) => {
-    const url = `${window.location.origin}/${artistSlug}/${slug}`;
-    await navigator.clipboard.writeText(url);
-    toast.success("Link copied to clipboard!");
-  };
+  const getFanlinkUrl = (artistSlug: string, slug: string) =>
+    `${window.location.origin}/${artistSlug}/${slug}`;
 
-  const handleCopyPreSaveUrl = async (artistSlug: string, slug: string) => {
-    const url = `${window.location.origin}/pre/${artistSlug}-${slug}`;
-    await navigator.clipboard.writeText(url);
-    toast.success("Link copied to clipboard!");
-  };
+  const getPreSaveUrl = (artistSlug: string, slug: string) =>
+    `${window.location.origin}/pre/${artistSlug}-${slug}`;
+
+  const isExpired = (link: Fanlink) =>
+    link.expires_at && new Date(link.expires_at) < new Date();
+
+  const isActive = (link: Fanlink) =>
+    link.is_published !== false && !isExpired(link);
 
   const filteredFanlinks = fanlinks.filter(
     (link) =>
@@ -391,7 +393,15 @@ const Dashboard = () => {
                           </div>
                         </div>
 
-                        <div className="flex items-center gap-2">
+                        {!isActive(link) && (
+                          <div className={`px-2 py-1 rounded-full text-xs font-medium ${
+                            isExpired(link) ? 'bg-yellow-500/20 text-yellow-400' : 'bg-destructive/20 text-destructive'
+                          }`}>
+                            {isExpired(link) ? 'Expired' : 'Disabled'}
+                          </div>
+                        )}
+
+                        <div className="flex items-center gap-1">
                           <Button variant="ghost" size="icon" asChild title="Analytics">
                             <Link to={`/analytics/fanlink/${link.id}`}>
                               <BarChart3 className="w-4 h-4" />
@@ -407,9 +417,12 @@ const Dashboard = () => {
                               <ExternalLink className="w-4 h-4" />
                             </Link>
                           </Button>
-                          <Button variant="ghost" size="icon" onClick={() => handleCopyFanlinkUrl(link.artist_slug, link.slug)} title="Copy Link">
-                            <Copy className="w-4 h-4" />
-                          </Button>
+                          <ShareButtons
+                            url={getFanlinkUrl(link.artist_slug, link.slug)}
+                            title={link.title}
+                            artist={link.artist}
+                            compact
+                          />
                           <Button variant="ghost" size="icon" className="text-destructive" onClick={() => handleDeleteFanlink(link.id)} title="Delete">
                             <Trash2 className="w-4 h-4" />
                           </Button>
@@ -507,7 +520,7 @@ const Dashboard = () => {
                           )}
                         </div>
 
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-1">
                           <Button variant="ghost" size="icon" asChild title="Analytics">
                             <Link to={`/analytics/presave/${ps.id}`}>
                               <BarChart3 className="w-4 h-4" />
@@ -523,9 +536,12 @@ const Dashboard = () => {
                               <ExternalLink className="w-4 h-4" />
                             </Link>
                           </Button>
-                          <Button variant="ghost" size="icon" onClick={() => handleCopyPreSaveUrl(ps.artist_slug, ps.slug)} title="Copy Link">
-                            <Copy className="w-4 h-4" />
-                          </Button>
+                          <ShareButtons
+                            url={getPreSaveUrl(ps.artist_slug, ps.slug)}
+                            title={ps.title}
+                            artist={ps.artist}
+                            compact
+                          />
                           <Button variant="ghost" size="icon" className="text-destructive" onClick={() => handleDeletePreSave(ps.id)} title="Delete">
                             <Trash2 className="w-4 h-4" />
                           </Button>

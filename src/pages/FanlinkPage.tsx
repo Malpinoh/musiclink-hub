@@ -70,6 +70,8 @@ interface Fanlink {
   release_type: string | null;
   isrc: string | null;
   upc: string | null;
+  is_published: boolean | null;
+  expires_at: string | null;
 }
 
 interface PlatformLink {
@@ -245,6 +247,27 @@ const FanlinkPage = () => {
         <Music2 className="w-16 h-16 text-muted-foreground mb-4" />
         <h1 className="font-display text-2xl font-bold mb-2">Fanlink Not Found</h1>
         <p className="text-muted-foreground mb-6">This link doesn't exist or has been removed.</p>
+        <Button variant="hero" asChild>
+          <Link to="/">Go Home</Link>
+        </Button>
+      </div>
+    );
+  }
+
+  // Check if disabled or expired
+  const isExpired = fanlink.expires_at && new Date(fanlink.expires_at) < new Date();
+  const isDisabled = fanlink.is_published === false;
+
+  if (isDisabled || isExpired) {
+    return (
+      <div className="min-h-screen bg-background flex flex-col items-center justify-center p-4">
+        <Music2 className="w-16 h-16 text-muted-foreground mb-4" />
+        <h1 className="font-display text-2xl font-bold mb-2">
+          {isExpired ? "Link Expired" : "Link Unavailable"}
+        </h1>
+        <p className="text-muted-foreground mb-6">
+          {isExpired ? "This link has expired and is no longer available." : "This link has been disabled by the creator."}
+        </p>
         <Button variant="hero" asChild>
           <Link to="/">Go Home</Link>
         </Button>

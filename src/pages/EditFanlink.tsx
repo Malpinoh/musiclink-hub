@@ -5,7 +5,10 @@ import { useNavigate, useParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import Header from "@/components/Header";
+import ShareButtons from "@/components/ShareButtons";
+import ImageCropper from "@/components/ImageCropper";
 import { motion } from "framer-motion";
 import { 
   Save, 
@@ -14,7 +17,9 @@ import {
   ArrowLeft,
   Trash2,
   Plus,
-  GripVertical
+  GripVertical,
+  Crop,
+  Calendar
 } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
@@ -53,6 +58,8 @@ interface Fanlink {
   isrc: string | null;
   release_date: string | null;
   release_type: string | null;
+  is_published: boolean | null;
+  expires_at: string | null;
 }
 
 const platformOptions = [
@@ -81,6 +88,8 @@ const EditFanlink = () => {
   const [draggedItem, setDraggedItem] = useState<string | null>(null);
   const [dragOverItem, setDragOverItem] = useState<string | null>(null);
   const [currentTheme, setCurrentTheme] = useState<Partial<LinkTheme>>({});
+  const [cropperOpen, setCropperOpen] = useState(false);
+  const [platformClickCounts, setPlatformClickCounts] = useState<Record<string, number>>({});
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -114,6 +123,24 @@ const EditFanlink = () => {
 
       if (linksError) throw linksError;
       setPlatformLinks(linksData || []);
+
+      // Fetch per-platform click counts
+      if (linksData && linksData.length > 0) {
+        const { data: clicksData } = await supabase
+          .from("clicks")
+          .select("platform_name")
+          .eq("fanlink_id", id!)
+          .not("platform_name", "is", null);
+
+        if (clicksData) {
+          const counts: Record<string, number> = {};
+          clicksData.forEach((c) => {
+            const pn = c.platform_name || "";
+            counts[pn] = (counts[pn] || 0) + 1;
+          });
+          setPlatformClickCounts(counts);
+        }
+      }
     } catch (error) {
       console.error("Error fetching fanlink:", error);
       toast.error("Fanlink not found");
@@ -180,6 +207,8 @@ const EditFanlink = () => {
           release_date: fanlink.release_date,
           upc: fanlink.upc,
           isrc: fanlink.isrc,
+          is_published: fanlink.is_published,
+          expires_at: fanlink.expires_at,
         })
         .eq("id", id);
 
@@ -258,6 +287,23 @@ const EditFanlink = () => {
     ));
   };
 
+  const handleCropComplete = async (croppedBlob: Blob) => {
+    if (!fanlink || !id) return;
+    try {
+      const fileName = `${id}-${Date.now()}.jpg`;
+      const { data, error } = await supabase.storage
+        .from("artwork")
+        .upload(fileName, croppedBlob, { upsert: true, contentType: "image/jpeg" });
+      if (error) throw error;
+      const { data: { publicUrl } } = supabase.storage.from("artwork").getPublicUrl(data.path);
+      setFanlink({ ...fanlink, artwork_url: publicUrl });
+      toast.success("Artwork cropped and uploaded!");
+    } catch (error) {
+      console.error("Error uploading cropped image:", error);
+      toast.error("Failed to upload cropped artwork");
+    }
+  };
+
   if (authLoading || loading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -291,6 +337,12 @@ const EditFanlink = () => {
                 /{fanlink.artist_slug}/{fanlink.slug}
               </p>
             </div>
+            <ShareButtons
+              url={`${window.location.origin}/${fanlink.artist_slug}/${fanlink.slug}`}
+              title={fanlink.title}
+              artist={fanlink.artist}
+              compact
+            />
             <Button variant="hero" onClick={handleSave} disabled={saving}>
               {saving ? (
                 <Loader2 className="w-4 h-4 animate-spin mr-2" />
@@ -311,11 +363,19 @@ const EditFanlink = () => {
             <h2 className="font-display font-semibold text-lg mb-4">Track Information</h2>
             
             <div className="flex gap-6">
-              <div className="w-32 h-32 rounded-xl bg-secondary flex items-center justify-center overflow-hidden shrink-0">
+              <div className="w-32 h-32 rounded-xl bg-secondary flex items-center justify-center overflow-hidden shrink-0 relative group">
                 {fanlink.artwork_url ? (
                   <img src={fanlink.artwork_url} alt={fanlink.title} className="w-full h-full object-cover" />
                 ) : (
                   <Music2 className="w-10 h-10 text-muted-foreground" />
+                )}
+                {fanlink.artwork_url && (
+                  <button
+                    onClick={() => setCropperOpen(true)}
+                    className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity rounded-xl"
+                  >
+                    <Crop className="w-6 h-6 text-white" />
+                  </button>
                 )}
               </div>
 
@@ -403,10 +463,17 @@ const EditFanlink = () => {
                     <div className="w-10 h-10 rounded-lg bg-secondary flex items-center justify-center shrink-0">
                       <PlatformIcon className="w-5 h-5" />
                     </div>
-                    <div className="flex-1">
-                      <p className="text-xs text-muted-foreground mb-1">
-                        {getPlatformDisplayName(link.platform_name)}
-                      </p>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-1">
+                        <p className="text-xs text-muted-foreground">
+                          {getPlatformDisplayName(link.platform_name)}
+                        </p>
+                        {(platformClickCounts[link.platform_name] || 0) > 0 && (
+                          <span className="px-2 py-0.5 rounded-full bg-primary/20 text-primary text-[10px] font-semibold">
+                            {platformClickCounts[link.platform_name].toLocaleString()} clicks
+                          </span>
+                        )}
+                      </div>
                       <Input
                         value={link.platform_url}
                         onChange={(e) => updatePlatformUrl(link.id, e.target.value)}
@@ -461,6 +528,46 @@ const EditFanlink = () => {
             </div>
           </motion.div>
 
+          {/* Link Visibility & Expiry */}
+          <motion.div
+            className="glass-card p-6 mt-6"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.25 }}
+          >
+            <h2 className="font-display font-semibold text-lg mb-4">Link Settings</h2>
+            
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <Label className="text-sm font-medium">Published</Label>
+                  <p className="text-xs text-muted-foreground">When disabled, the link returns a "not found" page</p>
+                </div>
+                <Switch
+                  checked={fanlink.is_published !== false}
+                  onCheckedChange={(checked) => setFanlink({ ...fanlink, is_published: checked })}
+                />
+              </div>
+
+              <div>
+                <Label className="flex items-center gap-2">
+                  <Calendar className="w-4 h-4" />
+                  Expires At (optional)
+                </Label>
+                <Input
+                  type="datetime-local"
+                  value={fanlink.expires_at ? new Date(fanlink.expires_at).toISOString().slice(0, 16) : ""}
+                  onChange={(e) => setFanlink({ ...fanlink, expires_at: e.target.value ? new Date(e.target.value).toISOString() : null })}
+                />
+                <p className="text-xs text-muted-foreground mt-1">
+                  {fanlink.expires_at && new Date(fanlink.expires_at) < new Date()
+                    ? "⚠️ This link has expired and is no longer accessible"
+                    : "Leave empty for no expiration"}
+                </p>
+              </div>
+            </div>
+          </motion.div>
+
           {/* Theme Customization */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}>
@@ -477,6 +584,16 @@ const EditFanlink = () => {
           </div>
         </div>
       </main>
+
+      {/* Image Cropper Dialog */}
+      {fanlink.artwork_url && (
+        <ImageCropper
+          imageUrl={fanlink.artwork_url}
+          open={cropperOpen}
+          onClose={() => setCropperOpen(false)}
+          onCropComplete={handleCropComplete}
+        />
+      )}
     </div>
   );
 };
