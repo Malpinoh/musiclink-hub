@@ -287,6 +287,23 @@ const EditFanlink = () => {
     ));
   };
 
+  const handleCropComplete = async (croppedBlob: Blob) => {
+    if (!fanlink || !id) return;
+    try {
+      const fileName = `${id}-${Date.now()}.jpg`;
+      const { data, error } = await supabase.storage
+        .from("artwork")
+        .upload(fileName, croppedBlob, { upsert: true, contentType: "image/jpeg" });
+      if (error) throw error;
+      const { data: { publicUrl } } = supabase.storage.from("artwork").getPublicUrl(data.path);
+      setFanlink({ ...fanlink, artwork_url: publicUrl });
+      toast.success("Artwork cropped and uploaded!");
+    } catch (error) {
+      console.error("Error uploading cropped image:", error);
+      toast.error("Failed to upload cropped artwork");
+    }
+  };
+
   if (authLoading || loading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -320,6 +337,12 @@ const EditFanlink = () => {
                 /{fanlink.artist_slug}/{fanlink.slug}
               </p>
             </div>
+            <ShareButtons
+              url={`${window.location.origin}/${fanlink.artist_slug}/${fanlink.slug}`}
+              title={fanlink.title}
+              artist={fanlink.artist}
+              compact
+            />
             <Button variant="hero" onClick={handleSave} disabled={saving}>
               {saving ? (
                 <Loader2 className="w-4 h-4 animate-spin mr-2" />
@@ -340,11 +363,19 @@ const EditFanlink = () => {
             <h2 className="font-display font-semibold text-lg mb-4">Track Information</h2>
             
             <div className="flex gap-6">
-              <div className="w-32 h-32 rounded-xl bg-secondary flex items-center justify-center overflow-hidden shrink-0">
+              <div className="w-32 h-32 rounded-xl bg-secondary flex items-center justify-center overflow-hidden shrink-0 relative group">
                 {fanlink.artwork_url ? (
                   <img src={fanlink.artwork_url} alt={fanlink.title} className="w-full h-full object-cover" />
                 ) : (
                   <Music2 className="w-10 h-10 text-muted-foreground" />
+                )}
+                {fanlink.artwork_url && (
+                  <button
+                    onClick={() => setCropperOpen(true)}
+                    className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity rounded-xl"
+                  >
+                    <Crop className="w-6 h-6 text-white" />
+                  </button>
                 )}
               </div>
 
