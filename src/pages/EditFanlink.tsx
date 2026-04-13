@@ -463,10 +463,17 @@ const EditFanlink = () => {
                     <div className="w-10 h-10 rounded-lg bg-secondary flex items-center justify-center shrink-0">
                       <PlatformIcon className="w-5 h-5" />
                     </div>
-                    <div className="flex-1">
-                      <p className="text-xs text-muted-foreground mb-1">
-                        {getPlatformDisplayName(link.platform_name)}
-                      </p>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-1">
+                        <p className="text-xs text-muted-foreground">
+                          {getPlatformDisplayName(link.platform_name)}
+                        </p>
+                        {(platformClickCounts[link.platform_name] || 0) > 0 && (
+                          <span className="px-2 py-0.5 rounded-full bg-primary/20 text-primary text-[10px] font-semibold">
+                            {platformClickCounts[link.platform_name].toLocaleString()} clicks
+                          </span>
+                        )}
+                      </div>
                       <Input
                         value={link.platform_url}
                         onChange={(e) => updatePlatformUrl(link.id, e.target.value)}
