@@ -253,6 +253,7 @@ export type Database = {
           artist_slug: string
           artwork_url: string | null
           created_at: string
+          expires_at: string | null
           id: string
           is_published: boolean | null
           isrc: string | null
@@ -269,6 +270,7 @@ export type Database = {
           artist_slug: string
           artwork_url?: string | null
           created_at?: string
+          expires_at?: string | null
           id?: string
           is_published?: boolean | null
           isrc?: string | null
@@ -285,6 +287,7 @@ export type Database = {
           artist_slug?: string
           artwork_url?: string | null
           created_at?: string
+          expires_at?: string | null
           id?: string
           is_published?: boolean | null
           isrc?: string | null
