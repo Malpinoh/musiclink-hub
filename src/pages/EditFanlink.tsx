@@ -207,6 +207,8 @@ const EditFanlink = () => {
           release_date: fanlink.release_date,
           upc: fanlink.upc,
           isrc: fanlink.isrc,
+          is_published: fanlink.is_published,
+          expires_at: fanlink.expires_at,
         })
         .eq("id", id);
 
