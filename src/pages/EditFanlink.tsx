@@ -528,6 +528,46 @@ const EditFanlink = () => {
             </div>
           </motion.div>
 
+          {/* Link Visibility & Expiry */}
+          <motion.div
+            className="glass-card p-6 mt-6"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.25 }}
+          >
+            <h2 className="font-display font-semibold text-lg mb-4">Link Settings</h2>
+            
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <Label className="text-sm font-medium">Published</Label>
+                  <p className="text-xs text-muted-foreground">When disabled, the link returns a "not found" page</p>
+                </div>
+                <Switch
+                  checked={fanlink.is_published !== false}
+                  onCheckedChange={(checked) => setFanlink({ ...fanlink, is_published: checked })}
+                />
+              </div>
+
+              <div>
+                <Label className="flex items-center gap-2">
+                  <Calendar className="w-4 h-4" />
+                  Expires At (optional)
+                </Label>
+                <Input
+                  type="datetime-local"
+                  value={fanlink.expires_at ? new Date(fanlink.expires_at).toISOString().slice(0, 16) : ""}
+                  onChange={(e) => setFanlink({ ...fanlink, expires_at: e.target.value ? new Date(e.target.value).toISOString() : null })}
+                />
+                <p className="text-xs text-muted-foreground mt-1">
+                  {fanlink.expires_at && new Date(fanlink.expires_at) < new Date()
+                    ? "⚠️ This link has expired and is no longer accessible"
+                    : "Leave empty for no expiration"}
+                </p>
+              </div>
+            </div>
+          </motion.div>
+
           {/* Theme Customization */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}>
@@ -544,6 +584,16 @@ const EditFanlink = () => {
           </div>
         </div>
       </main>
+
+      {/* Image Cropper Dialog */}
+      {fanlink.artwork_url && (
+        <ImageCropper
+          imageUrl={fanlink.artwork_url}
+          open={cropperOpen}
+          onClose={() => setCropperOpen(false)}
+          onCropComplete={handleCropComplete}
+        />
+      )}
     </div>
   );
 };
