@@ -5,7 +5,10 @@ import { useNavigate, useParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import Header from "@/components/Header";
+import ShareButtons from "@/components/ShareButtons";
+import ImageCropper from "@/components/ImageCropper";
 import { motion } from "framer-motion";
 import { 
   Save, 
@@ -14,7 +17,9 @@ import {
   ArrowLeft,
   Trash2,
   Plus,
-  GripVertical
+  GripVertical,
+  Crop,
+  Calendar
 } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
@@ -53,6 +58,8 @@ interface Fanlink {
   isrc: string | null;
   release_date: string | null;
   release_type: string | null;
+  is_published: boolean | null;
+  expires_at: string | null;
 }
 
 const platformOptions = [
@@ -81,6 +88,8 @@ const EditFanlink = () => {
   const [draggedItem, setDraggedItem] = useState<string | null>(null);
   const [dragOverItem, setDragOverItem] = useState<string | null>(null);
   const [currentTheme, setCurrentTheme] = useState<Partial<LinkTheme>>({});
+  const [cropperOpen, setCropperOpen] = useState(false);
+  const [platformClickCounts, setPlatformClickCounts] = useState<Record<string, number>>({});
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -114,6 +123,24 @@ const EditFanlink = () => {
 
       if (linksError) throw linksError;
       setPlatformLinks(linksData || []);
+
+      // Fetch per-platform click counts
+      if (linksData && linksData.length > 0) {
+        const { data: clicksData } = await supabase
+          .from("clicks")
+          .select("platform_name")
+          .eq("fanlink_id", id!)
+          .not("platform_name", "is", null);
+
+        if (clicksData) {
+          const counts: Record<string, number> = {};
+          clicksData.forEach((c) => {
+            const pn = c.platform_name || "";
+            counts[pn] = (counts[pn] || 0) + 1;
+          });
+          setPlatformClickCounts(counts);
+        }
+      }
     } catch (error) {
       console.error("Error fetching fanlink:", error);
       toast.error("Fanlink not found");
