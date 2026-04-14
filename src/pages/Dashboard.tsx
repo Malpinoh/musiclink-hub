@@ -71,6 +71,7 @@ const Dashboard = () => {
   const [fanlinks, setFanlinks] = useState<Fanlink[]>([]);
   const [preSaves, setPreSaves] = useState<PreSave[]>([]);
   const [clickCounts, setClickCounts] = useState<Record<string, number>>({});
+  const [fanContactCounts, setFanContactCounts] = useState<Record<string, number>>({});
   const [preSaveStats, setPreSaveStats] = useState<Record<string, PreSaveStats>>({});
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("fanlinks");
@@ -111,6 +112,17 @@ const Dashboard = () => {
           counts[fanlink.id] = count || 0;
         }
         setClickCounts(counts);
+
+        // Fetch fan contact counts
+        const fanCounts: Record<string, number> = {};
+        for (const fanlink of fanlinksData) {
+          const { count: fc } = await supabase
+            .from("fan_contacts")
+            .select("*", { count: "exact", head: true })
+            .eq("link_id", fanlink.id);
+          fanCounts[fanlink.id] = fc || 0;
+        }
+        setFanContactCounts(fanCounts);
       }
     } catch (error) {
       console.error("Error fetching fanlinks:", error);
