@@ -247,11 +247,57 @@ export type Database = {
           },
         ]
       }
+      fan_contacts: {
+        Row: {
+          collected_at: string
+          consent: boolean | null
+          country: string | null
+          email: string | null
+          id: string
+          ip_address: string | null
+          link_id: string
+          phone: string | null
+          user_agent: string | null
+        }
+        Insert: {
+          collected_at?: string
+          consent?: boolean | null
+          country?: string | null
+          email?: string | null
+          id?: string
+          ip_address?: string | null
+          link_id: string
+          phone?: string | null
+          user_agent?: string | null
+        }
+        Update: {
+          collected_at?: string
+          consent?: boolean | null
+          country?: string | null
+          email?: string | null
+          id?: string
+          ip_address?: string | null
+          link_id?: string
+          phone?: string | null
+          user_agent?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fan_contacts_link_id_fkey"
+            columns: ["link_id"]
+            isOneToOne: false
+            referencedRelation: "fanlinks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       fanlinks: {
         Row: {
           artist: string
           artist_slug: string
           artwork_url: string | null
+          collect_email: boolean | null
+          collect_phone: boolean | null
           created_at: string
           expires_at: string | null
           id: string
@@ -259,6 +305,7 @@ export type Database = {
           isrc: string | null
           release_date: string | null
           release_type: string | null
+          require_contact: boolean | null
           slug: string
           title: string
           upc: string | null
@@ -269,6 +316,8 @@ export type Database = {
           artist: string
           artist_slug: string
           artwork_url?: string | null
+          collect_email?: boolean | null
+          collect_phone?: boolean | null
           created_at?: string
           expires_at?: string | null
           id?: string
@@ -276,6 +325,7 @@ export type Database = {
           isrc?: string | null
           release_date?: string | null
           release_type?: string | null
+          require_contact?: boolean | null
           slug: string
           title: string
           upc?: string | null
@@ -286,6 +336,8 @@ export type Database = {
           artist?: string
           artist_slug?: string
           artwork_url?: string | null
+          collect_email?: boolean | null
+          collect_phone?: boolean | null
           created_at?: string
           expires_at?: string | null
           id?: string
@@ -293,6 +345,7 @@ export type Database = {
           isrc?: string | null
           release_date?: string | null
           release_type?: string | null
+          require_contact?: boolean | null
           slug?: string
           title?: string
           upc?: string | null
