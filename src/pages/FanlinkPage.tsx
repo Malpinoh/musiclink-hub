@@ -472,6 +472,7 @@ const FanlinkPage = () => {
                 <p className="text-muted-foreground">No streaming links available yet.</p>
               )}
             </motion.div>
+            )}
           </motion.div>
         </main>
 
