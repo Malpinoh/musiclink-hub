@@ -154,6 +154,16 @@ const EditFanlink = () => {
           setPlatformClickCounts(counts);
         }
       }
+
+      // Fetch fan contacts
+      const { data: contactsData } = await supabase
+        .from("fan_contacts")
+        .select("id, email, phone, collected_at")
+        .eq("link_id", id!)
+        .order("collected_at", { ascending: false });
+
+      if (contactsData) setFanContacts(contactsData);
+
     } catch (error) {
       console.error("Error fetching fanlink:", error);
       toast.error("Fanlink not found");
