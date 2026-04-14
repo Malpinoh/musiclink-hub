@@ -9,6 +9,7 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import demoArtwork from "@/assets/demo-artwork.jpg";
 import SEOHead from "@/components/SEOHead";
+import FanContactForm from "@/components/FanContactForm";
 import { getShareableFanlinkUrl } from "@/lib/shareUrl";
 import logo from "@/assets/logo.png";
 import {
@@ -72,6 +73,9 @@ interface Fanlink {
   upc: string | null;
   is_published: boolean | null;
   expires_at: string | null;
+  collect_email: boolean | null;
+  collect_phone: boolean | null;
+  require_contact: boolean | null;
 }
 
 interface PlatformLink {
@@ -101,6 +105,8 @@ const FanlinkPage = () => {
   const [platformLinks, setPlatformLinks] = useState<PlatformLink[]>([]);
   const [notFound, setNotFound] = useState(false);
   const [theme, setTheme] = useState<LinkThemeData | null>(null);
+  const [showContactForm, setShowContactForm] = useState(false);
+  const [contactSubmitted, setContactSubmitted] = useState(false);
 
   const currentUrl = window.location.href;
   
@@ -134,6 +140,11 @@ const FanlinkPage = () => {
       }
 
       setFanlink(fanlinkData);
+
+      // Check if contact collection is enabled
+      if (fanlinkData.collect_email || fanlinkData.collect_phone) {
+        setShowContactForm(true);
+      }
 
       // Fetch platform links
       const { data: linksData, error: linksError } = await supabase
@@ -392,7 +403,28 @@ const FanlinkPage = () => {
               )}
             </motion.div>
 
+            {/* Fan Contact Form */}
+            {showContactForm && !contactSubmitted && (
+              <FanContactForm
+                linkId={fanlink.id}
+                collectEmail={fanlink.collect_email ?? false}
+                collectPhone={fanlink.collect_phone ?? false}
+                requireContact={fanlink.require_contact ?? false}
+                onContinue={() => {
+                  setContactSubmitted(true);
+                  setShowContactForm(false);
+                }}
+                artistName={fanlink.artist}
+                themeColors={{
+                  buttonColor: theme?.button_color,
+                  textColor: theme?.text_color,
+                  buttonTextColor: theme?.button_color ? getContrastColor(theme.button_color) : undefined,
+                }}
+              />
+            )}
+
             {/* Platform Links */}
+            {(!showContactForm || contactSubmitted) && (
             <motion.div
               className="space-y-3"
               initial={{ opacity: 0 }}
@@ -440,6 +472,7 @@ const FanlinkPage = () => {
                 <p className="text-muted-foreground">No streaming links available yet.</p>
               )}
             </motion.div>
+            )}
           </motion.div>
         </main>
 
