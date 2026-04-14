@@ -403,7 +403,28 @@ const FanlinkPage = () => {
               )}
             </motion.div>
 
+            {/* Fan Contact Form */}
+            {showContactForm && !contactSubmitted && (
+              <FanContactForm
+                linkId={fanlink.id}
+                collectEmail={fanlink.collect_email ?? false}
+                collectPhone={fanlink.collect_phone ?? false}
+                requireContact={fanlink.require_contact ?? false}
+                onContinue={() => {
+                  setContactSubmitted(true);
+                  setShowContactForm(false);
+                }}
+                artistName={fanlink.artist}
+                themeColors={{
+                  buttonColor: theme?.button_color,
+                  textColor: theme?.text_color,
+                  buttonTextColor: theme?.button_color ? getContrastColor(theme.button_color) : undefined,
+                }}
+              />
+            )}
+
             {/* Platform Links */}
+            {(!showContactForm || contactSubmitted) && (
             <motion.div
               className="space-y-3"
               initial={{ opacity: 0 }}
