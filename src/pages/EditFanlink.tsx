@@ -60,6 +60,16 @@ interface Fanlink {
   release_type: string | null;
   is_published: boolean | null;
   expires_at: string | null;
+  collect_email: boolean | null;
+  collect_phone: boolean | null;
+  require_contact: boolean | null;
+}
+
+interface FanContact {
+  id: string;
+  email: string | null;
+  phone: string | null;
+  collected_at: string;
 }
 
 const platformOptions = [
