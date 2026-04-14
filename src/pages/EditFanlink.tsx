@@ -102,6 +102,7 @@ const EditFanlink = () => {
   const [currentTheme, setCurrentTheme] = useState<Partial<LinkTheme>>({});
   const [cropperOpen, setCropperOpen] = useState(false);
   const [platformClickCounts, setPlatformClickCounts] = useState<Record<string, number>>({});
+  const [fanContacts, setFanContacts] = useState<FanContact[]>([]);
 
   useEffect(() => {
     if (!authLoading && !user) {
