@@ -594,6 +594,104 @@ const EditFanlink = () => {
             </div>
           </motion.div>
 
+          {/* Fan Collection Settings */}
+          <motion.div
+            className="glass-card p-6 mt-6"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.27 }}
+          >
+            <h2 className="font-display font-semibold text-lg mb-4 flex items-center gap-2">
+              <Users className="w-5 h-5" />
+              Fan Collection
+            </h2>
+            
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <Label className="text-sm font-medium">Collect Email</Label>
+                  <p className="text-xs text-muted-foreground">Ask fans for their email before showing links</p>
+                </div>
+                <Switch
+                  checked={fanlink.collect_email === true}
+                  onCheckedChange={(checked) => setFanlink({ ...fanlink, collect_email: checked })}
+                />
+              </div>
+
+              <div className="flex items-center justify-between">
+                <div>
+                  <Label className="text-sm font-medium">Collect Phone</Label>
+                  <p className="text-xs text-muted-foreground">Optionally ask fans for their phone number</p>
+                </div>
+                <Switch
+                  checked={fanlink.collect_phone === true}
+                  onCheckedChange={(checked) => setFanlink({ ...fanlink, collect_phone: checked })}
+                />
+              </div>
+
+              <div className="flex items-center justify-between">
+                <div>
+                  <Label className="text-sm font-medium">Require Contact</Label>
+                  <p className="text-xs text-muted-foreground">Block access to links until fan submits info (no skip)</p>
+                </div>
+                <Switch
+                  checked={fanlink.require_contact === true}
+                  onCheckedChange={(checked) => setFanlink({ ...fanlink, require_contact: checked })}
+                  disabled={!fanlink.collect_email && !fanlink.collect_phone}
+                />
+              </div>
+            </div>
+
+            {/* Fan Contacts List */}
+            {fanContacts.length > 0 && (
+              <div className="mt-6 border-t border-border pt-4">
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="text-sm font-medium">
+                    Collected Fans ({fanContacts.length})
+                  </h3>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      const csv = [
+                        "Email,Phone,Date",
+                        ...fanContacts.map(c =>
+                          `${c.email || ""},${c.phone || ""},${new Date(c.collected_at).toLocaleDateString()}`
+                        ),
+                      ].join("\n");
+                      const blob = new Blob([csv], { type: "text/csv" });
+                      const url = URL.createObjectURL(blob);
+                      const a = document.createElement("a");
+                      a.href = url;
+                      a.download = `fan-contacts-${fanlink.slug}.csv`;
+                      a.click();
+                      URL.revokeObjectURL(url);
+                      toast.success("Contacts exported!");
+                    }}
+                  >
+                    <Download className="w-4 h-4 mr-2" />
+                    Export CSV
+                  </Button>
+                </div>
+                <div className="max-h-48 overflow-y-auto space-y-2">
+                  {fanContacts.slice(0, 20).map((contact) => (
+                    <div key={contact.id} className="flex items-center justify-between text-sm p-2 rounded-lg bg-secondary/50">
+                      <span className="truncate">{contact.email || contact.phone || "No info"}</span>
+                      <span className="text-xs text-muted-foreground shrink-0 ml-2">
+                        {new Date(contact.collected_at).toLocaleDateString()}
+                      </span>
+                    </div>
+                  ))}
+                  {fanContacts.length > 20 && (
+                    <p className="text-xs text-muted-foreground text-center py-1">
+                      +{fanContacts.length - 20} more — export CSV for full list
+                    </p>
+                  )}
+                </div>
+              </div>
+            )}
+          </motion.div>
+
           {/* Theme Customization */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}>
