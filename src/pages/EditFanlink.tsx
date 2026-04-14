@@ -19,7 +19,9 @@ import {
   Plus,
   GripVertical,
   Crop,
-  Calendar
+  Calendar,
+  Download,
+  Users
 } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
