@@ -9,6 +9,7 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import demoArtwork from "@/assets/demo-artwork.jpg";
 import SEOHead from "@/components/SEOHead";
+import FanContactForm from "@/components/FanContactForm";
 import { getShareableFanlinkUrl } from "@/lib/shareUrl";
 import logo from "@/assets/logo.png";
 import {
@@ -72,6 +73,9 @@ interface Fanlink {
   upc: string | null;
   is_published: boolean | null;
   expires_at: string | null;
+  collect_email: boolean | null;
+  collect_phone: boolean | null;
+  require_contact: boolean | null;
 }
 
 interface PlatformLink {
@@ -101,6 +105,8 @@ const FanlinkPage = () => {
   const [platformLinks, setPlatformLinks] = useState<PlatformLink[]>([]);
   const [notFound, setNotFound] = useState(false);
   const [theme, setTheme] = useState<LinkThemeData | null>(null);
+  const [showContactForm, setShowContactForm] = useState(false);
+  const [contactSubmitted, setContactSubmitted] = useState(false);
 
   const currentUrl = window.location.href;
   
