@@ -141,6 +141,11 @@ const FanlinkPage = () => {
 
       setFanlink(fanlinkData);
 
+      // Check if contact collection is enabled
+      if (fanlinkData.collect_email || fanlinkData.collect_phone) {
+        setShowContactForm(true);
+      }
+
       // Fetch platform links
       const { data: linksData, error: linksError } = await supabase
         .from("platform_links")
