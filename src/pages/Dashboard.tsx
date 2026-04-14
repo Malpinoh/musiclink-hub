@@ -399,6 +399,12 @@ const Dashboard = () => {
                         </div>
 
                         <div className="hidden md:flex items-center gap-6">
+                          {(fanContactCounts[link.id] || 0) > 0 && (
+                            <div className="text-right">
+                              <p className="font-display font-semibold">{(fanContactCounts[link.id]).toLocaleString()}</p>
+                              <p className="text-xs text-muted-foreground">fans</p>
+                            </div>
+                          )}
                           <div className="text-right">
                             <p className="font-display font-semibold">{(clickCounts[link.id] || 0).toLocaleString()}</p>
                             <p className="text-xs text-muted-foreground">clicks</p>
