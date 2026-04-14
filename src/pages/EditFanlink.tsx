@@ -232,6 +232,9 @@ const EditFanlink = () => {
           isrc: fanlink.isrc,
           is_published: fanlink.is_published,
           expires_at: fanlink.expires_at,
+          collect_email: fanlink.collect_email,
+          collect_phone: fanlink.collect_phone,
+          require_contact: fanlink.require_contact,
         })
         .eq("id", id);
 
