@@ -25,6 +25,9 @@ import NotFound from "./pages/NotFound";
 import ArtistBioPage from "./pages/ArtistBioPage";
 import EditArtistBio from "./pages/EditArtistBio";
 import ListenPage from "./pages/ListenPage";
+import CampaignDashboard from "./pages/CampaignDashboard";
+import CreateCampaign from "./pages/CreateCampaign";
+import CampaignList from "./pages/CampaignList";
 import OfflineBanner from "./components/OfflineBanner";
 
 const queryClient = new QueryClient();
@@ -65,6 +68,9 @@ const App = () => {
               <Route path="/presave/:artist/:slug" element={<PreSavePage />} />
               <Route path="/pre/:slug" element={<PreSaveCampaignRoute />} />
               <Route path="/listen/:slug" element={<ListenPage />} />
+              <Route path="/artist/campaigns" element={<CampaignDashboard />} />
+              <Route path="/artist/campaigns/create" element={<CreateCampaign />} />
+              <Route path="/artist/campaigns/list" element={<CampaignList />} />
               <Route path="/callback/spotify" element={<SpotifyCallback />} />
               <Route path="/artist/:username" element={<ArtistBioPage />} />
               <Route path="/artist-bio/edit" element={<EditArtistBio />} />

@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Menu, X, LogOut } from "lucide-react";
+import { Menu, X, LogOut, BarChart3 } from "lucide-react";
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "@/contexts/AuthContext";
@@ -32,9 +32,15 @@ const Header = () => {
             Home
           </Link>
           {user && (
-            <Link to="/dashboard" className="text-muted-foreground hover:text-foreground transition-colors">
-              Dashboard
-            </Link>
+            <>
+              <Link to="/dashboard" className="text-muted-foreground hover:text-foreground transition-colors">
+                Dashboard
+              </Link>
+              <Link to="/artist/campaigns" className="text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1">
+                <BarChart3 className="w-4 h-4" />
+                Campaigns
+              </Link>
+            </>
           )}
         </div>
 
@@ -87,13 +93,23 @@ const Header = () => {
                 Home
               </Link>
               {user && (
-                <Link 
-                  to="/dashboard" 
-                  className="py-2 text-muted-foreground hover:text-foreground transition-colors"
-                  onClick={() => setMobileMenuOpen(false)}
-                >
-                  Dashboard
-                </Link>
+                <>
+                  <Link 
+                    to="/dashboard" 
+                    className="py-2 text-muted-foreground hover:text-foreground transition-colors"
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
+                    Dashboard
+                  </Link>
+                  <Link 
+                    to="/artist/campaigns" 
+                    className="py-2 text-muted-foreground hover:text-foreground transition-colors flex items-center gap-2"
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
+                    <BarChart3 className="w-4 h-4" />
+                    Campaigns
+                  </Link>
+                </>
               )}
               <div className="flex flex-col gap-2 pt-4 border-t border-border">
                 {user ? (
