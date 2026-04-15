@@ -203,6 +203,83 @@ export type Database = {
         }
         Relationships: []
       }
+      campaign_templates: {
+        Row: {
+          created_at: string
+          default_settings: Json | null
+          description: string | null
+          id: string
+          name: string
+          template_type: string
+        }
+        Insert: {
+          created_at?: string
+          default_settings?: Json | null
+          description?: string | null
+          id?: string
+          name: string
+          template_type: string
+        }
+        Update: {
+          created_at?: string
+          default_settings?: Json | null
+          description?: string | null
+          id?: string
+          name?: string
+          template_type?: string
+        }
+        Relationships: []
+      }
+      campaigns: {
+        Row: {
+          artist_name: string | null
+          artwork_url: string | null
+          campaign_name: string
+          created_at: string
+          fanlink_id: string | null
+          id: string
+          pre_save_id: string | null
+          release_date: string | null
+          status: string
+          template_id: string | null
+          user_id: string
+        }
+        Insert: {
+          artist_name?: string | null
+          artwork_url?: string | null
+          campaign_name: string
+          created_at?: string
+          fanlink_id?: string | null
+          id?: string
+          pre_save_id?: string | null
+          release_date?: string | null
+          status?: string
+          template_id?: string | null
+          user_id: string
+        }
+        Update: {
+          artist_name?: string | null
+          artwork_url?: string | null
+          campaign_name?: string
+          created_at?: string
+          fanlink_id?: string | null
+          id?: string
+          pre_save_id?: string | null
+          release_date?: string | null
+          status?: string
+          template_id?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "campaigns_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "campaign_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       clicks: {
         Row: {
           city: string | null
