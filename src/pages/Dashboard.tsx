@@ -245,6 +245,12 @@ const Dashboard = () => {
             </div>
             <div className="flex flex-wrap gap-2">
               <Button variant="glass" asChild>
+                <Link to="/artist/campaigns">
+                  <BarChart3 className="w-4 h-4 mr-2" />
+                  Campaigns
+                </Link>
+              </Button>
+              <Button variant="glass" asChild>
                 <Link to="/artist-bio/edit">
                   <User className="w-4 h-4 mr-2" />
                   Artist Bio
