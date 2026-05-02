@@ -72,6 +72,7 @@ const App = () => {
               <Route path="/artist/campaigns" element={<CampaignDashboard />} />
               <Route path="/artist/campaigns/create" element={<CreateCampaign />} />
               <Route path="/artist/campaigns/list" element={<CampaignList />} />
+              <Route path="/artist/campaigns/view/:id" element={<CampaignPage />} />
               <Route path="/callback/spotify" element={<SpotifyCallback />} />
               <Route path="/artist/:username" element={<ArtistBioPage />} />
               <Route path="/artist-bio/edit" element={<EditArtistBio />} />

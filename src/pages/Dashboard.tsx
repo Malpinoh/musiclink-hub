@@ -52,7 +52,7 @@ const statCardVariants = {
   hidden: { opacity: 0, y: 20, scale: 0.95 },
   visible: (i: number) => ({
     opacity: 1, y: 0, scale: 1,
-    transition: { delay: i * 0.05, type: "spring", stiffness: 300, damping: 24 }
+    transition: { delay: i * 0.05, type: "spring" as const, stiffness: 300, damping: 24 }
   }),
 };
 
