@@ -298,7 +298,8 @@ const CreatePreSave = () => {
           upc: metadata.upc || null,
           album_title: metadata.album,
           is_released: false,
-          description: manualData.description?.trim() || null
+          description: manualData.description?.trim() || null,
+          preview_audio_url: previewAudioUrl || null
         })
         .select()
         .single();
