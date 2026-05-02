@@ -78,6 +78,7 @@ const CreatePreSave = () => {
   const [artworkPreview, setArtworkPreview] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
   
+  const [previewAudioUrl, setPreviewAudioUrl] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
   const [metadata, setMetadata] = useState<PreSaveMetadata | null>(null);
 
