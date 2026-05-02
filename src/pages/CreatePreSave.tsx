@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { trackEvent } from "@/lib/analytics";
+import AudioPreviewUploader from "@/components/AudioPreviewUploader";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { 
