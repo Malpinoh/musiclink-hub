@@ -28,6 +28,7 @@ import ListenPage from "./pages/ListenPage";
 import CampaignDashboard from "./pages/CampaignDashboard";
 import CreateCampaign from "./pages/CreateCampaign";
 import CampaignList from "./pages/CampaignList";
+import CampaignPage from "./pages/CampaignPage";
 import OfflineBanner from "./components/OfflineBanner";
 
 const queryClient = new QueryClient();
