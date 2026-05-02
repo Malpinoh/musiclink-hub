@@ -538,6 +538,17 @@ const CreatePreSave = () => {
               </div>
             </div>
 
+            {/* Audio Preview Upload */}
+            {user && (
+              <div className="mt-4">
+                <AudioPreviewUploader
+                  userId={user.id}
+                  currentUrl={previewAudioUrl}
+                  onUploaded={(url) => setPreviewAudioUrl(url)}
+                />
+              </div>
+            )}
+
             <Button
               onClick={handleManualSubmit}
               disabled={uploading}
