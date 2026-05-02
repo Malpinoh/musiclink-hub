@@ -255,7 +255,12 @@ function PreSaveContent({ artistParam, slugParam }: { artistParam?: string; slug
               )}
             </motion.div>
 
-            {/* Track Info */}
+            {/* Audio Preview */}
+            {preSave.preview_audio_url && (
+              <AudioPreviewPlayer audioUrl={preSave.preview_audio_url} />
+            )}
+
+
             <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="mb-6">
               <h1 className="font-display text-2xl md:text-3xl font-bold mb-2">{preSave.title}</h1>
               <p className="text-lg text-muted-foreground">{preSave.artist}</p>
