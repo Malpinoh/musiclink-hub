@@ -3,6 +3,7 @@ import { trackEvent } from "@/lib/analytics";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Music2, Bell, Loader2, Calendar, Share2, Copy, Check, Mail, User, Disc3 } from "lucide-react";
+import AudioPreviewPlayer from "@/components/AudioPreviewPlayer";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -28,6 +29,7 @@ interface PreSaveData {
   description: string | null;
   slug: string;
   artist_slug: string;
+  preview_audio_url: string | null;
 }
 
 /**
@@ -253,7 +255,12 @@ function PreSaveContent({ artistParam, slugParam }: { artistParam?: string; slug
               )}
             </motion.div>
 
-            {/* Track Info */}
+            {/* Audio Preview */}
+            {preSave.preview_audio_url && (
+              <AudioPreviewPlayer audioUrl={preSave.preview_audio_url} />
+            )}
+
+
             <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="mb-6">
               <h1 className="font-display text-2xl md:text-3xl font-bold mb-2">{preSave.title}</h1>
               <p className="text-lg text-muted-foreground">{preSave.artist}</p>

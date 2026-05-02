@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { trackEvent } from "@/lib/analytics";
+import AudioPreviewUploader from "@/components/AudioPreviewUploader";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { 
@@ -77,6 +78,7 @@ const CreatePreSave = () => {
   const [artworkPreview, setArtworkPreview] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
   
+  const [previewAudioUrl, setPreviewAudioUrl] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
   const [metadata, setMetadata] = useState<PreSaveMetadata | null>(null);
 
@@ -296,7 +298,8 @@ const CreatePreSave = () => {
           upc: metadata.upc || null,
           album_title: metadata.album,
           is_released: false,
-          description: manualData.description?.trim() || null
+          description: manualData.description?.trim() || null,
+          preview_audio_url: previewAudioUrl || null
         })
         .select()
         .single();
@@ -535,6 +538,17 @@ const CreatePreSave = () => {
                 )}
               </div>
             </div>
+
+            {/* Audio Preview Upload */}
+            {user && (
+              <div className="mt-4">
+                <AudioPreviewUploader
+                  userId={user.id}
+                  currentUrl={previewAudioUrl}
+                  onUploaded={(url) => setPreviewAudioUrl(url)}
+                />
+              </div>
+            )}
 
             <Button
               onClick={handleManualSubmit}

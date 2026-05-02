@@ -596,6 +596,7 @@ export type Database = {
           is_released: boolean | null
           isrc: string | null
           links_resolved: boolean | null
+          preview_audio_url: string | null
           release_date: string | null
           slug: string
           spotify_album_id: string | null
@@ -620,6 +621,7 @@ export type Database = {
           is_released?: boolean | null
           isrc?: string | null
           links_resolved?: boolean | null
+          preview_audio_url?: string | null
           release_date?: string | null
           slug: string
           spotify_album_id?: string | null
@@ -644,6 +646,7 @@ export type Database = {
           is_released?: boolean | null
           isrc?: string | null
           links_resolved?: boolean | null
+          preview_audio_url?: string | null
           release_date?: string | null
           slug?: string
           spotify_album_id?: string | null
