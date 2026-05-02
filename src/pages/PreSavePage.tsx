@@ -28,6 +28,7 @@ interface PreSaveData {
   description: string | null;
   slug: string;
   artist_slug: string;
+  preview_audio_url: string | null;
 }
 
 /**
