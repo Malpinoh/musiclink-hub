@@ -302,7 +302,10 @@ const CreatePreSave = () => {
           album_title: metadata.album,
           is_released: false,
           description: manualData.description?.trim() || null,
-          preview_audio_url: previewAudioUrl || null
+          preview_audio_url: previewAudioUrl || null,
+          preview_start: previewStart,
+          preview_end: previewEnd,
+          waveform_data: waveformData.length > 0 ? waveformData : null
         })
         .select()
         .single();
