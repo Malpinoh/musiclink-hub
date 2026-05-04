@@ -79,6 +79,9 @@ const CreatePreSave = () => {
   const [uploading, setUploading] = useState(false);
   
   const [previewAudioUrl, setPreviewAudioUrl] = useState<string | null>(null);
+  const [previewStart, setPreviewStart] = useState(0);
+  const [previewEnd, setPreviewEnd] = useState(30);
+  const [waveformData, setWaveformData] = useState<number[]>([]);
   const [creating, setCreating] = useState(false);
   const [metadata, setMetadata] = useState<PreSaveMetadata | null>(null);
 
