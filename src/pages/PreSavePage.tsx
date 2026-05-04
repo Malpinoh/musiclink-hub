@@ -30,6 +30,9 @@ interface PreSaveData {
   slug: string;
   artist_slug: string;
   preview_audio_url: string | null;
+  preview_start: number | null;
+  preview_end: number | null;
+  waveform_data: number[] | null;
 }
 
 /**
