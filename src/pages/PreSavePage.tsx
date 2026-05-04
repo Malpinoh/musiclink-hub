@@ -139,7 +139,10 @@ function PreSaveContent({ artistParam, slugParam }: { artistParam?: string; slug
           navigate(`/listen/${data.artist_slug}-${data.slug}`, { replace: true });
           return;
         }
-        setPreSave(data);
+        setPreSave({
+          ...data,
+          waveform_data: Array.isArray(data.waveform_data) ? data.waveform_data as number[] : null,
+        });
       } catch {
         setNotFound(true);
       } finally {
