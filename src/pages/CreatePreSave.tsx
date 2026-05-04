@@ -551,7 +551,12 @@ const CreatePreSave = () => {
                 <AudioPreviewUploader
                   userId={user.id}
                   currentUrl={previewAudioUrl}
-                  onUploaded={(url) => setPreviewAudioUrl(url)}
+                  onUploaded={(url, start, end, waveform) => {
+                    setPreviewAudioUrl(url);
+                    setPreviewStart(start);
+                    setPreviewEnd(end);
+                    setWaveformData(waveform);
+                  }}
                 />
               </div>
             )}
