@@ -263,7 +263,15 @@ function PreSaveContent({ artistParam, slugParam }: { artistParam?: string; slug
 
             {/* Audio Preview */}
             {preSave.preview_audio_url && (
-              <AudioPreviewPlayer audioUrl={preSave.preview_audio_url} />
+              <AudioPreviewPlayer
+                audioUrl={preSave.preview_audio_url}
+                artworkUrl={preSave.artwork_url || undefined}
+                title={preSave.title}
+                artist={preSave.artist}
+                previewStart={preSave.preview_start ?? 0}
+                previewEnd={preSave.preview_end ?? 30}
+                waveformData={preSave.waveform_data ?? undefined}
+              />
             )}
 
 
