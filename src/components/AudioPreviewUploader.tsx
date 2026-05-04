@@ -1,34 +1,33 @@
-import { useState, useRef } from "react";
+import { useState, useRef, lazy, Suspense } from "react";
 import { Upload, Music2, X, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { Slider } from "@/components/ui/slider";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+
+const AudioWaveformTrimmer = lazy(() => import("@/components/AudioWaveformTrimmer"));
 
 interface AudioPreviewUploaderProps {
   userId: string;
   currentUrl?: string | null;
-  onUploaded: (url: string) => void;
+  onUploaded: (url: string, start: number, end: number, waveform: number[]) => void;
 }
 
 const AudioPreviewUploader = ({ userId, currentUrl, onUploaded }: AudioPreviewUploaderProps) => {
   const fileRef = useRef<HTMLInputElement>(null);
-  const audioRef = useRef<HTMLAudioElement>(null);
   const [file, setFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
-  const [duration, setDuration] = useState(0);
-  const [startTime, setStartTime] = useState(0);
-
-  const maxSnippet = 30;
-  const endTime = Math.min(startTime + maxSnippet, duration);
+  const [trimStart, setTrimStart] = useState(0);
+  const [trimEnd, setTrimEnd] = useState(30);
+  const [waveform, setWaveform] = useState<number[]>([]);
 
   const handleFile = (e: React.ChangeEvent<HTMLInputElement>) => {
     const f = e.target.files?.[0];
     if (!f) return;
-    if (!f.type.startsWith("audio/")) {
-      toast.error("Please select an audio file (MP3 or WAV)");
+    const validTypes = ["audio/mpeg", "audio/wav", "audio/mp3", "audio/aac", "audio/mp4", "audio/x-m4a"];
+    if (!validTypes.some(t => f.type === t) && !f.name.match(/\.(mp3|wav|aac|m4a)$/i)) {
+      toast.error("Please select MP3, WAV, or AAC");
       return;
     }
     if (f.size > 10 * 1024 * 1024) {
@@ -37,11 +36,14 @@ const AudioPreviewUploader = ({ userId, currentUrl, onUploaded }: AudioPreviewUp
     }
     setFile(f);
     setPreview(URL.createObjectURL(f));
-    setStartTime(0);
+    setTrimStart(0);
+    setTrimEnd(30);
   };
 
-  const handleLoadedMetadata = () => {
-    if (audioRef.current) setDuration(audioRef.current.duration);
+  const handleTrimChange = (start: number, end: number, w: number[]) => {
+    setTrimStart(start);
+    setTrimEnd(end);
+    setWaveform(w);
   };
 
   const handleUpload = async () => {
@@ -53,7 +55,7 @@ const AudioPreviewUploader = ({ userId, currentUrl, onUploaded }: AudioPreviewUp
       const { error } = await supabase.storage.from("audio-previews").upload(path, file);
       if (error) throw error;
       const { data } = supabase.storage.from("audio-previews").getPublicUrl(path);
-      onUploaded(data.publicUrl);
+      onUploaded(data.publicUrl, trimStart, trimEnd, waveform);
       toast.success("Audio preview uploaded!");
     } catch {
       toast.error("Failed to upload audio");
@@ -64,9 +66,11 @@ const AudioPreviewUploader = ({ userId, currentUrl, onUploaded }: AudioPreviewUp
 
   const clear = () => {
     setFile(null);
+    if (preview) URL.revokeObjectURL(preview);
     setPreview(null);
-    setDuration(0);
-    setStartTime(0);
+    setTrimStart(0);
+    setTrimEnd(30);
+    setWaveform([]);
     if (fileRef.current) fileRef.current.value = "";
   };
 
@@ -89,37 +93,40 @@ const AudioPreviewUploader = ({ userId, currentUrl, onUploaded }: AudioPreviewUp
           onClick={() => fileRef.current?.click()}
         >
           <Upload className="w-8 h-8 mx-auto text-muted-foreground mb-2" />
-          <p className="text-sm text-muted-foreground">Upload MP3 or WAV (max 10MB)</p>
+          <p className="text-sm text-muted-foreground">Upload MP3, WAV, or AAC (max 10MB)</p>
           <input
             ref={fileRef}
             type="file"
-            accept="audio/mpeg,audio/wav,audio/mp3"
+            accept="audio/mpeg,audio/wav,audio/mp3,audio/aac,audio/mp4,.mp3,.wav,.aac,.m4a"
             className="hidden"
             onChange={handleFile}
           />
         </div>
       ) : (
-        <div className="glass-card p-4 space-y-3">
-          <audio ref={audioRef} src={preview!} preload="metadata" onLoadedMetadata={handleLoadedMetadata} />
-          <div className="flex items-center justify-between">
-            <p className="text-sm font-medium truncate">{file.name}</p>
+        <div className="space-y-3">
+          <div className="glass-card p-4 flex items-center justify-between">
+            <p className="text-sm font-medium truncate flex-1">{file.name}</p>
             <Button variant="ghost" size="icon" onClick={clear}>
               <X className="w-4 h-4" />
             </Button>
           </div>
 
-          {duration > 30 && (
-            <div>
-              <p className="text-xs text-muted-foreground mb-2">
-                Select snippet start ({Math.floor(startTime)}s – {Math.floor(endTime)}s of {Math.floor(duration)}s)
-              </p>
-              <Slider
-                value={[startTime]}
-                onValueChange={([v]) => setStartTime(v)}
-                max={Math.max(duration - maxSnippet, 0)}
-                step={1}
+          {/* Waveform Trimmer */}
+          {preview && (
+            <Suspense
+              fallback={
+                <div className="h-32 rounded-2xl bg-card/50 flex items-center justify-center">
+                  <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
+                </div>
+              }
+            >
+              <AudioWaveformTrimmer
+                audioUrl={preview}
+                onTrimChange={handleTrimChange}
+                initialStart={trimStart}
+                initialEnd={trimEnd}
               />
-            </div>
+            </Suspense>
           )}
 
           <Button

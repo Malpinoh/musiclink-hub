@@ -79,6 +79,9 @@ const CreatePreSave = () => {
   const [uploading, setUploading] = useState(false);
   
   const [previewAudioUrl, setPreviewAudioUrl] = useState<string | null>(null);
+  const [previewStart, setPreviewStart] = useState(0);
+  const [previewEnd, setPreviewEnd] = useState(30);
+  const [waveformData, setWaveformData] = useState<number[]>([]);
   const [creating, setCreating] = useState(false);
   const [metadata, setMetadata] = useState<PreSaveMetadata | null>(null);
 
@@ -299,7 +302,10 @@ const CreatePreSave = () => {
           album_title: metadata.album,
           is_released: false,
           description: manualData.description?.trim() || null,
-          preview_audio_url: previewAudioUrl || null
+          preview_audio_url: previewAudioUrl || null,
+          preview_start: previewStart,
+          preview_end: previewEnd,
+          waveform_data: waveformData.length > 0 ? waveformData : null
         })
         .select()
         .single();
@@ -545,7 +551,12 @@ const CreatePreSave = () => {
                 <AudioPreviewUploader
                   userId={user.id}
                   currentUrl={previewAudioUrl}
-                  onUploaded={(url) => setPreviewAudioUrl(url)}
+                  onUploaded={(url, start, end, waveform) => {
+                    setPreviewAudioUrl(url);
+                    setPreviewStart(start);
+                    setPreviewEnd(end);
+                    setWaveformData(waveform);
+                  }}
                 />
               </div>
             )}

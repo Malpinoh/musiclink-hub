@@ -597,6 +597,8 @@ export type Database = {
           isrc: string | null
           links_resolved: boolean | null
           preview_audio_url: string | null
+          preview_end: number | null
+          preview_start: number | null
           release_date: string | null
           slug: string
           spotify_album_id: string | null
@@ -606,6 +608,7 @@ export type Database = {
           upc: string | null
           updated_at: string
           user_id: string
+          waveform_data: Json | null
         }
         Insert: {
           album_title?: string | null
@@ -622,6 +625,8 @@ export type Database = {
           isrc?: string | null
           links_resolved?: boolean | null
           preview_audio_url?: string | null
+          preview_end?: number | null
+          preview_start?: number | null
           release_date?: string | null
           slug: string
           spotify_album_id?: string | null
@@ -631,6 +636,7 @@ export type Database = {
           upc?: string | null
           updated_at?: string
           user_id: string
+          waveform_data?: Json | null
         }
         Update: {
           album_title?: string | null
@@ -647,6 +653,8 @@ export type Database = {
           isrc?: string | null
           links_resolved?: boolean | null
           preview_audio_url?: string | null
+          preview_end?: number | null
+          preview_start?: number | null
           release_date?: string | null
           slug?: string
           spotify_album_id?: string | null
@@ -656,6 +664,7 @@ export type Database = {
           upc?: string | null
           updated_at?: string
           user_id?: string
+          waveform_data?: Json | null
         }
         Relationships: []
       }

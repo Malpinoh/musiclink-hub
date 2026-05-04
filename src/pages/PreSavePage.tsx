@@ -30,6 +30,9 @@ interface PreSaveData {
   slug: string;
   artist_slug: string;
   preview_audio_url: string | null;
+  preview_start: number | null;
+  preview_end: number | null;
+  waveform_data: number[] | null;
 }
 
 /**
@@ -136,7 +139,10 @@ function PreSaveContent({ artistParam, slugParam }: { artistParam?: string; slug
           navigate(`/listen/${data.artist_slug}-${data.slug}`, { replace: true });
           return;
         }
-        setPreSave(data);
+        setPreSave({
+          ...data,
+          waveform_data: Array.isArray(data.waveform_data) ? data.waveform_data as number[] : null,
+        });
       } catch {
         setNotFound(true);
       } finally {
@@ -257,7 +263,15 @@ function PreSaveContent({ artistParam, slugParam }: { artistParam?: string; slug
 
             {/* Audio Preview */}
             {preSave.preview_audio_url && (
-              <AudioPreviewPlayer audioUrl={preSave.preview_audio_url} />
+              <AudioPreviewPlayer
+                audioUrl={preSave.preview_audio_url}
+                artworkUrl={preSave.artwork_url || undefined}
+                title={preSave.title}
+                artist={preSave.artist}
+                previewStart={preSave.preview_start ?? 0}
+                previewEnd={preSave.preview_end ?? 30}
+                waveformData={preSave.waveform_data ?? undefined}
+              />
             )}
 
 
