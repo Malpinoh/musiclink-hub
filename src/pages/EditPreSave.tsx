@@ -184,6 +184,10 @@ const EditPreSave = () => {
           spotify_album_id: preSave.spotify_album_id,
           spotify_artist_id: preSave.spotify_artist_id,
           is_active: preSave.is_active,
+          preview_audio_url: preSave.preview_audio_url,
+          preview_start: preSave.preview_start,
+          preview_end: preSave.preview_end,
+          waveform_data: preSave.waveform_data,
         })
         .eq("id", id);
 
