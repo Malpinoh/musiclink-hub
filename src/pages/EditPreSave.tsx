@@ -40,6 +40,10 @@ interface PreSave {
   is_active: boolean | null;
   is_released: boolean | null;
   links_resolved: boolean | null;
+  preview_audio_url: string | null;
+  preview_start: number | null;
+  preview_end: number | null;
+  waveform_data: number[] | null;
 }
 
 interface StreamingLink {
