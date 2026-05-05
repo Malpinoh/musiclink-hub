@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
+import AudioPreviewUploader from "@/components/AudioPreviewUploader";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -39,6 +40,10 @@ interface PreSave {
   is_active: boolean | null;
   is_released: boolean | null;
   links_resolved: boolean | null;
+  preview_audio_url: string | null;
+  preview_start: number | null;
+  preview_end: number | null;
+  waveform_data: number[] | null;
 }
 
 interface StreamingLink {
@@ -83,7 +88,10 @@ const EditPreSave = () => {
         .single();
 
       if (error) throw error;
-      setPreSave(data);
+      setPreSave({
+        ...data,
+        waveform_data: Array.isArray(data.waveform_data) ? data.waveform_data as number[] : null,
+      });
 
       // Fetch streaming links
       const { data: links } = await supabase
@@ -176,6 +184,10 @@ const EditPreSave = () => {
           spotify_album_id: preSave.spotify_album_id,
           spotify_artist_id: preSave.spotify_artist_id,
           is_active: preSave.is_active,
+          preview_audio_url: preSave.preview_audio_url,
+          preview_start: preSave.preview_start,
+          preview_end: preSave.preview_end,
+          waveform_data: preSave.waveform_data,
         })
         .eq("id", id);
 
@@ -395,6 +407,37 @@ const EditPreSave = () => {
                 />
               </div>
             </div>
+          </motion.div>
+
+          {/* Audio Preview */}
+          <motion.div
+            className="glass-card p-6 mt-6"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.35 }}
+          >
+            <h2 className="font-display font-semibold text-lg flex items-center gap-2 mb-4">
+              <Music2 className="w-5 h-5" />
+              🎧 Audio Preview
+            </h2>
+            <p className="text-sm text-muted-foreground mb-4">
+              Upload a snippet of your track. Fans will hear a 30-second preview on the pre-save page.
+            </p>
+            {user && (
+              <AudioPreviewUploader
+                userId={user.id}
+                currentUrl={preSave.preview_audio_url}
+                onUploaded={(url, start, end, waveform) => {
+                  setPreSave({
+                    ...preSave,
+                    preview_audio_url: url,
+                    preview_start: start,
+                    preview_end: end,
+                    waveform_data: waveform,
+                  });
+                }}
+              />
+            )}
           </motion.div>
 
           {/* Streaming Links */}

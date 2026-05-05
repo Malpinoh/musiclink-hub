@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useCallback, useMemo } from "react";
-import { Play, Pause, RotateCcw, Volume2, VolumeX } from "lucide-react";
+import { Play, Pause, RotateCcw, Volume2, VolumeX, Repeat, Loader2, AlertCircle } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
 interface AudioPreviewPlayerProps {
@@ -24,13 +24,17 @@ const AudioPreviewPlayer = ({
   previewEnd,
   waveformData,
 }: AudioPreviewPlayerProps) => {
-  const audioRef = useRef<HTMLAudioElement>(null);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
   const [playing, setPlaying] = useState(false);
   const [progress, setProgress] = useState(0);
   const [duration, setDuration] = useState(0);
   const [muted, setMuted] = useState(false);
   const [ended, setEnded] = useState(false);
   const [tapped, setTapped] = useState(false);
+  const [looping, setLooping] = useState(false);
+  const [buffering, setBuffering] = useState(false);
+  const [error, setError] = useState(false);
+  const [audioLoaded, setAudioLoaded] = useState(false);
 
   const clipStart = previewStart;
   const clipEnd = previewEnd ?? Math.min((duration || DEFAULT_MAX), clipStart + DEFAULT_MAX);
@@ -42,7 +46,6 @@ const AudioPreviewPlayer = ({
       const step = Math.floor(waveformData.length / BAR_COUNT);
       return Array.from({ length: BAR_COUNT }, (_, i) => waveformData[i * step] ?? 0.3);
     }
-    // Pseudo-random deterministic waveform based on URL
     let seed = 0;
     for (let i = 0; i < audioUrl.length; i++) seed = (seed * 31 + audioUrl.charCodeAt(i)) & 0xffffff;
     return Array.from({ length: BAR_COUNT }, (_, i) => {
@@ -56,58 +59,79 @@ const AudioPreviewPlayer = ({
     if (a) { a.pause(); a.currentTime = clipStart; }
     setPlaying(false);
     setProgress(0);
-    setEnded(true);
-  }, [clipStart]);
+    if (!looping) setEnded(true);
+  }, [clipStart, looping]);
 
-  const togglePlay = useCallback(() => {
-    const a = audioRef.current;
-    if (!a) return;
-    setTapped(true);
-    if (playing) {
-      a.pause();
-      setPlaying(false);
-    } else {
-      setEnded(false);
-      if (a.currentTime < clipStart || a.currentTime >= clipEnd) a.currentTime = clipStart;
-      a.play().catch(() => {});
-      setPlaying(true);
-    }
-  }, [playing, clipStart, clipEnd]);
+  // Lazy-load audio element only on first play
+  const ensureAudio = useCallback(() => {
+    if (audioRef.current) return audioRef.current;
+    const a = new Audio();
+    a.preload = "metadata";
+    a.src = audioUrl;
+    audioRef.current = a;
 
-  const replay = () => {
-    const a = audioRef.current;
-    if (!a) return;
-    a.currentTime = clipStart;
-    setEnded(false);
-    setProgress(0);
-    a.play().catch(() => {});
-    setPlaying(true);
-  };
+    a.addEventListener("loadedmetadata", () => {
+      setDuration(a.duration);
+      setAudioLoaded(true);
+    });
+    a.addEventListener("timeupdate", () => {
+      const t = a.currentTime - clipStart;
+      setProgress(Math.max(0, t));
+      if (a.currentTime >= clipEnd) {
+        if (looping) {
+          a.currentTime = clipStart;
+        } else {
+          a.pause();
+          a.currentTime = clipStart;
+          setPlaying(false);
+          setProgress(0);
+          setEnded(true);
+        }
+      }
+    });
+    a.addEventListener("ended", () => {
+      if (looping) {
+        a.currentTime = clipStart;
+        a.play().catch(() => {});
+      } else {
+        stop();
+      }
+    });
+    a.addEventListener("waiting", () => setBuffering(true));
+    a.addEventListener("canplay", () => setBuffering(false));
+    a.addEventListener("error", () => { setError(true); setPlaying(false); });
 
+    return a;
+  }, [audioUrl, clipStart, clipEnd, looping, stop]);
+
+  // Update looping behavior on existing audio
   useEffect(() => {
     const a = audioRef.current;
     if (!a) return;
-    const onMeta = () => setDuration(a.duration);
+    // Re-attach timeupdate to pick up looping changes
     const onTime = () => {
       const t = a.currentTime - clipStart;
       setProgress(Math.max(0, t));
-      if (a.currentTime >= clipEnd) stop();
+      if (a.currentTime >= clipEnd) {
+        if (looping) {
+          a.currentTime = clipStart;
+        } else {
+          a.pause();
+          a.currentTime = clipStart;
+          setPlaying(false);
+          setProgress(0);
+          setEnded(true);
+        }
+      }
     };
-    const onEnd = () => stop();
-    a.addEventListener("loadedmetadata", onMeta);
     a.addEventListener("timeupdate", onTime);
-    a.addEventListener("ended", onEnd);
-    return () => {
-      a.removeEventListener("loadedmetadata", onMeta);
-      a.removeEventListener("timeupdate", onTime);
-      a.removeEventListener("ended", onEnd);
-    };
-  }, [clipStart, clipEnd, stop]);
+    return () => a.removeEventListener("timeupdate", onTime);
+  }, [clipStart, clipEnd, looping]);
 
   // Fade in/out effect
   useEffect(() => {
     const a = audioRef.current;
-    if (!a) return;
+    if (!a || !playing) return;
     const fade = () => {
       const t = a.currentTime;
       const fadeIn = Math.min(1, (t - clipStart) / 1);
@@ -116,7 +140,51 @@ const AudioPreviewPlayer = ({
     };
     const id = setInterval(fade, 50);
     return () => clearInterval(id);
-  }, [clipStart, clipEnd, muted]);
+  }, [clipStart, clipEnd, muted, playing]);
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      const a = audioRef.current;
+      if (a) { a.pause(); a.src = ""; }
+    };
+  }, []);
+
+  const togglePlay = useCallback(() => {
+    setTapped(true);
+    setError(false);
+    const a = ensureAudio();
+    if (playing) {
+      a.pause();
+      setPlaying(false);
+    } else {
+      setEnded(false);
+      setBuffering(true);
+      if (a.currentTime < clipStart || a.currentTime >= clipEnd) a.currentTime = clipStart;
+      a.play()
+        .then(() => setBuffering(false))
+        .catch(() => { setError(true); setBuffering(false); });
+      setPlaying(true);
+    }
+  }, [playing, clipStart, clipEnd, ensureAudio]);
+
+  const replay = () => {
+    setError(false);
+    const a = ensureAudio();
+    a.currentTime = clipStart;
+    setEnded(false);
+    setProgress(0);
+    a.play().catch(() => setError(true));
+    setPlaying(true);
+  };
+
+  const handleRetry = () => {
+    setError(false);
+    const a = audioRef.current;
+    if (a) { a.src = ""; a.src = audioUrl; }
+    audioRef.current = null;
+    setAudioLoaded(false);
+  };
 
   const handleSeek = (e: React.MouseEvent<HTMLDivElement>) => {
     const a = audioRef.current;
@@ -148,7 +216,7 @@ const AudioPreviewPlayer = ({
 
       {/* Glow effect when playing */}
       <AnimatePresence>
-        {playing && (
+        {playing && !buffering && (
           <motion.div
             className="absolute -inset-1 bg-primary/10 blur-xl rounded-3xl z-0"
             initial={{ opacity: 0 }}
@@ -159,13 +227,24 @@ const AudioPreviewPlayer = ({
       </AnimatePresence>
 
       <div className="relative z-10 p-4">
+        {/* Error state */}
+        {error && (
+          <div className="flex items-center gap-3 mb-3 p-3 rounded-xl bg-destructive/10 border border-destructive/20">
+            <AlertCircle className="w-4 h-4 text-destructive flex-shrink-0" />
+            <p className="text-xs text-destructive flex-1">Failed to load audio</p>
+            <button onClick={handleRetry} className="text-xs font-medium text-destructive underline">
+              Retry
+            </button>
+          </div>
+        )}
+
         {/* Top row: artwork + info + controls */}
         <div className="flex items-center gap-3 mb-4">
           {/* Album art with pulse */}
           {artworkUrl && (
             <motion.div
               className="relative flex-shrink-0"
-              animate={playing ? { scale: [1, 1.03, 1] } : {}}
+              animate={playing && !buffering ? { scale: [1, 1.03, 1] } : {}}
               transition={playing ? { duration: 2, repeat: Infinity, ease: "easeInOut" } : {}}
             >
               <img
@@ -173,7 +252,7 @@ const AudioPreviewPlayer = ({
                 alt={title || "Preview"}
                 className="w-14 h-14 rounded-xl object-cover shadow-lg"
               />
-              {playing && (
+              {playing && !buffering && (
                 <motion.div
                   className="absolute inset-0 rounded-xl border-2 border-primary/50"
                   animate={{ opacity: [0.3, 0.7, 0.3] }}
@@ -194,17 +273,30 @@ const AudioPreviewPlayer = ({
             </div>
           </div>
 
-          {/* Play button */}
-          <div className="flex items-center gap-1.5">
+          {/* Controls */}
+          <div className="flex items-center gap-1">
+            {/* Loop toggle */}
             <motion.button
-              onClick={muted ? () => setMuted(false) : () => setMuted(true)}
+              onClick={() => setLooping(!looping)}
+              className={`w-8 h-8 rounded-full flex items-center justify-center transition-colors ${
+                looping ? "text-primary bg-primary/10" : "text-muted-foreground hover:text-foreground"
+              }`}
+              title={looping ? "Loop on" : "Loop off"}
+            >
+              <Repeat className="w-4 h-4" />
+            </motion.button>
+
+            {/* Mute toggle */}
+            <motion.button
+              onClick={() => setMuted(!muted)}
               className="w-8 h-8 rounded-full flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
             >
               {muted ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
             </motion.button>
 
+            {/* Play / Replay button */}
             <AnimatePresence mode="wait">
-              {ended ? (
+              {ended && !looping ? (
                 <motion.button
                   key="replay"
                   onClick={replay}
@@ -227,8 +319,11 @@ const AudioPreviewPlayer = ({
                   initial={{ scale: 0.8, opacity: 0 }}
                   animate={{ scale: 1, opacity: 1 }}
                   exit={{ scale: 0.8, opacity: 0 }}
+                  disabled={buffering}
                 >
-                  {playing ? (
+                  {buffering ? (
+                    <Loader2 className="w-5 h-5 text-primary-foreground animate-spin" />
+                  ) : playing ? (
                     <Pause className="w-5 h-5 text-primary-foreground" />
                   ) : (
                     <Play className="w-5 h-5 text-primary-foreground ml-0.5" />
@@ -248,12 +343,12 @@ const AudioPreviewPlayer = ({
               return (
                 <motion.div
                   key={i}
-                  className={`flex-1 rounded-full transition-colors duration-100 ${
+                  className={`flex-1 rounded-full transition-colors duration-150 ${
                     isPlayed ? "bg-primary" : "bg-muted-foreground/20"
                   }`}
                   style={{ height: `${Math.max(10, v * 100)}%` }}
                   animate={
-                    playing && isPlayed
+                    playing && isPlayed && !buffering
                       ? { scaleY: [1, 1.1, 1], transition: { duration: 0.4, delay: i * 0.01 } }
                       : {}
                   }
@@ -269,9 +364,24 @@ const AudioPreviewPlayer = ({
           <span>{fmt(clipLen)}</span>
         </div>
 
+        {/* Buffering indicator */}
+        <AnimatePresence>
+          {buffering && playing && (
+            <motion.p
+              className="text-center text-[10px] text-muted-foreground/80 mt-2 flex items-center justify-center gap-1"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+            >
+              <Loader2 className="w-3 h-3 animate-spin" />
+              Loading audio...
+            </motion.p>
+          )}
+        </AnimatePresence>
+
         {/* Tap to play hint */}
         <AnimatePresence>
-          {!tapped && (
+          {!tapped && !error && (
             <motion.p
               className="text-center text-[10px] text-muted-foreground/60 mt-2"
               initial={{ opacity: 0 }}
@@ -283,8 +393,6 @@ const AudioPreviewPlayer = ({
           )}
         </AnimatePresence>
       </div>
-
-      <audio ref={audioRef} src={audioUrl} preload="metadata" />
     </motion.div>
   );
 };
