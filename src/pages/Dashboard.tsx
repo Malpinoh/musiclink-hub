@@ -9,7 +9,7 @@ import { motion } from "framer-motion";
 import {
   Plus, Search, Link2, BarChart3, ExternalLink, Trash2, Music2, Loader2,
   Clock, Calendar, Edit, User, Mail, MailCheck, MailX, TrendingUp, Users,
-  Copy, Rocket, Eye
+  Copy, Eye
 } from "lucide-react";
 import ShareButtons from "@/components/ShareButtons";
 import PerformanceChart, { ChartDataPoint } from "@/components/PerformanceChart";
