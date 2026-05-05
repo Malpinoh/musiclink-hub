@@ -88,7 +88,10 @@ const EditPreSave = () => {
         .single();
 
       if (error) throw error;
-      setPreSave(data);
+      setPreSave({
+        ...data,
+        waveform_data: Array.isArray(data.waveform_data) ? data.waveform_data as number[] : null,
+      });
 
       // Fetch streaming links
       const { data: links } = await supabase
