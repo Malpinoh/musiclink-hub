@@ -409,6 +409,37 @@ const EditPreSave = () => {
             </div>
           </motion.div>
 
+          {/* Audio Preview */}
+          <motion.div
+            className="glass-card p-6 mt-6"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.35 }}
+          >
+            <h2 className="font-display font-semibold text-lg flex items-center gap-2 mb-4">
+              <Music2 className="w-5 h-5" />
+              🎧 Audio Preview
+            </h2>
+            <p className="text-sm text-muted-foreground mb-4">
+              Upload a snippet of your track. Fans will hear a 30-second preview on the pre-save page.
+            </p>
+            {user && (
+              <AudioPreviewUploader
+                userId={user.id}
+                currentUrl={preSave.preview_audio_url}
+                onUploaded={(url, start, end, waveform) => {
+                  setPreSave({
+                    ...preSave,
+                    preview_audio_url: url,
+                    preview_start: start,
+                    preview_end: end,
+                    waveform_data: waveform,
+                  });
+                }}
+              />
+            )}
+          </motion.div>
+
           {/* Streaming Links */}
           <motion.div
             className="glass-card p-6 mt-6"
