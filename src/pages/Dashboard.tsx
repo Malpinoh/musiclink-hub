@@ -9,7 +9,7 @@ import { motion } from "framer-motion";
 import {
   Plus, Search, Link2, BarChart3, ExternalLink, Trash2, Music2, Loader2,
   Clock, Calendar, Edit, User, Mail, MailCheck, MailX, TrendingUp, Users,
-  Copy, Rocket, Eye
+  Copy, Eye
 } from "lucide-react";
 import ShareButtons from "@/components/ShareButtons";
 import PerformanceChart, { ChartDataPoint } from "@/components/PerformanceChart";
@@ -271,20 +271,25 @@ const Dashboard = () => {
             animate="visible"
           >
             <h2 className="font-display text-lg font-semibold mb-4 text-muted-foreground">Quick Actions</h2>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
               <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
                 <Button variant="hero" size="lg" className="w-full rounded-2xl py-6" asChild>
-                  <Link to="/artist/campaigns/create"><Rocket className="w-5 h-5 mr-2" />Create Campaign</Link>
+                  <Link to="/create"><Plus className="w-5 h-5 mr-2" />New Fanlink</Link>
+                </Button>
+              </motion.div>
+              <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+                <Button variant="hero" size="lg" className="w-full rounded-2xl py-6 from-accent to-primary" asChild>
+                  <Link to="/presave/create"><Music2 className="w-5 h-5 mr-2" />New Pre-save</Link>
                 </Button>
               </motion.div>
               <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
                 <Button variant="outline" size="lg" className="w-full rounded-2xl py-6" asChild>
-                  <Link to="/artist/campaigns"><Eye className="w-5 h-5 mr-2" />View Campaigns</Link>
+                  <Link to="/artist/campaigns"><Eye className="w-5 h-5 mr-2" />Campaigns</Link>
                 </Button>
               </motion.div>
               <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
                 <Button variant="outline" size="lg" className="w-full rounded-2xl py-6" onClick={handleCopyLatest}>
-                  <Copy className="w-5 h-5 mr-2" />Copy Latest Link
+                  <Copy className="w-5 h-5 mr-2" />Copy Link
                 </Button>
               </motion.div>
             </div>
