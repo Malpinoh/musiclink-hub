@@ -721,7 +721,30 @@ const CreatePreSave = () => {
               </div>
             </div>
 
-            {/* Edit / Clear */}
+            {/* Audio Preview Upload */}
+            {user && (
+              <div className="mt-6 p-4 border border-primary/20 rounded-xl bg-primary/5">
+                <div className="flex items-center gap-2 mb-3">
+                  <Music2 className="w-5 h-5 text-primary" />
+                  <h3 className="font-display font-semibold">🎧 Upload Pre-Release Audio Preview</h3>
+                </div>
+                <p className="text-sm text-muted-foreground mb-4">
+                  Upload a snippet of your unreleased track. Fans will hear a 30-second preview on your pre-save page.
+                </p>
+                <AudioPreviewUploader
+                  userId={user.id}
+                  currentUrl={previewAudioUrl}
+                  onUploaded={(url, start, end, waveform) => {
+                    setPreviewAudioUrl(url);
+                    setPreviewStart(start);
+                    setPreviewEnd(end);
+                    setWaveformData(waveform);
+                  }}
+                />
+              </div>
+            )}
+
+
             <div className="mt-6 flex gap-2">
               <Button
                 variant="outline"
