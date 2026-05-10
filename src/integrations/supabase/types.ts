@@ -236,8 +236,10 @@ export type Database = {
           artwork_url: string | null
           campaign_name: string
           created_at: string
+          description: string | null
           fanlink_id: string | null
           id: string
+          metadata: Json
           pre_save_id: string | null
           release_date: string | null
           status: string
@@ -249,8 +251,10 @@ export type Database = {
           artwork_url?: string | null
           campaign_name: string
           created_at?: string
+          description?: string | null
           fanlink_id?: string | null
           id?: string
+          metadata?: Json
           pre_save_id?: string | null
           release_date?: string | null
           status?: string
@@ -262,8 +266,10 @@ export type Database = {
           artwork_url?: string | null
           campaign_name?: string
           created_at?: string
+          description?: string | null
           fanlink_id?: string | null
           id?: string
+          metadata?: Json
           pre_save_id?: string | null
           release_date?: string | null
           status?: string
