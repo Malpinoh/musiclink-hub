@@ -1,12 +1,11 @@
-import { useState, useRef, lazy, Suspense } from "react";
+import { useState, useRef } from "react";
 import { Upload, Music2, X, Loader2, CheckCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { processAudioPreview } from "@/lib/audioProcessing";
-
-const AudioWaveformTrimmer = lazy(() => import("@/components/AudioWaveformTrimmer"));
+import AudioWaveformTrimmer from "@/components/AudioWaveformTrimmer";
 
 interface AudioPreviewUploaderProps {
   userId: string;
