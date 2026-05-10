@@ -150,20 +150,12 @@ const AudioPreviewUploader = ({ userId, currentUrl, onUploaded }: AudioPreviewUp
 
           {/* Waveform Trimmer */}
           {preview && !uploaded && (
-            <Suspense
-              fallback={
-                <div className="h-32 rounded-2xl bg-card/50 flex items-center justify-center">
-                  <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
-                </div>
-              }
-            >
-              <AudioWaveformTrimmer
-                audioUrl={preview}
-                onTrimChange={handleTrimChange}
-                initialStart={trimStart}
-                initialEnd={trimEnd}
-              />
-            </Suspense>
+            <AudioWaveformTrimmer
+              audioUrl={preview}
+              onTrimChange={handleTrimChange}
+              initialStart={trimStart}
+              initialEnd={trimEnd}
+            />
           )}
 
           {!uploaded && (
