@@ -427,7 +427,7 @@ const EditPreSave = () => {
               <AudioPreviewUploader
                 userId={user.id}
                 currentUrl={preSave.preview_audio_url}
-                onUploaded={(url, start, end, waveform) => {
+                onUploaded={async (url, start, end, waveform) => {
                   setPreSave({
                     ...preSave,
                     preview_audio_url: url,
@@ -435,6 +435,23 @@ const EditPreSave = () => {
                     preview_end: end,
                     waveform_data: waveform,
                   });
+                  // Auto-persist immediately so the upload isn't lost if the user
+                  // navigates away without clicking "Save Changes".
+                  const { error } = await supabase
+                    .from("pre_saves")
+                    .update({
+                      preview_audio_url: url,
+                      preview_start: start,
+                      preview_end: end,
+                      waveform_data: waveform,
+                    })
+                    .eq("id", preSave.id);
+                  if (error) {
+                    console.error("Auto-save preview failed:", error);
+                    toast.error("Audio uploaded but failed to save. Click Save Changes.");
+                  } else {
+                    toast.success("Audio preview saved!");
+                  }
                 }}
               />
             )}
