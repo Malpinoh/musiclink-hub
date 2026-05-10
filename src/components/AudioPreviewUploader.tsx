@@ -1,12 +1,11 @@
-import { useState, useRef, lazy, Suspense } from "react";
+import { useState, useRef } from "react";
 import { Upload, Music2, X, Loader2, CheckCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { processAudioPreview } from "@/lib/audioProcessing";
-
-const AudioWaveformTrimmer = lazy(() => import("@/components/AudioWaveformTrimmer"));
+import AudioWaveformTrimmer from "@/components/AudioWaveformTrimmer";
 
 interface AudioPreviewUploaderProps {
   userId: string;
@@ -151,20 +150,12 @@ const AudioPreviewUploader = ({ userId, currentUrl, onUploaded }: AudioPreviewUp
 
           {/* Waveform Trimmer */}
           {preview && !uploaded && (
-            <Suspense
-              fallback={
-                <div className="h-32 rounded-2xl bg-card/50 flex items-center justify-center">
-                  <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
-                </div>
-              }
-            >
-              <AudioWaveformTrimmer
-                audioUrl={preview}
-                onTrimChange={handleTrimChange}
-                initialStart={trimStart}
-                initialEnd={trimEnd}
-              />
-            </Suspense>
+            <AudioWaveformTrimmer
+              audioUrl={preview}
+              onTrimChange={handleTrimChange}
+              initialStart={trimStart}
+              initialEnd={trimEnd}
+            />
           )}
 
           {!uploaded && (
