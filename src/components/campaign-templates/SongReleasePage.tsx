@@ -107,7 +107,7 @@ const SongReleasePage = ({ campaign }: SongReleasePageProps) => {
             transition={{ type: "spring", stiffness: 180, damping: 18 }}
           >
             <motion.div
-              className="absolute -inset-10 bg-gradient-conic from-primary via-accent to-primary blur-3xl rounded-full opacity-40"
+              className="absolute -inset-10 bg-gradient-to-tr from-primary via-accent to-primary blur-3xl rounded-full opacity-40"
               animate={{ rotate: 360 }}
               transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
             />
