@@ -1,5 +1,5 @@
 import { useState, useRef } from "react";
-import { Upload, Music2, X, Loader2, CheckCircle } from "lucide-react";
+import { Upload, Music2, X, Loader2, CheckCircle, RefreshCw, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
@@ -11,9 +11,10 @@ interface AudioPreviewUploaderProps {
   userId: string;
   currentUrl?: string | null;
   onUploaded: (url: string, start: number, end: number, waveform: number[]) => void;
+  onDeleted?: () => void;
 }
 
-const AudioPreviewUploader = ({ userId, currentUrl, onUploaded }: AudioPreviewUploaderProps) => {
+const AudioPreviewUploader = ({ userId, currentUrl, onUploaded, onDeleted }: AudioPreviewUploaderProps) => {
   const fileRef = useRef<HTMLInputElement>(null);
   const [file, setFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
