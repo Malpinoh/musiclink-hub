@@ -113,9 +113,24 @@ const AudioPreviewUploader = ({ userId, currentUrl, onUploaded, onDeleted }: Aud
       </Label>
 
       {currentUrl && !file && (
-        <div className="text-xs text-muted-foreground bg-secondary/50 rounded-lg p-3 flex items-center gap-2">
-          <CheckCircle className="w-4 h-4 text-primary" />
-          Audio preview already uploaded
+        <div className="text-xs bg-secondary/50 rounded-lg p-3 flex items-center gap-2">
+          <CheckCircle className="w-4 h-4 text-primary flex-shrink-0" />
+          <span className="flex-1 text-muted-foreground">Audio preview uploaded</span>
+          <Button size="sm" variant="outline" type="button" onClick={() => fileRef.current?.click()}>
+            <RefreshCw className="w-3.5 h-3.5 mr-1" /> Replace
+          </Button>
+          <Button
+            size="sm"
+            variant="ghost"
+            type="button"
+            onClick={() => {
+              if (onDeleted) onDeleted();
+              else onUploaded("", 0, 30, []);
+              toast.success("Preview removed");
+            }}
+          >
+            <Trash2 className="w-3.5 h-3.5 text-destructive" />
+          </Button>
         </div>
       )}
 
