@@ -830,7 +830,46 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      get_campaign_timeseries: {
+        Args: { _start: string; _user_id: string }
+        Returns: {
+          clicks: number
+          day: string
+          fans: number
+          presaves: number
+        }[]
+      }
+      get_campaign_totals: {
+        Args: { _start: string; _user_id: string }
+        Returns: {
+          total_clicks: number
+          total_fans: number
+          total_presaves: number
+        }[]
+      }
+      get_click_dimensions: {
+        Args: { _start: string; _user_id: string }
+        Returns: {
+          count: number
+          dimension: string
+          value: string
+        }[]
+      }
+      get_fanlink_breakdown: {
+        Args: { _start: string; _user_id: string }
+        Returns: {
+          clicks: number
+          fanlink_id: string
+          fans: number
+        }[]
+      }
+      get_presave_breakdown: {
+        Args: { _start: string; _user_id: string }
+        Returns: {
+          actions: number
+          pre_save_id: string
+        }[]
+      }
     }
     Enums: {
       [_ in never]: never
