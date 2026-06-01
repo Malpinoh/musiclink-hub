@@ -1,6 +1,6 @@
-import { useState } from "react";
-import { motion } from "framer-motion";
-import { Play, Pause, Share2, Copy, Check, ExternalLink } from "lucide-react";
+import { useState, useEffect, useMemo } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { Share2, Copy, Check, Film, Eye, Heart, Flame, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import logo from "@/assets/logo.png";
@@ -11,11 +11,62 @@ interface VideoLaunchPageProps {
     campaign_name: string;
     artist_name: string;
     artwork_url: string | null;
+    release_date: string | null;
+    description?: string | null;
+    metadata?: Record<string, any> | null;
   };
 }
 
+const REACTIONS = [
+  { emoji: "🔥", label: "Fire", icon: Flame },
+  { emoji: "❤️", label: "Love", icon: Heart },
+  { emoji: "✨", label: "Magic", icon: Sparkles },
+  { emoji: "👀", label: "Eyes", icon: Eye },
+];
+
+// Extract YouTube/Vimeo embed URL
+const toEmbedUrl = (url?: string | null): string | null => {
+  if (!url) return null;
+  const yt = url.match(/(?:youtube\.com\/(?:watch\?v=|embed\/)|youtu\.be\/)([\w-]{11})/);
+  if (yt) return `https://www.youtube.com/embed/${yt[1]}?rel=0&modestbranding=1`;
+  const vimeo = url.match(/vimeo\.com\/(\d+)/);
+  if (vimeo) return `https://player.vimeo.com/video/${vimeo[1]}`;
+  return null;
+};
+
 const VideoLaunchPage = ({ campaign }: VideoLaunchPageProps) => {
+  const meta = campaign.metadata || {};
+  const videoUrl = meta.video_url as string | undefined;
+  const embedUrl = useMemo(() => toEmbedUrl(videoUrl), [videoUrl]);
+
   const [copied, setCopied] = useState(false);
+  const [reactions, setReactions] = useState<Record<string, number>>({ "🔥": 0, "❤️": 0, "✨": 0, "👀": 0 });
+  const [countdown, setCountdown] = useState<{ d: number; h: number; m: number; s: number } | null>(null);
+  const [views, setViews] = useState(0);
+
+  useEffect(() => {
+    // Simulated live view counter
+    setViews(Math.floor(Math.random() * 5000) + 1200);
+    const id = setInterval(() => setViews((v) => v + Math.floor(Math.random() * 3)), 4000);
+    return () => clearInterval(id);
+  }, []);
+
+  useEffect(() => {
+    if (!campaign.release_date) return;
+    const tick = () => {
+      const diff = new Date(campaign.release_date!).getTime() - Date.now();
+      if (diff <= 0) return setCountdown(null);
+      setCountdown({
+        d: Math.floor(diff / 86400000),
+        h: Math.floor((diff % 86400000) / 3600000),
+        m: Math.floor((diff % 3600000) / 60000),
+        s: Math.floor((diff % 60000) / 1000),
+      });
+    };
+    tick();
+    const id = setInterval(tick, 1000);
+    return () => clearInterval(id);
+  }, [campaign.release_date]);
 
   const handleCopy = async () => {
     await navigator.clipboard.writeText(window.location.href);
@@ -24,102 +75,179 @@ const VideoLaunchPage = ({ campaign }: VideoLaunchPageProps) => {
     setTimeout(() => setCopied(false), 2000);
   };
 
-  const platforms = [
-    { name: "YouTube", color: "bg-red-600" },
-    { name: "Apple Music", color: "bg-pink-600" },
-    { name: "Spotify", color: "bg-green-600" },
-  ];
+  const react = (emoji: string) => {
+    setReactions((r) => ({ ...r, [emoji]: (r[emoji] || 0) + 1 }));
+  };
 
   return (
-    // DARK THEME ONLY — full-width layout, large video at top
-    <div className="min-h-screen bg-black text-white">
-      {/* Full-bleed background */}
-      {campaign.artwork_url && (
-        <div className="fixed inset-0 z-0">
-          <img src={campaign.artwork_url} alt="" className="w-full h-full object-cover opacity-15 scale-105" />
-          <div className="absolute inset-0 bg-gradient-to-b from-black/90 via-black/70 to-black" />
+    <div className="min-h-screen bg-black text-white overflow-hidden">
+      {/* Cinematic vignette + film grain */}
+      <div className="fixed inset-0 pointer-events-none">
+        <div className="absolute inset-0 bg-gradient-radial from-transparent via-black/40 to-black" />
+        <div className="absolute inset-0 opacity-[0.03] mix-blend-overlay" style={{ backgroundImage: "url(\"data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E\")" }} />
+      </div>
+
+      {/* Top bar — cinema style */}
+      <header className="relative z-20 flex justify-between items-center px-6 py-4 border-b border-white/10">
+        <Link to="/" className="flex items-center gap-2 opacity-60 hover:opacity-100 transition-opacity">
+          <img src={logo} alt="MDistro" className="w-7 h-7 rounded-lg" width={28} height={28} />
+          <span className="text-xs uppercase tracking-[0.3em] font-light">Now Playing</span>
+        </Link>
+        <div className="flex gap-2">
+          <Button variant="ghost" size="icon" onClick={handleCopy} className="rounded-full text-white hover:bg-white/10">
+            {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+          </Button>
+          <Button variant="ghost" size="icon" className="rounded-full text-white hover:bg-white/10" onClick={() => navigator.share?.({ url: window.location.href })}>
+            <Share2 className="w-4 h-4" />
+          </Button>
         </div>
+      </header>
+
+      {/* Letterboxed video hero */}
+      <section className="relative z-10 max-w-6xl mx-auto px-4 md:px-8 pt-8">
+        <motion.div
+          className="relative aspect-video rounded-2xl overflow-hidden bg-zinc-950 ring-1 ring-white/10 shadow-[0_0_120px_-20px_rgba(239,68,68,0.4)]"
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.8, ease: "easeOut" }}
+        >
+          {embedUrl ? (
+            <iframe
+              src={embedUrl}
+              title={campaign.campaign_name}
+              className="w-full h-full"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+              allowFullScreen
+            />
+          ) : (
+            <div className="absolute inset-0 flex flex-col items-center justify-center gap-4">
+              {campaign.artwork_url && (
+                <img src={campaign.artwork_url} alt="" className="absolute inset-0 w-full h-full object-cover opacity-40" loading="lazy" />
+              )}
+              <div className="absolute inset-0 bg-gradient-to-t from-black via-black/60 to-transparent" />
+              <Film className="relative w-16 h-16 text-red-500 opacity-80" />
+              <p className="relative text-sm text-white/60 uppercase tracking-[0.3em]">Video premieres soon</p>
+            </div>
+          )}
+        </motion.div>
+
+        {/* Live view counter */}
+        <div className="flex items-center justify-center gap-2 mt-4">
+          <motion.span
+            className="w-2 h-2 rounded-full bg-red-500"
+            animate={{ opacity: [1, 0.3, 1] }}
+            transition={{ duration: 1.5, repeat: Infinity }}
+          />
+          <p className="text-xs uppercase tracking-widest text-white/60">
+            {views.toLocaleString()} watching now
+          </p>
+        </div>
+      </section>
+
+      {/* Title block */}
+      <section className="relative z-10 max-w-3xl mx-auto px-6 py-10 text-center">
+        <motion.p
+          className="text-[11px] uppercase tracking-[0.4em] text-red-500/80 mb-3"
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.3 }}
+        >
+          Music Video
+        </motion.p>
+        <motion.h1
+          className="font-display text-4xl md:text-6xl font-black tracking-tight mb-3 bg-gradient-to-b from-white via-white to-white/40 bg-clip-text text-transparent"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.4 }}
+        >
+          {campaign.campaign_name}
+        </motion.h1>
+        <motion.p
+          className="text-lg text-white/70 font-light"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.5 }}
+        >
+          {campaign.artist_name}
+        </motion.p>
+        {campaign.description && (
+          <motion.p
+            className="mt-6 text-sm text-white/50 max-w-xl mx-auto leading-relaxed"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.6 }}
+          >
+            {campaign.description}
+          </motion.p>
+        )}
+      </section>
+
+      {/* Premiere countdown */}
+      {countdown && (
+        <section className="relative z-10 max-w-2xl mx-auto px-6 mb-12">
+          <p className="text-center text-[11px] uppercase tracking-[0.4em] text-white/50 mb-4">Premiere in</p>
+          <div className="grid grid-cols-4 gap-2">
+            {[{ v: countdown.d, l: "Days" }, { v: countdown.h, l: "Hours" }, { v: countdown.m, l: "Min" }, { v: countdown.s, l: "Sec" }].map((i) => (
+              <div key={i.l} className="bg-white/5 backdrop-blur border border-white/10 rounded-lg p-4 text-center">
+                <div className="font-display text-3xl md:text-4xl font-black text-white tabular-nums">{String(i.v).padStart(2, "0")}</div>
+                <div className="text-[10px] uppercase tracking-widest text-white/40 mt-1">{i.l}</div>
+              </div>
+            ))}
+          </div>
+        </section>
       )}
 
-      <div className="relative z-10 flex flex-col min-h-screen">
-        {/* Minimal header */}
-        <header className="p-6 flex justify-between items-center">
-          <Link to="/" className="opacity-50 hover:opacity-100 transition-opacity">
-            <img src={logo} alt="MDistro" className="w-8 h-8 rounded-2xl" />
-          </Link>
-          <div className="flex gap-2">
-            <motion.div whileTap={{ scale: 0.9 }}>
-              <Button variant="ghost" size="icon" className="text-white/60 hover:text-white rounded-2xl" onClick={handleCopy}>
-                {copied ? <Check className="w-5 h-5" /> : <Copy className="w-5 h-5" />}
-              </Button>
-            </motion.div>
-            <motion.div whileTap={{ scale: 0.9 }}>
-              <Button variant="ghost" size="icon" className="text-white/60 hover:text-white rounded-2xl" onClick={() => navigator.share?.({ url: window.location.href })}>
-                <Share2 className="w-5 h-5" />
-              </Button>
-            </motion.div>
-          </div>
-        </header>
+      {/* Fan reactions */}
+      <section className="relative z-10 max-w-2xl mx-auto px-6 mb-12">
+        <p className="text-center text-[11px] uppercase tracking-[0.4em] text-white/50 mb-4">Drop a reaction</p>
+        <div className="flex justify-center gap-3">
+          {REACTIONS.map((r) => (
+            <motion.button
+              key={r.emoji}
+              onClick={() => react(r.emoji)}
+              whileHover={{ scale: 1.15, y: -4 }}
+              whileTap={{ scale: 0.85 }}
+              className="relative w-16 h-16 rounded-2xl bg-white/5 border border-white/10 hover:border-red-500/50 transition-colors flex items-center justify-center text-2xl"
+            >
+              {r.emoji}
+              <AnimatePresence>
+                {reactions[r.emoji] > 0 && (
+                  <motion.span
+                    key={reactions[r.emoji]}
+                    className="absolute -top-2 -right-2 bg-red-500 text-white text-[10px] font-bold rounded-full px-1.5 py-0.5 min-w-[20px] text-center"
+                    initial={{ scale: 0, y: 0 }}
+                    animate={{ scale: 1, y: 0 }}
+                    exit={{ scale: 0 }}
+                  >
+                    {reactions[r.emoji]}
+                  </motion.span>
+                )}
+              </AnimatePresence>
+            </motion.button>
+          ))}
+        </div>
+      </section>
 
-        {/* FULL-WIDTH video player area at TOP */}
-        <main className="flex-1 flex flex-col">
-          <motion.div
-            className="relative w-full max-w-4xl mx-auto aspect-video cursor-pointer group"
-            initial={{ scale: 0.92, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            transition={{ type: "spring", stiffness: 120, damping: 18 }}
-          >
-            {campaign.artwork_url ? (
-              <img src={campaign.artwork_url} alt={campaign.campaign_name} className="w-full h-full object-cover rounded-none md:rounded-2xl" />
-            ) : (
-              <div className="w-full h-full bg-white/5" />
-            )}
-            <div className="absolute inset-0 bg-black/30 flex items-center justify-center group-hover:bg-black/20 transition-colors md:rounded-2xl">
-              <motion.div
-                className="w-20 h-20 md:w-24 md:h-24 rounded-full bg-white/10 backdrop-blur-md flex items-center justify-center border border-white/20"
-                whileHover={{ scale: 1.15, backgroundColor: "rgba(255,255,255,0.2)" }}
-                whileTap={{ scale: 0.95 }}
-              >
-                <Play className="w-8 h-8 md:w-10 md:h-10 text-white ml-1" />
-              </motion.div>
-            </div>
-          </motion.div>
+      {/* Share toolkit */}
+      <section className="relative z-10 max-w-md mx-auto px-6 mb-12">
+        <div className="bg-white/5 border border-white/10 rounded-2xl p-4 flex items-center gap-3">
+          <input
+            readOnly
+            value={typeof window !== "undefined" ? window.location.href : ""}
+            className="flex-1 bg-transparent text-xs text-white/60 truncate outline-none"
+          />
+          <Button onClick={handleCopy} size="sm" className="bg-red-600 hover:bg-red-700 text-white rounded-lg">
+            {copied ? "Copied" : "Copy"}
+          </Button>
+        </div>
+      </section>
 
-          {/* Content below video */}
-          <div className="max-w-xl mx-auto w-full px-6 py-10 space-y-8">
-            <motion.div className="text-center" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
-              <p className="text-[10px] uppercase tracking-[0.3em] text-white/40 mb-3">Official Music Video</p>
-              <h1 className="font-display text-3xl md:text-5xl font-bold mb-2 leading-tight">{campaign.campaign_name}</h1>
-              <p className="text-xl text-white/50">{campaign.artist_name}</p>
-            </motion.div>
-
-            {/* Platform links — stacked full-width */}
-            <motion.div className="space-y-3" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}>
-              {platforms.map((p, i) => (
-                <motion.button
-                  key={p.name}
-                  className={`w-full ${p.color} hover:opacity-90 text-white rounded-2xl py-5 px-6 font-semibold flex items-center justify-between transition-opacity text-lg`}
-                  initial={{ opacity: 0, x: -30 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: 0.35 + i * 0.08 }}
-                  whileHover={{ scale: 1.02, x: 4 }}
-                  whileTap={{ scale: 0.98 }}
-                >
-                  <span>{p.name}</span>
-                  <ExternalLink className="w-5 h-5 opacity-60" />
-                </motion.button>
-              ))}
-            </motion.div>
-          </div>
-        </main>
-
-        <footer className="p-6 text-center">
-          <Link to="/" className="inline-flex items-center gap-2 text-xs text-white/30 hover:text-white/50 transition-colors">
-            <img src={logo} alt="" className="w-4 h-4 rounded-lg" />
-            Powered by MDistro Link
-          </Link>
-        </footer>
-      </div>
+      <footer className="relative z-10 py-8 text-center border-t border-white/5 mt-8">
+        <Link to="/" className="inline-flex items-center gap-2 text-[10px] uppercase tracking-[0.3em] text-white/40 hover:text-white/70">
+          <img src={logo} alt="" className="w-3 h-3 rounded" width={12} height={12} />
+          MDistro Link
+        </Link>
+      </footer>
     </div>
   );
 };
