@@ -99,7 +99,7 @@ const AudioPreviewPlayer = ({
       a.src = "";
       audioRef.current = null;
     };
-  }, [audioUrl, clipStart, previewEnd]);
+  }, [audioUrl]);
 
   // Mute sync
   useEffect(() => {
@@ -115,9 +115,7 @@ const AudioPreviewPlayer = ({
       return;
     }
     setEnded(false);
-    if (a.currentTime < clipStart || (previewEnd != null && a.currentTime >= previewEnd)) {
-      a.currentTime = clipStart;
-    }
+    if (a.ended || a.currentTime >= (a.duration || 0)) a.currentTime = 0;
     setBuffering(true);
     try {
       await a.play();
@@ -126,7 +124,7 @@ const AudioPreviewPlayer = ({
       setError(true);
       setBuffering(false);
     }
-  }, [playing, clipStart, previewEnd]);
+  }, [playing]);
 
   const replay = useCallback(async () => {
     const a = audioRef.current;
