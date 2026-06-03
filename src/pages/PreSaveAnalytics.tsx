@@ -11,6 +11,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from "recharts";
 import { useIsMobile } from "@/hooks/use-mobile";
 import AnalyticsSkeleton from "@/components/AnalyticsSkeleton";
+import { fetchAllRows } from "@/lib/fetchAllRows";
 
 interface PreSave {
   id: string;
@@ -174,13 +175,10 @@ const PreSaveAnalytics = () => {
       }
       setPreSave(preSaveData);
 
-      const { data: actions, error: actionsError } = await supabase
-        .from("pre_save_actions")
-        .select("*")
-        .eq("pre_save_id", id);
-
-      if (actionsError) throw actionsError;
-      processActions(actions || []);
+      const actions = await fetchAllRows<Record<string, unknown>>(
+        () => supabase.from("pre_save_actions").select("*").eq("pre_save_id", id!),
+      );
+      processActions(actions as never[]);
 
       // Fetch fan signups
       const { data: fans } = await supabase

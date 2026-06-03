@@ -139,20 +139,19 @@ const EditFanlink = () => {
 
       // Fetch per-platform click counts
       if (linksData && linksData.length > 0) {
-        const { data: clicksData } = await supabase
-          .from("clicks")
-          .select("platform_name")
-          .eq("fanlink_id", id!)
-          .not("platform_name", "is", null);
-
-        if (clicksData) {
-          const counts: Record<string, number> = {};
-          clicksData.forEach((c) => {
-            const pn = c.platform_name || "";
-            counts[pn] = (counts[pn] || 0) + 1;
-          });
-          setPlatformClickCounts(counts);
-        }
+        // Per-platform counts via parallel exact counts — no row cap.
+        const counts: Record<string, number> = {};
+        await Promise.all(
+          linksData.map(async (pl) => {
+            const { count } = await supabase
+              .from("clicks")
+              .select("*", { count: "exact", head: true })
+              .eq("fanlink_id", id!)
+              .eq("platform_name", pl.platform_name);
+            counts[pl.platform_name] = count || 0;
+          }),
+        );
+        setPlatformClickCounts(counts);
       }
 
       // Fetch fan contacts

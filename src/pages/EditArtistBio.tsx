@@ -148,31 +148,29 @@ const EditArtistBio = () => {
   };
 
   const loadAnalytics = async (pid: string) => {
-    const [viewsResult, clicksResult] = await Promise.all([
+    const { fetchAllRows } = await import("@/lib/fetchAllRows");
+    const [viewsCount, clicksCount, recentViewsCount, clicks] = await Promise.all([
+      supabase.from("artist_profile_views").select("*", { count: "exact", head: true }).eq("artist_profile_id", pid),
+      supabase.from("artist_link_clicks").select("*", { count: "exact", head: true }).eq("artist_profile_id", pid),
       supabase
         .from("artist_profile_views")
-        .select("viewed_at", { count: "exact" })
-        .eq("artist_profile_id", pid),
-      supabase
-        .from("artist_link_clicks")
-        .select("link_type, clicked_at", { count: "exact" })
-        .eq("artist_profile_id", pid),
+        .select("*", { count: "exact", head: true })
+        .eq("artist_profile_id", pid)
+        .gte("viewed_at", new Date(Date.now() - 7 * 86400000).toISOString()),
+      fetchAllRows<{ link_type: string }>(
+        () => supabase.from("artist_link_clicks").select("link_type").eq("artist_profile_id", pid),
+      ),
     ]);
 
-    const totalViews = viewsResult.count || 0;
-    const totalClicks = clicksResult.count || 0;
-
-    // Recent views (last 7 days)
-    const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
-    const recentViews = (viewsResult.data || []).filter(v => v.viewed_at > weekAgo).length;
-
-    // Clicks by type
     const clicksByType: Record<string, number> = {};
-    for (const c of clicksResult.data || []) {
-      clicksByType[c.link_type] = (clicksByType[c.link_type] || 0) + 1;
-    }
+    for (const c of clicks) clicksByType[c.link_type] = (clicksByType[c.link_type] || 0) + 1;
 
-    setAnalytics({ totalViews, totalClicks, recentViews, clicksByType });
+    setAnalytics({
+      totalViews: viewsCount.count || 0,
+      totalClicks: clicksCount.count || 0,
+      recentViews: recentViewsCount.count || 0,
+      clicksByType,
+    });
   };
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {

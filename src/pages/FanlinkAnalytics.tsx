@@ -11,6 +11,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend } from "recharts";
 import { useIsMobile } from "@/hooks/use-mobile";
 import AnalyticsSkeleton from "@/components/AnalyticsSkeleton";
+import { fetchAllRows } from "@/lib/fetchAllRows";
 
 interface Fanlink {
   id: string;
