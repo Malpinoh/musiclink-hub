@@ -299,6 +299,14 @@ const Dashboard = () => {
                 </motion.div>
               ))}
             </div>
+            {verification && (
+              <div className="mt-4 rounded-xl border border-border/30 bg-background/40 p-3 text-xs text-muted-foreground flex flex-wrap items-center gap-x-4 gap-y-1">
+                <span className="font-medium text-foreground">Analytics integrity</span>
+                <span>DB clicks: <b className="text-foreground">{verification.dbClicks.toLocaleString()}</b></span>
+                <span>Dashboard clicks: <b className="text-foreground">{verification.dashClicks.toLocaleString()}</b></span>
+                <span>Diff: <b className={verification.dbClicks === verification.dashClicks ? "text-green-500" : "text-yellow-500"}>{(verification.dbClicks - verification.dashClicks).toLocaleString()}</b></span>
+              </div>
+            )}
           </motion.section>
 
           {/* ── Section 2: Quick Actions Panel ── */}
