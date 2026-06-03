@@ -170,13 +170,10 @@ const FanlinkAnalytics = () => {
       }
       setFanlink(fanlinkData);
 
-      const { data: clicks, error: clicksError } = await supabase
-        .from("clicks")
-        .select("platform_name, clicked_at, country, city")
-        .eq("fanlink_id", id);
-
-      if (clicksError) throw clicksError;
-      processClicks(clicks || []);
+      const clicks = await fetchAllRows<{ platform_name: string | null; clicked_at: string; country: string | null; city: string | null }>(
+        () => supabase.from("clicks").select("platform_name, clicked_at, country, city").eq("fanlink_id", id!),
+      );
+      processClicks(clicks);
     } catch (error) {
       console.error("Error fetching analytics:", error);
     } finally {
