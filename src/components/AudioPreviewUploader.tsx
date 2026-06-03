@@ -81,8 +81,10 @@ const AudioPreviewUploader = ({ userId, currentUrl, onUploaded, onDeleted }: Aud
       if (previewError) throw previewError;
 
       const { data } = supabase.storage.from("audio-previews").getPublicUrl(previewPath);
-      
-      onUploaded(data.publicUrl, result.actualStart, result.actualEnd, result.waveformData);
+
+      // The uploaded file is the already-trimmed clip, so playback range is 0..clipLen.
+      const clipLen = result.actualEnd - result.actualStart;
+      onUploaded(data.publicUrl, 0, clipLen, result.waveformData);
       setUploaded(true);
       toast.success("Audio preview processed and uploaded!");
     } catch (err) {

@@ -81,6 +81,8 @@ const Dashboard = () => {
     if (!authLoading && !user) navigate("/login");
   }, [user, authLoading, navigate]);
 
+  const [verification, setVerification] = useState<{ dbClicks: number; dashClicks: number } | null>(null);
+
   const fetchData = useCallback(async () => {
     if (!user) return;
     try {
@@ -96,31 +98,56 @@ const Dashboard = () => {
 
       if (fls.length > 0) {
         const fanlinkIds = fls.map((f) => f.id);
-        const [clicksRes, fansRes] = await Promise.all([
-          supabase.from("clicks").select("fanlink_id, clicked_at").in("fanlink_id", fanlinkIds),
-          supabase.from("fan_contacts").select("link_id").in("link_id", fanlinkIds),
-        ]);
+
+        // Per-fanlink exact counts via parallel HEAD queries — bypasses 1k row cap.
+        const perLinkResults = await Promise.all(
+          fanlinkIds.map(async (id) => {
+            const [clicksCount, fansCount] = await Promise.all([
+              supabase.from("clicks").select("*", { count: "exact", head: true }).eq("fanlink_id", id),
+              supabase.from("fan_contacts").select("*", { count: "exact", head: true }).eq("link_id", id),
+            ]);
+            return { id, clicks: clicksCount.count || 0, fans: fansCount.count || 0 };
+          })
+        );
 
         const cc: Record<string, number> = {};
         const fc: Record<string, number> = {};
-        fanlinkIds.forEach((id) => { cc[id] = 0; fc[id] = 0; });
-        (clicksRes.data || []).forEach((c) => { cc[c.fanlink_id] = (cc[c.fanlink_id] || 0) + 1; });
-        (fansRes.data || []).forEach((f) => { fc[f.link_id] = (fc[f.link_id] || 0) + 1; });
+        perLinkResults.forEach((r) => { cc[r.id] = r.clicks; fc[r.id] = r.fans; });
         setClickCounts(cc);
         setFanContactCounts(fc);
 
-        const now = Date.now();
-        const thirtyDaysAgo = now - 30 * 86400000;
+        // Time-series for chart: paginate clicks in 1k chunks (last 30 days only).
+        const thirtyDaysAgo = new Date(Date.now() - 30 * 86400000).toISOString();
         const dateMap: Record<string, { clicks: number; fans: number; presaves: number }> = {};
-        (clicksRes.data || []).forEach((c) => {
-          const ts = new Date(c.clicked_at).getTime();
-          if (ts >= thirtyDaysAgo) {
+        let from = 0;
+        const PAGE = 1000;
+        // eslint-disable-next-line no-constant-condition
+        while (true) {
+          const { data: chunk, error } = await supabase
+            .from("clicks")
+            .select("clicked_at")
+            .in("fanlink_id", fanlinkIds)
+            .gte("clicked_at", thirtyDaysAgo)
+            .order("clicked_at", { ascending: true })
+            .range(from, from + PAGE - 1);
+          if (error || !chunk || chunk.length === 0) break;
+          chunk.forEach((c) => {
             const d = new Date(c.clicked_at).toLocaleDateString("en-US", { month: "short", day: "numeric" });
             if (!dateMap[d]) dateMap[d] = { clicks: 0, fans: 0, presaves: 0 };
             dateMap[d].clicks++;
-          }
-        });
+          });
+          if (chunk.length < PAGE) break;
+          from += PAGE;
+        }
         setChartData(Object.entries(dateMap).map(([date, v]) => ({ date, ...v })).slice(-30));
+
+        // Verification: total DB clicks across all fanlinks via exact count.
+        const { count: totalDbClicks } = await supabase
+          .from("clicks")
+          .select("*", { count: "exact", head: true })
+          .in("fanlink_id", fanlinkIds);
+        const dashSum = perLinkResults.reduce((s, r) => s + r.clicks, 0);
+        setVerification({ dbClicks: totalDbClicks || 0, dashClicks: dashSum });
       }
 
       if (pss.length > 0) {
@@ -146,6 +173,18 @@ const Dashboard = () => {
 
   useEffect(() => {
     if (user) fetchData();
+  }, [user, fetchData]);
+
+  // Realtime: refresh totals when new clicks/fans/pre-saves arrive.
+  useEffect(() => {
+    if (!user) return;
+    const channel = supabase
+      .channel(`dashboard-${user.id}`)
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "clicks" }, () => fetchData())
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "fan_contacts" }, () => fetchData())
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "presave_fans" }, () => fetchData())
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
   }, [user, fetchData]);
 
   const handleDeleteFanlink = async (id: string) => {
@@ -260,6 +299,14 @@ const Dashboard = () => {
                 </motion.div>
               ))}
             </div>
+            {verification && (
+              <div className="mt-4 rounded-xl border border-border/30 bg-background/40 p-3 text-xs text-muted-foreground flex flex-wrap items-center gap-x-4 gap-y-1">
+                <span className="font-medium text-foreground">Analytics integrity</span>
+                <span>DB clicks: <b className="text-foreground">{verification.dbClicks.toLocaleString()}</b></span>
+                <span>Dashboard clicks: <b className="text-foreground">{verification.dashClicks.toLocaleString()}</b></span>
+                <span>Diff: <b className={verification.dbClicks === verification.dashClicks ? "text-green-500" : "text-yellow-500"}>{(verification.dbClicks - verification.dashClicks).toLocaleString()}</b></span>
+              </div>
+            )}
           </motion.section>
 
           {/* ── Section 2: Quick Actions Panel ── */}

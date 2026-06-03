@@ -32,8 +32,12 @@ const AudioPreviewPlayer = ({
   const [buffering, setBuffering] = useState(false);
   const [error, setError] = useState(false);
 
-  const clipStart = previewStart || 0;
-  const clipEnd = previewEnd ?? duration ?? 30;
+  // The stored audio file is already the trimmed preview clip. Always play
+  // it from 0 to its actual loaded duration. previewStart/previewEnd refer
+  // to positions in the ORIGINAL song and must NOT clamp playback of the
+  // already-trimmed preview file (that was the bug cutting off playback).
+  const clipStart = 0;
+  const clipEnd = duration || (previewEnd != null && previewStart != null ? previewEnd - previewStart : 30);
   const clipLen = Math.max(0, clipEnd - clipStart);
 
   const bars = useMemo(() => {
@@ -62,13 +66,7 @@ const AudioPreviewPlayer = ({
 
     const onMeta = () => setDuration(a.duration || 0);
     const onTime = () => {
-      setProgress(Math.max(0, a.currentTime - clipStart));
-      if (previewEnd != null && a.currentTime >= previewEnd) {
-        a.pause();
-        a.currentTime = clipStart;
-        setPlaying(false);
-        setEnded(true);
-      }
+      setProgress(Math.max(0, a.currentTime));
     };
     const onEnded = () => { setPlaying(false); setEnded(true); setProgress(0); };
     const onWaiting = () => setBuffering(true);
@@ -101,7 +99,7 @@ const AudioPreviewPlayer = ({
       a.src = "";
       audioRef.current = null;
     };
-  }, [audioUrl, clipStart, previewEnd]);
+  }, [audioUrl]);
 
   // Mute sync
   useEffect(() => {
@@ -117,9 +115,7 @@ const AudioPreviewPlayer = ({
       return;
     }
     setEnded(false);
-    if (a.currentTime < clipStart || (previewEnd != null && a.currentTime >= previewEnd)) {
-      a.currentTime = clipStart;
-    }
+    if (a.ended || a.currentTime >= (a.duration || 0)) a.currentTime = 0;
     setBuffering(true);
     try {
       await a.play();
@@ -128,7 +124,7 @@ const AudioPreviewPlayer = ({
       setError(true);
       setBuffering(false);
     }
-  }, [playing, clipStart, previewEnd]);
+  }, [playing]);
 
   const replay = useCallback(async () => {
     const a = audioRef.current;

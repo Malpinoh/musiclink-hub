@@ -136,25 +136,45 @@ export async function processAudioPreview(
   manualStart?: number,
   manualEnd?: number
 ): Promise<AudioProcessingResult> {
-  const ctx = new AudioContext();
+  // Use webkit prefix fallback for older Safari.
+  const AudioCtor: typeof AudioContext =
+    (window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext);
+  if (!AudioCtor) throw new Error("Web Audio API not supported in this browser");
+
+  const ctx = new AudioCtor();
   const arrayBuffer = await file.arrayBuffer();
-  const fullBuffer = await ctx.decodeAudioData(arrayBuffer);
+
+  let fullBuffer: AudioBuffer;
+  try {
+    // Promise wrapper (Safari historically required callback form).
+    fullBuffer = await new Promise<AudioBuffer>((resolve, reject) => {
+      const p = ctx.decodeAudioData(arrayBuffer.slice(0), resolve, reject);
+      if (p && typeof (p as Promise<AudioBuffer>).then === "function") {
+        (p as Promise<AudioBuffer>).then(resolve, reject);
+      }
+    });
+  } catch (err) {
+    ctx.close();
+    throw new Error(
+      `Could not decode "${file.name}". Convert to MP3 or WAV and try again. (${(err as Error)?.message ?? "decode error"})`
+    );
+  }
+
   const duration = fullBuffer.duration;
   const sr = fullBuffer.sampleRate;
+  if (!duration || duration < 1) {
+    ctx.close();
+    throw new Error("Audio file appears to be empty or too short.");
+  }
 
-  // Determine trim points
+  // Determine trim points, clamped to actual duration.
   let clipStart: number;
   let clipEnd: number;
-
   if (manualStart !== undefined && manualEnd !== undefined) {
-    clipStart = Math.max(0, manualStart);
-    clipEnd = Math.min(duration, manualEnd);
-    // Enforce max 30s
-    if (clipEnd - clipStart > MAX_PREVIEW_SECONDS) {
-      clipEnd = clipStart + MAX_PREVIEW_SECONDS;
-    }
+    clipStart = Math.max(0, Math.min(manualStart, Math.max(0, duration - 1)));
+    clipEnd = Math.max(clipStart + 1, Math.min(manualEnd, duration));
+    if (clipEnd - clipStart > MAX_PREVIEW_SECONDS) clipEnd = clipStart + MAX_PREVIEW_SECONDS;
   } else {
-    // Auto: start=20s, end=50s (or fit within duration)
     clipStart = duration > DEFAULT_END ? DEFAULT_START : 0;
     clipEnd = Math.min(clipStart + MAX_PREVIEW_SECONDS, duration);
   }
@@ -162,32 +182,34 @@ export async function processAudioPreview(
   const startSample = Math.floor(clipStart * sr);
   const endSample = Math.min(Math.floor(clipEnd * sr), fullBuffer.length);
   const clipLength = endSample - startSample;
+  if (clipLength <= 0) {
+    ctx.close();
+    throw new Error("Selected preview range produced 0 samples. Please pick a different range.");
+  }
 
-  // Create trimmed buffer
-  const trimmedBuffer = ctx.createBuffer(
-    fullBuffer.numberOfChannels,
-    clipLength,
-    sr
-  );
+  const trimmedBuffer = ctx.createBuffer(fullBuffer.numberOfChannels, clipLength, sr);
   for (let ch = 0; ch < fullBuffer.numberOfChannels; ch++) {
     const src = fullBuffer.getChannelData(ch);
     const dest = trimmedBuffer.getChannelData(ch);
-    for (let i = 0; i < clipLength; i++) {
-      dest[i] = src[startSample + i];
-    }
+    for (let i = 0; i < clipLength; i++) dest[i] = src[startSample + i];
   }
 
-  // Normalize volume
   normalizeVolume(trimmedBuffer);
+  // Shorter fade for clips under 5s so the clip is mostly audible.
+  const fade = Math.min(FADE_DURATION, (clipEnd - clipStart) / 6);
+  applyFade(trimmedBuffer, fade, fade);
 
-  // Apply fade in/out
-  applyFade(trimmedBuffer, FADE_DURATION, FADE_DURATION);
-
-  // Generate waveform from trimmed buffer
   const waveformData = generateWaveformFromBuffer(trimmedBuffer);
-
-  // Encode to WAV
   const previewBlob = encodeWAV(trimmedBuffer, 0, trimmedBuffer.length);
+
+  // Verify produced clip duration matches the requested range (±100ms).
+  const producedDuration = trimmedBuffer.length / sr;
+  const expected = clipEnd - clipStart;
+  if (Math.abs(producedDuration - expected) > 0.1) {
+    console.warn(
+      `[audio] processed clip duration ${producedDuration.toFixed(2)}s differs from requested ${expected.toFixed(2)}s`
+    );
+  }
 
   ctx.close();
 

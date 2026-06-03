@@ -1,64 +1,186 @@
-# Analytics + Templates 2.0 + Audio Fix + Performance
+# MDISTRO LINK Major Upgrade — Implementation Plan
 
-This is a large, multi-area upgrade. I'm proposing it in 4 tracks so you can confirm scope before I start writing code.
+This is a large multi-area upgrade. I'll split it into 7 tracks, sequenced by risk and dependency. Several items (analytics fix, audio fix, performance) are bug fixes I can ship quickly. Others (true Spotify pre-save, ad monetization, full customization) are net-new systems that need scoping decisions before I touch code.
 
-## 1. Fix Total Clicks Analytics (critical)
+---
 
-**Root cause (suspected):** Supabase queries default to a 1,000 row cap. `CampaignDashboard.tsx` currently does `select("id, platform_name, ...").gte(...).in("fanlink_id", ids)` then counts the array — so above 1,000 clicks, totals freeze.
+## Track 1 — Analytics Total Clicks Fix (CRITICAL, ship first)
 
-**Fix:**
-- Replace row-fetching aggregates with `select("*", { count: "exact", head: true })` queries for the headline counters (Total Clicks, Fans, Pre-saves) so we get true counts regardless of size.
-- Keep row-level fetches only for the chart and per-campaign breakdowns, but paginate in chunks of 1000 until exhausted (or move aggregation into a SQL RPC).
-- Add a small `get_campaign_totals(user_id, start_date)` Postgres function returning aggregated totals per fanlink/presave in a single round trip — fixes both accuracy and the N+1 pattern.
-- Add indexes: `clicks(fanlink_id, clicked_at)`, `fan_contacts(link_id, collected_at)`, `pre_save_actions(pre_save_id, created_at)` if missing.
-- Validation: log DB total vs dashboard total in a dev assertion; they must match.
+**Diagnosis**
 
-## 2. Campaign Templates 2.0
+- DB has ~2,437 clicks, dashboard shows 1,000 → classic PostgREST 1k row cap.
+- Last upgrade already added `get_campaign_totals` RPC for the **Campaign** dashboard, but the **Artist Dashboard** (`src/pages/Dashboard.tsx`) and `FanlinkAnalytics.tsx` / `PreSaveAnalytics.tsx` still do `.select("...").eq(...)` and count the returned array.
 
-Rebuild each of the 4 template pages as a distinct experience. Today they share too much. Plan:
+**Fix**
 
-**Song Release** (`SongReleasePage.tsx`)
-- Animated gradient hero, countdown, pre-save CTA, streaming platform cards, fan comments section (new `campaign_comments` table), release progress tracker.
+- Audit every analytics query in: `Dashboard.tsx`, `FanlinkAnalytics.tsx`, `PreSaveAnalytics.tsx`, `CampaignDashboard.tsx`, `ArtistBioPage` analytics.
+- Replace counting-by-array with `select("*", { count: "exact", head: true })`.
+- Add RPCs for the artist dashboard totals (clicks + analytics_events + artist_link_clicks + pre_save_actions) in a single round trip.
+- Add a small **"Analytics verification"** card (raw DB count vs dashboard count vs diff) — owner-only.
+- Wire a Supabase Realtime subscription on `clicks` + `pre_save_actions` to invalidate the dashboard query so totals refresh live.
+- Ensure all analytics are calculated from actual database records and never from paginated query results.
+- Audit every dashboard card showing clicks, views, pre-saves, conversions, fan captures, and campaign performance.
+- Add a system-wide analytics integrity checker for adm
 
-**Music Video Launch** (`VideoLaunchPage.tsx`)
-- Cinematic dark theme, embedded YouTube/Vimeo player as hero, premiere countdown, view counter, reaction emojis (new `campaign_reactions` table), share toolkit.
+---
 
-**Album / EP Launch** (`AlbumLaunchPage.tsx`)
-- Editorial magazine layout, tracklist with per-track 30s previews (reuses pre-save audio system), album story, credits, collaborators grid, timeline.
+## Track 2 — Preview Audio Fix (CRITICAL, ship with Track 1)
 
-**Concert Promotion** (`EventPromotionPage.tsx`)
-- Poster-style hero, event countdown, venue card with embedded Google Maps iframe (no API key needed), ticket CTAs, lineup grid, schedule table, RSVP form (new `event_rsvps` table).
+**Diagnosis**
 
-**New tables (migration):**
-- `campaign_comments(id, campaign_id, name, message, created_at)` — public insert, owner read.
-- `campaign_reactions(id, campaign_id, emoji, created_at)` — public insert, owner read.
-- `event_rsvps(id, campaign_id, name, email, created_at)` — public insert, owner read.
+- Player already stops at `previewEnd`, but actual processed preview blob may be shorter than expected because `audioProcessing.ts` trims to `end - start` only if the source decodes fully; on M4A/some MP3s decoding fails silently and we upload a clipped file.
 
-## 3. Pre-save Audio Preview Fix
+**Fix**
 
-Rebuild playback around a single `<audio>` element with proper lifecycle (matches the proven pattern):
-- One `useRef<HTMLAudioElement>`, stop-before-play, `canplaythrough` for loading state, cleanup on unmount.
-- Use Supabase Storage signed URLs (1h) instead of public URLs so Range requests + progressive loading work reliably on iOS Safari/PWA.
-- Waveform: keep existing `waveform_data` jsonb; click-to-seek on the bar.
-- Uploader: keep MP3/WAV/AAC/M4A, enforce 30s trim via existing `audioProcessing.ts`, add replace + delete actions wired to storage.
-- Apply the same player to album tracklists in template 2.0.
+- Rewrite `audioProcessing.ts`:
+  - Decode via `OfflineAudioContext` with full-duration buffer; if decode fails, fall back to server-side trim via a new edge function (`process-audio-preview`) using ffmpeg-wasm or just upload original + use `previewStart/End` on playback.
+  - Verify output blob duration === `end - start` ± 50ms; log + toast on mismatch.
+- Make `AudioPreviewPlayer` always trust `previewEnd` from DB (already does) but clamp to actual audio duration once metadata loads.
+- Accept MP3/WAV/M4A explicitly; reject others with a clear error.
+- The selected preview must always play the exact duration selected by the artist.
+- If artist selects 30 seconds, fan must hear the full 30 seconds.
+- If artist selects 20 seconds, fan must hear the full 20 seconds.
+- Audio preview should preload quickly and not buffer excessively.
 
-Touches: `AudioPreviewPlayer.tsx`, `AudioPreviewUploader.tsx`, `PreSavePage.tsx`, `EditPreSave.tsx`.
+---
 
-## 4. Performance Optimization
+## Track 3 — True Spotify Pre-Save System (NEW, biggest item)
 
-- **Code splitting:** convert heavy routes (`CampaignDashboard`, `FanlinkAnalytics`, `PreSaveAnalytics`, `EditFanlink`, `EditPreSave`, all 4 campaign template pages, `ArtistBioPage`) to `React.lazy` with `Suspense` + skeletons in `App.tsx`.
-- **Images:** add `loading="lazy"` + `decoding="async"` + explicit width/height to artwork/avatars/banners across `FanlinkPage`, `PreSavePage`, `ArtistBioPage`, dashboards. Add `fetchpriority="high"` to LCP artwork.
-- **Queries:** replace dashboard's 6 sequential queries with `Promise.all`; memoize derived data with `useMemo`; introduce the `count: "exact"` pattern from track 1.
-- **Audio:** signed URLs + Range (track 3) covers this.
+This is a real product, not a quick fix. I want to confirm scope before building.
 
-## Scope confirmation
+**What I'll build by default:**
 
-This is roughly 15–20 files touched plus 2 migrations. I'd suggest I ship it in this order so you can review per track:
+1. **Fan capture before OAuth**: gate the Spotify auth button behind a Name + Email form. Store in `presave_fans` (already exists), then redirect to Spotify OAuth.
+2. **OAuth scopes**: `user-library-modify user-follow-modify playlist-modify-public playlist-modify-private user-read-email`.
+3. **Token storage**: already in `pre_save_actions` (access + refresh + expiry). Add `fan_id` FK linking back to `presave_fans`.
+4. **Release-day worker** (`execute-presave-library-saves` exists — needs hardening):
+  - Refresh expired tokens.
+  - `PUT /me/tracks` (Liked Songs) for every fan.
+  - Optional: `PUT /me/following` (artist follow) + `POST /playlists/{id}/tracks` if the artist configured a target playlist.
+  - Per-fan status row (success / failure / error_message) in new `presave_save_results` table.
+5. **Dashboard metrics**: Total Pre-Saves, Saves Completed, Failed, Delivery Rate, Conversion Rate (presaves / page views), Top Countries, fan email export (CSV).
 
-1. Track 1 (analytics fix + migration) — smallest, unblocks correct numbers.
-2. Track 3 (audio fix) — user-visible bug.
-3. Track 4 (perf) — mostly mechanical.
-4. Track 2 (templates 2.0) — biggest, design-heavy.
+**Open questions before I build:**
 
-Reply "go" to start with Track 1, or tell me to reorder / drop anything (e.g. skip new comments/reactions/RSVP tables, skip Google Maps, etc.).
+- Confirm we want Name + Email **required before** the Spotify button (vs. after auth, prefilled from Spotify profile)? Spec says before — I'll go with that. 
+- Auto-follow artist + auto-add to playlist: toggle per campaign, default **off**? yes
+- Spotify dev app: redirect URI must include production + preview domains. I'll list what needs to be added in Spotify Dashboard. ok list it 
+  and also do this
+- Name and Email are mandatory before Spotify authentication.
+- Store fan country, device type, browser, and referral source.
+- Support automatic release-day save to:
+  - Spotify Liked Songs
+  - Artist Follow (optional)
+  - Playlist Add (optional)
+- Artist must be able to export fan data as CSV.
+
+---
+
+## Track 4 — Pre-Save Page Customization
+
+New table `pre_save_themes` (mirrors `link_themes`):
+
+- background_image_url, hero_image_url, artist_image_url
+- background_color, text_color, button_color, accent_color
+- font_family, countdown_enabled, cta_text
+- section_order (jsonb array)
+
+UI:
+
+- New "Customize" tab in `EditPreSave.tsx` with live preview iframe (renders `PreSavePage` with draft theme via URL param or context).
+- Reuse the `ThemeCustomizer` pattern from fanlinks.
+- Add multiple professional templates.
+- Allow artist branding:
+  - Logo
+  - Artist image
+  - Background image
+  - Colors
+  - Fonts
+  - CTA text
+- Mobile responsive on all devices.
+
+---
+
+## Track 5 — Ad Monetization Infrastructure
+
+Foundation only (no live ad network until artist opts in):
+
+- New tables: `ad_placements` (where), `ad_impressions` (when/who), `ad_revenue` (calculated), `artist_revenue_share` (config).
+- `AdSlot` React component with placements: `preview-pre-roll`, `presave-pre-complete`.
+- Pluggable provider interface; ship a `HouseAdProvider` (own promo) by default, scaffold for `GoogleAdManagerProvider` (requires GAM account — user adds when ready).
+- Revenue dashboard: impressions, eCPM, gross, artist share %, payout owed.
+- Build the system in a way that future artist revenue sharing is possible.
+- Track:
+  - Impressions
+  - Clicks
+  - Revenue
+  - Artist Share
+  - Platform Share
+- Support future Google Ad Manager integration without requiring another database redesign.
+
+I will **not** integrate Google Ad Manager in this pass — it needs a GAM publisher account, ad units, and approval. I'll scaffold the integration point and document what to do next.
+
+---
+
+## Track 6 — Performance
+
+- Convert remaining heavy routes to `React.lazy` (Edit pages, Analytics pages).
+- `React.memo` + `useMemo` on dashboard cards.
+- Add indexes (if not yet present) on `analytics_events(user_id, created_at)`, `artist_link_clicks(clicked_at)`.
+- Image: `loading="lazy"` + `decoding="async"` audited across all templates.
+- Service-worker style cache for static assets (vite already does hashing; add `Cache-Control` headers via meta or vercel.json).
+- Query client `staleTime` 60s for dashboard, `gcTime` 5m.
+
+---
+
+## Track 7 — Unique Campaign Templates (Polish pass)
+
+Last upgrade already rebuilt the 4 templates. This pass goes further to **differentiate workflows**:
+
+- **Song Release**: keep current; add "smart link" tab as primary CTA.
+- **Music Video Launch**: full-bleed video hero, premiere chat ticker.
+- **Album/EP**: vertical scroll-snap per track with mini-player.
+- **Concert**: ticket-purchase-first flow, RSVP secondary, venue map primary.
+- Make every campaign type completely different:
+  New Song Release:
+  - Release countdown
+  - Smart links
+  - Fan capture
+  Music Video Launch:
+  - Video-first layout
+  - Premiere countdown
+  - Video engagement analytics
+  Album / EP Launch:
+  - Tracklist showcase
+  - Multi-song previews
+  - Album-focused design
+  Concert Promotion:
+  - Venue information
+  - RSVP collection
+  - Ticket purchase flow
+  - Event countdown
+  &nbsp;
+
+Distinct **setup wizards** in `CreateCampaign.tsx` per template (different fields, not just same form with different labels).
+
+---
+
+## Suggested ship order (and what I'll touch)
+
+1. **Track 1 + 2** (analytics + audio) — small, critical, ~6 files + 1 migration. **Ship first.**
+2. **Track 6** (perf) — small, low risk.
+3. **Track 4** (customization) — 1 migration + 2 components.
+4. **Track 3** (true Spotify pre-save) — biggest; 1 migration, edge function hardening, new fan-gate UI.
+5. **Track 5** (ad scaffolding) — 1 migration + ad slot components.
+6. **Track 7** (template differentiation polish).
+
+---
+
+## Before I start — please confirm
+
+1. **Spotify**: Name + Email required **before** OAuth button (per your spec) — confirm yes. yes 
+2. **Auto-follow & auto-add-to-playlist**: ship as **per-campaign toggles, default off**? YES 
+3. **Ad monetization**: scaffold only this pass (house ads + DB + dashboard), with GAM as a documented next step — OK? YES
+4. **Order**: ship Tracks 1+2+6 now in one batch, then continue with 3/4/5/7 in follow-ups? Or do you want everything in one giant batch (much longer, higher risk)? YES everything in one gaint batch
+
+Reply with answers (or "all defaults, ship in order") and I'll start with Track 1+2 immediately.
