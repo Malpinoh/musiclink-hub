@@ -32,8 +32,12 @@ const AudioPreviewPlayer = ({
   const [buffering, setBuffering] = useState(false);
   const [error, setError] = useState(false);
 
-  const clipStart = previewStart || 0;
-  const clipEnd = previewEnd ?? duration ?? 30;
+  // The stored audio file is already the trimmed preview clip. Always play
+  // it from 0 to its actual loaded duration. previewStart/previewEnd refer
+  // to positions in the ORIGINAL song and must NOT clamp playback of the
+  // already-trimmed preview file (that was the bug cutting off playback).
+  const clipStart = 0;
+  const clipEnd = duration || (previewEnd != null && previewStart != null ? previewEnd - previewStart : 30);
   const clipLen = Math.max(0, clipEnd - clipStart);
 
   const bars = useMemo(() => {
