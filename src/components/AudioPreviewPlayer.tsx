@@ -66,13 +66,7 @@ const AudioPreviewPlayer = ({
 
     const onMeta = () => setDuration(a.duration || 0);
     const onTime = () => {
-      setProgress(Math.max(0, a.currentTime - clipStart));
-      if (previewEnd != null && a.currentTime >= previewEnd) {
-        a.pause();
-        a.currentTime = clipStart;
-        setPlaying(false);
-        setEnded(true);
-      }
+      setProgress(Math.max(0, a.currentTime));
     };
     const onEnded = () => { setPlaying(false); setEnded(true); setProgress(0); };
     const onWaiting = () => setBuffering(true);
