@@ -368,10 +368,12 @@ function PreSaveContent({ artistParam, slugParam }: { artistParam?: string; slug
                   <p className="text-sm text-muted-foreground">We'll send you a notification as soon as <strong>{preSave.title}</strong> drops.</p>
                 </div>
               ) : (
-                <form onSubmit={handleFanSubmit} className="glass-card p-6 text-left space-y-4">
+                <form onSubmit={handleNotifyMe} className="glass-card p-6 text-left space-y-4">
                   <div className="text-center mb-2">
-                    <h3 className="font-display font-semibold text-lg">Get notified when it drops</h3>
-                    <p className="text-xs text-muted-foreground mt-1">Be the first to listen on release day</p>
+                    <h3 className="font-display font-semibold text-lg">Pre-save on Spotify</h3>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Enter your name and email, then connect Spotify. We'll save it to your library and notify you on release day.
+                    </p>
                   </div>
                   <div>
                     <Label htmlFor="fan-name" className="flex items-center gap-1.5 mb-1"><User className="w-3.5 h-3.5" /> Name</Label>
@@ -381,13 +383,20 @@ function PreSaveContent({ artistParam, slugParam }: { artistParam?: string; slug
                     <Label htmlFor="fan-email" className="flex items-center gap-1.5 mb-1"><Mail className="w-3.5 h-3.5" /> Email</Label>
                     <Input id="fan-email" type="email" placeholder="you@email.com" value={fanEmail} onChange={(e) => setFanEmail(e.target.value)} required maxLength={255} />
                   </div>
-                  <div>
-                    <Label htmlFor="spotify-email" className="flex items-center gap-1.5 mb-1"><Disc3 className="w-3.5 h-3.5" /> Spotify Email (optional)</Label>
-                    <Input id="spotify-email" type="email" placeholder="your-spotify@email.com" value={spotifyEmail} onChange={(e) => setSpotifyEmail(e.target.value)} maxLength={255} />
-                  </div>
-                  <Button type="submit" variant="hero" size="lg" className="w-full" disabled={submitting}>
-                    {submitting ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Bell className="w-4 h-4 mr-2" />}
-                    Notify me when it drops
+                  <Button
+                    type="button"
+                    variant="hero"
+                    size="lg"
+                    className="w-full bg-[#1DB954] hover:bg-[#1ed760] text-black"
+                    disabled={submitting}
+                    onClick={handleSpotifyPresave}
+                  >
+                    {submitting ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
+                    Pre-Save on Spotify
+                  </Button>
+                  <Button type="submit" variant="outline" size="sm" className="w-full" disabled={submitting}>
+                    <Bell className="w-3.5 h-3.5 mr-2" />
+                    Just notify me by email
                   </Button>
                 </form>
               )}
