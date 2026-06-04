@@ -12,6 +12,7 @@ const SpotifyCallback = () => {
 
   useEffect(() => {
     handleCallback();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleCallback = async () => {
@@ -24,7 +25,6 @@ const SpotifyCallback = () => {
       setMessage("Authorization was cancelled or denied.");
       return;
     }
-
     if (!code || !state) {
       setStatus("error");
       setMessage("Invalid callback parameters.");
@@ -32,39 +32,41 @@ const SpotifyCallback = () => {
     }
 
     try {
-      // Parse state to get pre_save_id and action
       const stateData = JSON.parse(atob(state));
-      const { preSaveId, action, returnUrl } = stateData;
+      const { preSaveId, action, returnUrl, redirectUri, fanId } = stateData;
 
-      // Exchange code for tokens via edge function
-      const { data, error: exchangeError } = await supabase.functions.invoke(
-        "spotify-oauth-callback",
-        {
-          body: { code, preSaveId, action },
+      // Recover fan name/email from sessionStorage
+      let fanName: string | null = null;
+      let fanEmail: string | null = null;
+      try {
+        const cached = sessionStorage.getItem(`presave_fan_${preSaveId}`);
+        if (cached) {
+          const parsed = JSON.parse(cached);
+          fanName = parsed.name ?? null;
+          fanEmail = parsed.email ?? null;
         }
-      );
+      } catch {/* ignore */}
 
-      if (exchangeError || !data?.success) {
-        throw new Error(exchangeError?.message || data?.error || "Failed to complete authorization");
+      const { data, error: invokeError } = await supabase.functions.invoke("spotify-oauth-callback", {
+        body: { code, preSaveId, action, fanId, fanName, fanEmail, redirectUri },
+      });
+
+      if (invokeError || !data?.success) {
+        throw new Error(invokeError?.message || data?.error || "Failed to complete authorization");
       }
 
+      sessionStorage.removeItem(`presave_fan_${preSaveId}`);
       setStatus("success");
-      setMessage(
-        action === "presave"
-          ? "Pre-save confirmed! We'll save this to your library on release day."
-          : "You're now following the artist!"
-      );
+      setMessage("Pre-save confirmed! We'll save this to your library on release day.");
 
-      // Redirect back after a delay
       setTimeout(() => {
-        if (returnUrl) {
-          navigate(returnUrl);
-        }
+        if (returnUrl) navigate(returnUrl);
       }, 2000);
-    } catch (err: any) {
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Something went wrong. Please try again.";
       console.error("Callback error:", err);
       setStatus("error");
-      setMessage(err.message || "Something went wrong. Please try again.");
+      setMessage(msg);
     }
   };
 
@@ -75,18 +77,16 @@ const SpotifyCallback = () => {
           <>
             <Loader2 className="w-12 h-12 animate-spin text-primary mx-auto mb-4" />
             <h1 className="font-display text-xl font-bold mb-2">Connecting to Spotify...</h1>
-            <p className="text-muted-foreground">Please wait while we complete your request.</p>
+            <p className="text-muted-foreground">Please wait while we complete your pre-save.</p>
           </>
         )}
-
         {status === "success" && (
           <>
             <CheckCircle className="w-12 h-12 text-green-500 mx-auto mb-4" />
-            <h1 className="font-display text-xl font-bold mb-2">Success!</h1>
+            <h1 className="font-display text-xl font-bold mb-2">You're in! 🎉</h1>
             <p className="text-muted-foreground">{message}</p>
           </>
         )}
-
         {status === "error" && (
           <>
             <XCircle className="w-12 h-12 text-destructive mx-auto mb-4" />

@@ -531,14 +531,24 @@ export type Database = {
       pre_save_actions: {
         Row: {
           action_type: string
+          artist_followed: boolean
+          artist_followed_at: string | null
           city: string | null
           completed: boolean | null
           country: string | null
           created_at: string
           email: string | null
+          email_sent: boolean
+          email_sent_at: string | null
+          fan_email: string | null
+          fan_id: string | null
+          fan_name: string | null
           id: string
+          last_error: string | null
           library_saved: boolean | null
           library_saved_at: string | null
+          playlist_added: boolean
+          playlist_added_at: string | null
           pre_save_id: string
           spotify_access_token: string | null
           spotify_refresh_token: string | null
@@ -547,14 +557,24 @@ export type Database = {
         }
         Insert: {
           action_type: string
+          artist_followed?: boolean
+          artist_followed_at?: string | null
           city?: string | null
           completed?: boolean | null
           country?: string | null
           created_at?: string
           email?: string | null
+          email_sent?: boolean
+          email_sent_at?: string | null
+          fan_email?: string | null
+          fan_id?: string | null
+          fan_name?: string | null
           id?: string
+          last_error?: string | null
           library_saved?: boolean | null
           library_saved_at?: string | null
+          playlist_added?: boolean
+          playlist_added_at?: string | null
           pre_save_id: string
           spotify_access_token?: string | null
           spotify_refresh_token?: string | null
@@ -563,14 +583,24 @@ export type Database = {
         }
         Update: {
           action_type?: string
+          artist_followed?: boolean
+          artist_followed_at?: string | null
           city?: string | null
           completed?: boolean | null
           country?: string | null
           created_at?: string
           email?: string | null
+          email_sent?: boolean
+          email_sent_at?: string | null
+          fan_email?: string | null
+          fan_id?: string | null
+          fan_name?: string | null
           id?: string
+          last_error?: string | null
           library_saved?: boolean | null
           library_saved_at?: string | null
+          playlist_added?: boolean
+          playlist_added_at?: string | null
           pre_save_id?: string
           spotify_access_token?: string | null
           spotify_refresh_token?: string | null
@@ -595,6 +625,8 @@ export type Database = {
           artist: string
           artist_slug: string
           artwork_url: string | null
+          auto_add_to_playlist: boolean
+          auto_follow_artist: boolean
           created_at: string
           description: string | null
           id: string
@@ -602,10 +634,12 @@ export type Database = {
           is_released: boolean | null
           isrc: string | null
           links_resolved: boolean | null
+          playlist_id: string | null
           preview_audio_url: string | null
           preview_end: number | null
           preview_start: number | null
           release_date: string | null
+          send_release_email: boolean
           slug: string
           spotify_album_id: string | null
           spotify_artist_id: string | null
@@ -623,6 +657,8 @@ export type Database = {
           artist: string
           artist_slug: string
           artwork_url?: string | null
+          auto_add_to_playlist?: boolean
+          auto_follow_artist?: boolean
           created_at?: string
           description?: string | null
           id?: string
@@ -630,10 +666,12 @@ export type Database = {
           is_released?: boolean | null
           isrc?: string | null
           links_resolved?: boolean | null
+          playlist_id?: string | null
           preview_audio_url?: string | null
           preview_end?: number | null
           preview_start?: number | null
           release_date?: string | null
+          send_release_email?: boolean
           slug: string
           spotify_album_id?: string | null
           spotify_artist_id?: string | null
@@ -651,6 +689,8 @@ export type Database = {
           artist?: string
           artist_slug?: string
           artwork_url?: string | null
+          auto_add_to_playlist?: boolean
+          auto_follow_artist?: boolean
           created_at?: string
           description?: string | null
           id?: string
@@ -658,10 +698,12 @@ export type Database = {
           is_released?: boolean | null
           isrc?: string | null
           links_resolved?: boolean | null
+          playlist_id?: string | null
           preview_audio_url?: string | null
           preview_end?: number | null
           preview_start?: number | null
           release_date?: string | null
+          send_release_email?: boolean
           slug?: string
           spotify_album_id?: string | null
           spotify_artist_id?: string | null

@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { trackEvent } from "@/lib/analytics";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Music2, Bell, Loader2, Calendar, Share2, Copy, Check, Mail, User, Disc3 } from "lucide-react";
+import { Music2, Bell, Loader2, Calendar, Share2, Copy, Check, Mail, User } from "lucide-react";
 import AudioPreviewPlayer from "@/components/AudioPreviewPlayer";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -13,6 +13,7 @@ import demoArtwork from "@/assets/demo-artwork.jpg";
 import SEOHead from "@/components/SEOHead";
 import { getShareablePresaveUrl } from "@/lib/shareUrl";
 import logo from "@/assets/logo.png";
+import { buildSpotifyAuthorizeUrl, getPresaveRedirectUri } from "@/lib/spotifyAuth";
 
 interface PreSaveData {
   id: string;
@@ -113,7 +114,6 @@ function PreSaveContent({ artistParam, slugParam }: { artistParam?: string; slug
   // Fan form
   const [fanName, setFanName] = useState("");
   const [fanEmail, setFanEmail] = useState("");
-  const [spotifyEmail, setSpotifyEmail] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
 
@@ -151,27 +151,45 @@ function PreSaveContent({ artistParam, slugParam }: { artistParam?: string; slug
     })();
   }, [artist, slug]);
 
-  const handleFanSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!preSave || !fanName.trim() || !fanEmail.trim()) return;
-
+  const validateForm = (): boolean => {
+    if (!fanName.trim()) { toast.error("Please enter your name"); return false; }
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(fanEmail.trim())) { toast.error("Please enter a valid email"); return; }
-    if (spotifyEmail.trim() && !emailRegex.test(spotifyEmail.trim())) { toast.error("Please enter a valid Spotify email"); return; }
+    if (!emailRegex.test(fanEmail.trim())) { toast.error("Please enter a valid email"); return false; }
+    return true;
+  };
 
+  // Insert fan signup, return fan id. Handles duplicate (already on list) by
+  // fetching the existing row.
+  const upsertFan = async (preSaveId: string): Promise<string | null> => {
+    const email = fanEmail.trim().toLowerCase();
+    const name = fanName.trim();
+    const { data, error } = await supabase.from("presave_fans").insert({
+      pre_save_id: preSaveId,
+      name,
+      email,
+    }).select("id").maybeSingle();
+    if (data?.id) return data.id;
+    if (error && error.code === "23505") {
+      // Duplicate — fetch existing
+      const { data: existing } = await supabase
+        .from("presave_fans")
+        .select("id")
+        .eq("pre_save_id", preSaveId)
+        .eq("email", email)
+        .maybeSingle();
+      return existing?.id ?? null;
+    }
+    if (error) throw error;
+    return null;
+  };
+
+  const handleNotifyMe = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!preSave || !validateForm()) return;
     setSubmitting(true);
     try {
-      const { error } = await supabase.from("presave_fans").insert({
-        pre_save_id: preSave.id,
-        name: fanName.trim(),
-        email: fanEmail.trim().toLowerCase(),
-        spotify_email: spotifyEmail.trim().toLowerCase() || null,
-      });
-
-      if (error) {
-        if (error.code === "23505") { toast.info("You're already signed up!"); setSubmitted(true); return; }
-        throw error;
-      }
+      const fanId = await upsertFan(preSave.id);
+      if (!fanId) throw new Error("Could not create signup");
       trackEvent("fan_collected", { pre_save_id: preSave.id });
       setSubmitted(true);
       toast.success("You're on the list! We'll notify you when it drops.");
@@ -181,6 +199,41 @@ function PreSaveContent({ artistParam, slugParam }: { artistParam?: string; slug
       setSubmitting(false);
     }
   };
+
+  const handleSpotifyPresave = async () => {
+    if (!preSave || !validateForm()) return;
+    setSubmitting(true);
+    try {
+      const fanId = await upsertFan(preSave.id);
+      if (!fanId) throw new Error("Could not create signup");
+      trackEvent("fan_collected", { pre_save_id: preSave.id });
+      trackEvent("spotify_presave_started", { pre_save_id: preSave.id });
+
+      const redirectUri = getPresaveRedirectUri();
+      const authorizeUrl = buildSpotifyAuthorizeUrl({
+        preSaveId: preSave.id,
+        fanId,
+        action: "save_and_follow",
+        redirectUri,
+        returnUrl: window.location.pathname,
+      });
+      if (!authorizeUrl) {
+        toast.error("Spotify integration is not configured.");
+        return;
+      }
+      // Persist fan name/email so the callback can read it without depending on state.
+      sessionStorage.setItem(
+        `presave_fan_${preSave.id}`,
+        JSON.stringify({ fanId, name: fanName.trim(), email: fanEmail.trim().toLowerCase() }),
+      );
+      window.location.href = authorizeUrl;
+    } catch (err) {
+      console.error(err);
+      toast.error("Could not start Spotify pre-save.");
+      setSubmitting(false);
+    }
+  };
+
 
   const getCountdown = () => {
     if (!preSave?.release_date) return null;
@@ -315,10 +368,12 @@ function PreSaveContent({ artistParam, slugParam }: { artistParam?: string; slug
                   <p className="text-sm text-muted-foreground">We'll send you a notification as soon as <strong>{preSave.title}</strong> drops.</p>
                 </div>
               ) : (
-                <form onSubmit={handleFanSubmit} className="glass-card p-6 text-left space-y-4">
+                <form onSubmit={handleNotifyMe} className="glass-card p-6 text-left space-y-4">
                   <div className="text-center mb-2">
-                    <h3 className="font-display font-semibold text-lg">Get notified when it drops</h3>
-                    <p className="text-xs text-muted-foreground mt-1">Be the first to listen on release day</p>
+                    <h3 className="font-display font-semibold text-lg">Pre-save on Spotify</h3>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Enter your name and email, then connect Spotify. We'll save it to your library and notify you on release day.
+                    </p>
                   </div>
                   <div>
                     <Label htmlFor="fan-name" className="flex items-center gap-1.5 mb-1"><User className="w-3.5 h-3.5" /> Name</Label>
@@ -328,13 +383,20 @@ function PreSaveContent({ artistParam, slugParam }: { artistParam?: string; slug
                     <Label htmlFor="fan-email" className="flex items-center gap-1.5 mb-1"><Mail className="w-3.5 h-3.5" /> Email</Label>
                     <Input id="fan-email" type="email" placeholder="you@email.com" value={fanEmail} onChange={(e) => setFanEmail(e.target.value)} required maxLength={255} />
                   </div>
-                  <div>
-                    <Label htmlFor="spotify-email" className="flex items-center gap-1.5 mb-1"><Disc3 className="w-3.5 h-3.5" /> Spotify Email (optional)</Label>
-                    <Input id="spotify-email" type="email" placeholder="your-spotify@email.com" value={spotifyEmail} onChange={(e) => setSpotifyEmail(e.target.value)} maxLength={255} />
-                  </div>
-                  <Button type="submit" variant="hero" size="lg" className="w-full" disabled={submitting}>
-                    {submitting ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Bell className="w-4 h-4 mr-2" />}
-                    Notify me when it drops
+                  <Button
+                    type="button"
+                    variant="hero"
+                    size="lg"
+                    className="w-full bg-[#1DB954] hover:bg-[#1ed760] text-black"
+                    disabled={submitting}
+                    onClick={handleSpotifyPresave}
+                  >
+                    {submitting ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
+                    Pre-Save on Spotify
+                  </Button>
+                  <Button type="submit" variant="outline" size="sm" className="w-full" disabled={submitting}>
+                    <Bell className="w-3.5 h-3.5 mr-2" />
+                    Just notify me by email
                   </Button>
                 </form>
               )}
