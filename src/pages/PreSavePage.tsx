@@ -114,7 +114,6 @@ function PreSaveContent({ artistParam, slugParam }: { artistParam?: string; slug
   // Fan form
   const [fanName, setFanName] = useState("");
   const [fanEmail, setFanEmail] = useState("");
-  const [spotifyEmail, setSpotifyEmail] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
 
@@ -152,27 +151,45 @@ function PreSaveContent({ artistParam, slugParam }: { artistParam?: string; slug
     })();
   }, [artist, slug]);
 
-  const handleFanSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!preSave || !fanName.trim() || !fanEmail.trim()) return;
-
+  const validateForm = (): boolean => {
+    if (!fanName.trim()) { toast.error("Please enter your name"); return false; }
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(fanEmail.trim())) { toast.error("Please enter a valid email"); return; }
-    if (spotifyEmail.trim() && !emailRegex.test(spotifyEmail.trim())) { toast.error("Please enter a valid Spotify email"); return; }
+    if (!emailRegex.test(fanEmail.trim())) { toast.error("Please enter a valid email"); return false; }
+    return true;
+  };
 
+  // Insert fan signup, return fan id. Handles duplicate (already on list) by
+  // fetching the existing row.
+  const upsertFan = async (preSaveId: string): Promise<string | null> => {
+    const email = fanEmail.trim().toLowerCase();
+    const name = fanName.trim();
+    const { data, error } = await supabase.from("presave_fans").insert({
+      pre_save_id: preSaveId,
+      name,
+      email,
+    }).select("id").maybeSingle();
+    if (data?.id) return data.id;
+    if (error && error.code === "23505") {
+      // Duplicate — fetch existing
+      const { data: existing } = await supabase
+        .from("presave_fans")
+        .select("id")
+        .eq("pre_save_id", preSaveId)
+        .eq("email", email)
+        .maybeSingle();
+      return existing?.id ?? null;
+    }
+    if (error) throw error;
+    return null;
+  };
+
+  const handleNotifyMe = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!preSave || !validateForm()) return;
     setSubmitting(true);
     try {
-      const { error } = await supabase.from("presave_fans").insert({
-        pre_save_id: preSave.id,
-        name: fanName.trim(),
-        email: fanEmail.trim().toLowerCase(),
-        spotify_email: spotifyEmail.trim().toLowerCase() || null,
-      });
-
-      if (error) {
-        if (error.code === "23505") { toast.info("You're already signed up!"); setSubmitted(true); return; }
-        throw error;
-      }
+      const fanId = await upsertFan(preSave.id);
+      if (!fanId) throw new Error("Could not create signup");
       trackEvent("fan_collected", { pre_save_id: preSave.id });
       setSubmitted(true);
       toast.success("You're on the list! We'll notify you when it drops.");
@@ -182,6 +199,41 @@ function PreSaveContent({ artistParam, slugParam }: { artistParam?: string; slug
       setSubmitting(false);
     }
   };
+
+  const handleSpotifyPresave = async () => {
+    if (!preSave || !validateForm()) return;
+    setSubmitting(true);
+    try {
+      const fanId = await upsertFan(preSave.id);
+      if (!fanId) throw new Error("Could not create signup");
+      trackEvent("fan_collected", { pre_save_id: preSave.id });
+      trackEvent("spotify_presave_started", { pre_save_id: preSave.id });
+
+      const redirectUri = getPresaveRedirectUri();
+      const authorizeUrl = buildSpotifyAuthorizeUrl({
+        preSaveId: preSave.id,
+        fanId,
+        action: "save_and_follow",
+        redirectUri,
+        returnUrl: window.location.pathname,
+      });
+      if (!authorizeUrl) {
+        toast.error("Spotify integration is not configured.");
+        return;
+      }
+      // Persist fan name/email so the callback can read it without depending on state.
+      sessionStorage.setItem(
+        `presave_fan_${preSave.id}`,
+        JSON.stringify({ fanId, name: fanName.trim(), email: fanEmail.trim().toLowerCase() }),
+      );
+      window.location.href = authorizeUrl;
+    } catch (err) {
+      console.error(err);
+      toast.error("Could not start Spotify pre-save.");
+      setSubmitting(false);
+    }
+  };
+
 
   const getCountdown = () => {
     if (!preSave?.release_date) return null;
