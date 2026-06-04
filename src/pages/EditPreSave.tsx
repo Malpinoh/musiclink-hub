@@ -44,6 +44,10 @@ interface PreSave {
   preview_start: number | null;
   preview_end: number | null;
   waveform_data: number[] | null;
+  auto_follow_artist: boolean | null;
+  auto_add_to_playlist: boolean | null;
+  playlist_id: string | null;
+  send_release_email: boolean | null;
 }
 
 interface StreamingLink {
@@ -188,6 +192,10 @@ const EditPreSave = () => {
           preview_start: preSave.preview_start,
           preview_end: preSave.preview_end,
           waveform_data: preSave.waveform_data,
+          auto_follow_artist: preSave.auto_follow_artist ?? false,
+          auto_add_to_playlist: preSave.auto_add_to_playlist ?? false,
+          playlist_id: preSave.playlist_id || null,
+          send_release_email: preSave.send_release_email ?? true,
         })
         .eq("id", id);
 
