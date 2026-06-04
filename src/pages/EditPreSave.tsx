@@ -417,6 +417,79 @@ const EditPreSave = () => {
             </div>
           </motion.div>
 
+          {/* Release-Day Automation */}
+          <motion.div
+            className="glass-card p-6 mt-6"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.32 }}
+          >
+            <h2 className="font-display font-semibold text-lg mb-1">Release-Day Automation</h2>
+            <p className="text-sm text-muted-foreground mb-4">
+              What should happen for fans who pre-saved through Spotify, on release day?
+            </p>
+            <div className="space-y-4">
+              <label className="flex items-start gap-3 cursor-pointer">
+                <input
+                  type="checkbox"
+                  className="mt-1 w-4 h-4 accent-primary"
+                  checked={true}
+                  disabled
+                />
+                <div>
+                  <div className="font-medium text-sm">Save to Spotify Library (Liked Songs)</div>
+                  <div className="text-xs text-muted-foreground">Always on — this is the core of pre-save.</div>
+                </div>
+              </label>
+              <label className="flex items-start gap-3 cursor-pointer">
+                <input
+                  type="checkbox"
+                  className="mt-1 w-4 h-4 accent-primary"
+                  checked={preSave.auto_follow_artist ?? false}
+                  onChange={(e) => setPreSave({ ...preSave, auto_follow_artist: e.target.checked })}
+                />
+                <div>
+                  <div className="font-medium text-sm">Auto-follow the artist</div>
+                  <div className="text-xs text-muted-foreground">Requires Spotify Artist ID above.</div>
+                </div>
+              </label>
+              <label className="flex items-start gap-3 cursor-pointer">
+                <input
+                  type="checkbox"
+                  className="mt-1 w-4 h-4 accent-primary"
+                  checked={preSave.auto_add_to_playlist ?? false}
+                  onChange={(e) => setPreSave({ ...preSave, auto_add_to_playlist: e.target.checked })}
+                />
+                <div className="flex-1">
+                  <div className="font-medium text-sm">Add to playlist</div>
+                  <div className="text-xs text-muted-foreground mb-2">
+                    Adds all tracks to a playlist on the fan's account. They must own it (or it must be collaborative).
+                  </div>
+                  {preSave.auto_add_to_playlist && (
+                    <Input
+                      placeholder="Spotify playlist ID (e.g. 37i9dQZF1DXcBWIGoYBM5M)"
+                      value={preSave.playlist_id || ""}
+                      onChange={(e) => setPreSave({ ...preSave, playlist_id: e.target.value || null })}
+                    />
+                  )}
+                </div>
+              </label>
+              <label className="flex items-start gap-3 cursor-pointer">
+                <input
+                  type="checkbox"
+                  className="mt-1 w-4 h-4 accent-primary"
+                  checked={preSave.send_release_email ?? true}
+                  onChange={(e) => setPreSave({ ...preSave, send_release_email: e.target.checked })}
+                />
+                <div>
+                  <div className="font-medium text-sm">Send branded release email</div>
+                  <div className="text-xs text-muted-foreground">Notifies each fan via email when the release drops.</div>
+                </div>
+              </label>
+            </div>
+          </motion.div>
+
+
           {/* Audio Preview */}
           <motion.div
             className="glass-card p-6 mt-6"
