@@ -210,7 +210,7 @@ function PreSaveContent({ artistParam, slugParam }: { artistParam?: string; slug
       trackEvent("spotify_presave_started", { pre_save_id: preSave.id });
 
       const redirectUri = getPresaveRedirectUri();
-      const authorizeUrl = buildSpotifyAuthorizeUrl({
+      const authorizeUrl = await buildSpotifyAuthorizeUrl({
         preSaveId: preSave.id,
         fanId,
         action: "save_and_follow",

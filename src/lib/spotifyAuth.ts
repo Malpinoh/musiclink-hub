@@ -1,6 +1,7 @@
 // Build the Spotify OAuth authorize URL for fan pre-save.
 // The redirect URI must be registered in the Spotify developer dashboard
 // for each origin (preview + production + custom domains).
+import { supabase } from "@/integrations/supabase/client";
 
 export const SPOTIFY_PRESAVE_SCOPES = [
   "user-library-modify",
@@ -18,10 +19,32 @@ export interface PresaveOAuthState {
   returnUrl: string;
 }
 
-export function buildSpotifyAuthorizeUrl(state: PresaveOAuthState): string | null {
-  const clientId = import.meta.env.VITE_SPOTIFY_CLIENT_ID;
+let cachedClientId: string | null = null;
+
+async function getSpotifyClientId(): Promise<string | null> {
+  if (cachedClientId) return cachedClientId;
+  const envId = (import.meta.env.VITE_SPOTIFY_CLIENT_ID as string | undefined) || "";
+  if (envId) {
+    cachedClientId = envId;
+    return envId;
+  }
+  try {
+    const { data, error } = await supabase.functions.invoke("get-spotify-client-id");
+    if (error) throw error;
+    const id = (data as { clientId?: string } | null)?.clientId || "";
+    if (!id) return null;
+    cachedClientId = id;
+    return id;
+  } catch (e) {
+    console.error("Failed to fetch Spotify client id", e);
+    return null;
+  }
+}
+
+export async function buildSpotifyAuthorizeUrl(state: PresaveOAuthState): Promise<string | null> {
+  const clientId = await getSpotifyClientId();
   if (!clientId) {
-    console.error("VITE_SPOTIFY_CLIENT_ID not configured");
+    console.error("Spotify client id not configured");
     return null;
   }
   const params = new URLSearchParams({
