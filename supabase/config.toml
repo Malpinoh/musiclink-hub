@@ -59,3 +59,6 @@ verify_jwt = false
 
 [functions.resolve-presave-streaming-links]
 verify_jwt = false
+
+[functions.get-spotify-client-id]
+verify_jwt = false

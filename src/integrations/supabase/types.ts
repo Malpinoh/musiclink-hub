@@ -644,6 +644,17 @@ export type Database = {
           spotify_album_id: string | null
           spotify_artist_id: string | null
           spotify_uri: string | null
+          theme_accent_color: string | null
+          theme_bg_color: string | null
+          theme_bg_image_url: string | null
+          theme_button_color: string | null
+          theme_button_text_color: string | null
+          theme_countdown_enabled: boolean
+          theme_cta_text: string | null
+          theme_font_family: string | null
+          theme_hero_image_url: string | null
+          theme_layout: string
+          theme_text_color: string | null
           title: string
           upc: string | null
           updated_at: string
@@ -676,6 +687,17 @@ export type Database = {
           spotify_album_id?: string | null
           spotify_artist_id?: string | null
           spotify_uri?: string | null
+          theme_accent_color?: string | null
+          theme_bg_color?: string | null
+          theme_bg_image_url?: string | null
+          theme_button_color?: string | null
+          theme_button_text_color?: string | null
+          theme_countdown_enabled?: boolean
+          theme_cta_text?: string | null
+          theme_font_family?: string | null
+          theme_hero_image_url?: string | null
+          theme_layout?: string
+          theme_text_color?: string | null
           title: string
           upc?: string | null
           updated_at?: string
@@ -708,6 +730,17 @@ export type Database = {
           spotify_album_id?: string | null
           spotify_artist_id?: string | null
           spotify_uri?: string | null
+          theme_accent_color?: string | null
+          theme_bg_color?: string | null
+          theme_bg_image_url?: string | null
+          theme_button_color?: string | null
+          theme_button_text_color?: string | null
+          theme_countdown_enabled?: boolean
+          theme_cta_text?: string | null
+          theme_font_family?: string | null
+          theme_hero_image_url?: string | null
+          theme_layout?: string
+          theme_text_color?: string | null
           title?: string
           upc?: string | null
           updated_at?: string

@@ -48,6 +48,17 @@ interface PreSave {
   auto_add_to_playlist: boolean | null;
   playlist_id: string | null;
   send_release_email: boolean | null;
+  theme_bg_color: string | null;
+  theme_text_color: string | null;
+  theme_accent_color: string | null;
+  theme_button_color: string | null;
+  theme_button_text_color: string | null;
+  theme_font_family: string | null;
+  theme_bg_image_url: string | null;
+  theme_hero_image_url: string | null;
+  theme_cta_text: string | null;
+  theme_countdown_enabled: boolean | null;
+  theme_layout: string | null;
 }
 
 interface StreamingLink {
@@ -196,6 +207,17 @@ const EditPreSave = () => {
           auto_add_to_playlist: preSave.auto_add_to_playlist ?? false,
           playlist_id: preSave.playlist_id || null,
           send_release_email: preSave.send_release_email ?? true,
+          theme_bg_color: preSave.theme_bg_color,
+          theme_text_color: preSave.theme_text_color,
+          theme_accent_color: preSave.theme_accent_color,
+          theme_button_color: preSave.theme_button_color,
+          theme_button_text_color: preSave.theme_button_text_color,
+          theme_font_family: preSave.theme_font_family,
+          theme_bg_image_url: preSave.theme_bg_image_url,
+          theme_hero_image_url: preSave.theme_hero_image_url,
+          theme_cta_text: preSave.theme_cta_text,
+          theme_countdown_enabled: preSave.theme_countdown_enabled ?? true,
+          theme_layout: preSave.theme_layout || 'classic',
         })
         .eq("id", id);
 
@@ -488,6 +510,116 @@ const EditPreSave = () => {
               </label>
             </div>
           </motion.div>
+
+          {/* Page Customization */}
+          <motion.div
+            className="glass-card p-6 mt-6"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.33 }}
+          >
+            <h2 className="font-display font-semibold text-lg mb-1">🎨 Page Customization</h2>
+            <p className="text-sm text-muted-foreground mb-4">
+              Brand your pre-save page. Leave blank to use defaults.
+            </p>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <Label>Layout style</Label>
+                <select
+                  className="w-full mt-1 bg-background border border-input rounded-md h-10 px-3 text-sm"
+                  value={preSave.theme_layout || 'classic'}
+                  onChange={(e) => setPreSave({ ...preSave, theme_layout: e.target.value })}
+                >
+                  <option value="classic">Classic — centered card</option>
+                  <option value="bold">Bold — full-bleed hero</option>
+                  <option value="minimal">Minimal — clean & quiet</option>
+                </select>
+              </div>
+              <div>
+                <Label>Font</Label>
+                <select
+                  className="w-full mt-1 bg-background border border-input rounded-md h-10 px-3 text-sm"
+                  value={preSave.theme_font_family || ''}
+                  onChange={(e) => setPreSave({ ...preSave, theme_font_family: e.target.value || null })}
+                >
+                  <option value="">Default</option>
+                  <option value="'Inter', sans-serif">Inter</option>
+                  <option value="'Space Grotesk', sans-serif">Space Grotesk</option>
+                  <option value="'Playfair Display', serif">Playfair Display</option>
+                  <option value="'Bebas Neue', sans-serif">Bebas Neue</option>
+                  <option value="'JetBrains Mono', monospace">JetBrains Mono</option>
+                </select>
+              </div>
+
+              {[
+                { key: 'theme_bg_color', label: 'Background color' },
+                { key: 'theme_text_color', label: 'Text color' },
+                { key: 'theme_accent_color', label: 'Accent color' },
+                { key: 'theme_button_color', label: 'Button color' },
+                { key: 'theme_button_text_color', label: 'Button text color' },
+              ].map((f) => {
+                const val = (preSave as unknown as Record<string, string | null>)[f.key] || '';
+                return (
+                  <div key={f.key}>
+                    <Label>{f.label}</Label>
+                    <div className="flex gap-2 mt-1">
+                      <input
+                        type="color"
+                        value={val || '#000000'}
+                        onChange={(e) => setPreSave({ ...preSave, [f.key]: e.target.value } as PreSave)}
+                        className="w-12 h-10 rounded border border-input cursor-pointer bg-background"
+                      />
+                      <Input
+                        placeholder="#hex or blank"
+                        value={val}
+                        onChange={(e) => setPreSave({ ...preSave, [f.key]: e.target.value || null } as PreSave)}
+                      />
+                    </div>
+                  </div>
+                );
+              })}
+
+              <div className="md:col-span-2">
+                <Label>Background image URL (optional)</Label>
+                <Input
+                  className="mt-1"
+                  placeholder="https://..."
+                  value={preSave.theme_bg_image_url || ''}
+                  onChange={(e) => setPreSave({ ...preSave, theme_bg_image_url: e.target.value || null })}
+                />
+              </div>
+              <div className="md:col-span-2">
+                <Label>Hero image URL (optional — overrides artwork)</Label>
+                <Input
+                  className="mt-1"
+                  placeholder="https://..."
+                  value={preSave.theme_hero_image_url || ''}
+                  onChange={(e) => setPreSave({ ...preSave, theme_hero_image_url: e.target.value || null })}
+                />
+              </div>
+              <div className="md:col-span-2">
+                <Label>Call-to-action button text</Label>
+                <Input
+                  className="mt-1"
+                  placeholder="Pre-Save on Spotify"
+                  value={preSave.theme_cta_text || ''}
+                  onChange={(e) => setPreSave({ ...preSave, theme_cta_text: e.target.value || null })}
+                />
+              </div>
+              <label className="flex items-center gap-3 cursor-pointer md:col-span-2">
+                <input
+                  type="checkbox"
+                  className="w-4 h-4 accent-primary"
+                  checked={preSave.theme_countdown_enabled ?? true}
+                  onChange={(e) => setPreSave({ ...preSave, theme_countdown_enabled: e.target.checked })}
+                />
+                <span className="text-sm">Show countdown timer</span>
+              </label>
+            </div>
+          </motion.div>
+
+
 
 
           {/* Audio Preview */}
