@@ -218,17 +218,6 @@ const EditPreSave = () => {
           theme_cta_text: preSave.theme_cta_text,
           theme_countdown_enabled: preSave.theme_countdown_enabled ?? true,
           theme_layout: preSave.theme_layout || 'classic',
-          theme_bg_color: preSave.theme_bg_color || null,
-          theme_text_color: preSave.theme_text_color || null,
-          theme_accent_color: preSave.theme_accent_color || null,
-          theme_button_color: preSave.theme_button_color || null,
-          theme_button_text_color: preSave.theme_button_text_color || null,
-          theme_font_family: preSave.theme_font_family || null,
-          theme_bg_image_url: preSave.theme_bg_image_url || null,
-          theme_hero_image_url: preSave.theme_hero_image_url || null,
-          theme_cta_text: preSave.theme_cta_text || null,
-          theme_countdown_enabled: preSave.theme_countdown_enabled ?? true,
-          theme_layout: preSave.theme_layout || 'classic',
         })
         .eq("id", id);
 
