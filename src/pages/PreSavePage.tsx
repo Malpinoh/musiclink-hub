@@ -292,11 +292,22 @@ function PreSaveContent({ artistParam, slugParam }: { artistParam?: string; slug
   }
 
   return (
-    <div className="min-h-screen bg-background relative overflow-hidden">
+    <div
+      className="min-h-screen bg-background relative overflow-hidden"
+      style={{
+        backgroundColor: preSave.theme_bg_color || undefined,
+        color: preSave.theme_text_color || undefined,
+        fontFamily: preSave.theme_font_family || undefined,
+      }}
+    >
       <SEOHead title={preSave.title} artist={preSave.artist} imageUrl={preSave.artwork_url || undefined} pageUrl={currentUrl} albumTitle={preSave.album_title || undefined} type="presave" />
 
       <div className="absolute inset-0 z-0">
-        <img src={preSave.artwork_url || demoArtwork} alt="" className="w-full h-full object-cover opacity-20 blur-3xl scale-110" />
+        <img
+          src={preSave.theme_bg_image_url || preSave.artwork_url || demoArtwork}
+          alt=""
+          className={preSave.theme_bg_image_url ? "w-full h-full object-cover opacity-40" : "w-full h-full object-cover opacity-20 blur-3xl scale-110"}
+        />
         <div className="absolute inset-0 bg-gradient-to-b from-background/80 via-background/90 to-background" />
       </div>
 
