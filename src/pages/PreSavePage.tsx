@@ -34,6 +34,17 @@ interface PreSaveData {
   preview_start: number | null;
   preview_end: number | null;
   waveform_data: number[] | null;
+  theme_bg_color?: string | null;
+  theme_text_color?: string | null;
+  theme_accent_color?: string | null;
+  theme_button_color?: string | null;
+  theme_button_text_color?: string | null;
+  theme_font_family?: string | null;
+  theme_bg_image_url?: string | null;
+  theme_hero_image_url?: string | null;
+  theme_cta_text?: string | null;
+  theme_countdown_enabled?: boolean | null;
+  theme_layout?: string | null;
 }
 
 /**
