@@ -328,7 +328,7 @@ function PreSaveContent({ artistParam, slugParam }: { artistParam?: string; slug
             {/* Artwork */}
             <motion.div className="relative mb-8" initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ delay: 0.1 }}>
               <div className="absolute -inset-4 bg-gradient-to-r from-primary/30 to-accent/30 blur-2xl rounded-full opacity-50 animate-pulse-glow" />
-              <img src={preSave.artwork_url || demoArtwork} alt={`${preSave.title} artwork`} className="relative w-56 h-56 md:w-64 md:h-64 mx-auto rounded-2xl shadow-2xl object-cover" />
+              <img src={preSave.theme_hero_image_url || preSave.artwork_url || demoArtwork} alt={`${preSave.title} artwork`} className="relative w-56 h-56 md:w-64 md:h-64 mx-auto rounded-2xl shadow-2xl object-cover" />
               {!preSave.is_released && (
                 <div className="absolute -bottom-3 left-1/2 -translate-x-1/2 bg-gradient-to-r from-primary to-accent px-4 py-1 rounded-full">
                   <span className="text-xs font-semibold text-primary-foreground">PRE-SAVE</span>
@@ -363,7 +363,7 @@ function PreSaveContent({ artistParam, slugParam }: { artistParam?: string; slug
             </motion.div>
 
             {/* Countdown */}
-            {countdown && !preSave.is_released && (
+            {countdown && !preSave.is_released && (preSave.theme_countdown_enabled ?? true) && (
               <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.25 }} className="mb-8">
                 <p className="text-xs uppercase tracking-widest text-muted-foreground mb-3">Drops in</p>
                 <div className="flex justify-center gap-4">
@@ -410,11 +410,16 @@ function PreSaveContent({ artistParam, slugParam }: { artistParam?: string; slug
                     variant="hero"
                     size="lg"
                     className="w-full bg-[#1DB954] hover:bg-[#1ed760] text-black"
+                    style={
+                      preSave.theme_button_color
+                        ? { backgroundColor: preSave.theme_button_color, color: preSave.theme_button_text_color || undefined }
+                        : undefined
+                    }
                     disabled={submitting}
                     onClick={handleSpotifyPresave}
                   >
                     {submitting ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
-                    Pre-Save on Spotify
+                    {preSave.theme_cta_text || "Pre-Save on Spotify"}
                   </Button>
                   <Button type="submit" variant="outline" size="sm" className="w-full" disabled={submitting}>
                     <Bell className="w-3.5 h-3.5 mr-2" />
