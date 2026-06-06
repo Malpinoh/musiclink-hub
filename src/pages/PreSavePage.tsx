@@ -14,6 +14,7 @@ import SEOHead from "@/components/SEOHead";
 import { getShareablePresaveUrl } from "@/lib/shareUrl";
 import logo from "@/assets/logo.png";
 import { buildSpotifyAuthorizeUrl, getPresaveRedirectUri } from "@/lib/spotifyAuth";
+import HouseAdSlot from "@/components/HouseAdSlot";
 
 interface PreSaveData {
   id: string;
@@ -427,6 +428,10 @@ function PreSaveContent({ artistParam, slugParam }: { artistParam?: string; slug
                   </Button>
                 </form>
               )}
+            </motion.div>
+
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.4 }} className="mt-6">
+              <HouseAdSlot preSaveId={preSave.id} />
             </motion.div>
           </motion.div>
         </main>
