@@ -32,6 +32,7 @@ const CampaignDashboard = lazy(() => import("./pages/CampaignDashboard"));
 const CreateCampaign = lazy(() => import("./pages/CreateCampaign"));
 const CampaignList = lazy(() => import("./pages/CampaignList"));
 const CampaignPage = lazy(() => import("./pages/CampaignPage"));
+const RevenueDashboard = lazy(() => import("./pages/RevenueDashboard"));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -86,6 +87,7 @@ const App = () => {
                 <Route path="/artist/campaigns/create" element={<CreateCampaign />} />
                 <Route path="/artist/campaigns/list" element={<CampaignList />} />
                 <Route path="/artist/campaigns/view/:id" element={<CampaignPage />} />
+                <Route path="/artist/revenue" element={<RevenueDashboard />} />
                 <Route path="/callback/spotify" element={<SpotifyCallback />} />
                 <Route path="/artist/:username" element={<ArtistBioPage />} />
                 <Route path="/artist-bio/edit" element={<EditArtistBio />} />
