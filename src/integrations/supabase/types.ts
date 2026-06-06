@@ -14,6 +14,134 @@ export type Database = {
   }
   public: {
     Tables: {
+      ad_campaigns: {
+        Row: {
+          advertiser: string
+          cpc_cents: number
+          cpm_cents: number
+          created_at: string
+          cta_text: string | null
+          description: string | null
+          ends_at: string | null
+          id: string
+          image_url: string | null
+          is_active: boolean
+          is_house_ad: boolean
+          starts_at: string | null
+          target_url: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          advertiser: string
+          cpc_cents?: number
+          cpm_cents?: number
+          created_at?: string
+          cta_text?: string | null
+          description?: string | null
+          ends_at?: string | null
+          id?: string
+          image_url?: string | null
+          is_active?: boolean
+          is_house_ad?: boolean
+          starts_at?: string | null
+          target_url: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          advertiser?: string
+          cpc_cents?: number
+          cpm_cents?: number
+          created_at?: string
+          cta_text?: string | null
+          description?: string | null
+          ends_at?: string | null
+          id?: string
+          image_url?: string | null
+          is_active?: boolean
+          is_house_ad?: boolean
+          starts_at?: string | null
+          target_url?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      ad_impressions: {
+        Row: {
+          ad_campaign_id: string
+          artist_user_id: string | null
+          country: string | null
+          created_at: string
+          event_type: string
+          fanlink_id: string | null
+          id: string
+          pre_save_id: string | null
+        }
+        Insert: {
+          ad_campaign_id: string
+          artist_user_id?: string | null
+          country?: string | null
+          created_at?: string
+          event_type: string
+          fanlink_id?: string | null
+          id?: string
+          pre_save_id?: string | null
+        }
+        Update: {
+          ad_campaign_id?: string
+          artist_user_id?: string | null
+          country?: string | null
+          created_at?: string
+          event_type?: string
+          fanlink_id?: string | null
+          id?: string
+          pre_save_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ad_impressions_ad_campaign_id_fkey"
+            columns: ["ad_campaign_id"]
+            isOneToOne: false
+            referencedRelation: "ad_campaigns"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ad_revenue_shares: {
+        Row: {
+          artist_user_id: string
+          id: string
+          share_percent: number
+          total_clicks: number
+          total_earned_cents: number
+          total_impressions: number
+          total_paid_cents: number
+          updated_at: string
+        }
+        Insert: {
+          artist_user_id: string
+          id?: string
+          share_percent?: number
+          total_clicks?: number
+          total_earned_cents?: number
+          total_impressions?: number
+          total_paid_cents?: number
+          updated_at?: string
+        }
+        Update: {
+          artist_user_id?: string
+          id?: string
+          share_percent?: number
+          total_clicks?: number
+          total_earned_cents?: number
+          total_impressions?: number
+          total_paid_cents?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       analytics_events: {
         Row: {
           created_at: string
