@@ -14,6 +14,7 @@ import SEOHead from "@/components/SEOHead";
 import { getShareablePresaveUrl } from "@/lib/shareUrl";
 import logo from "@/assets/logo.png";
 import { buildSpotifyAuthorizeUrl, getPresaveRedirectUri } from "@/lib/spotifyAuth";
+import HouseAdSlot from "@/components/HouseAdSlot";
 
 interface PreSaveData {
   id: string;
