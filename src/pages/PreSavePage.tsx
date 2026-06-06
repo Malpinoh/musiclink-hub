@@ -429,6 +429,10 @@ function PreSaveContent({ artistParam, slugParam }: { artistParam?: string; slug
                 </form>
               )}
             </motion.div>
+
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.4 }} className="mt-6">
+              <HouseAdSlot preSaveId={preSave.id} />
+            </motion.div>
           </motion.div>
         </main>
 
