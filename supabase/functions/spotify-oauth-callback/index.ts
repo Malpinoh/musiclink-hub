@@ -77,8 +77,11 @@ serve(async (req) => {
     } = body;
 
     if (!code || !preSaveId || !redirectUri) {
+      await logFailure("missing_callback_params", "Missing code/preSaveId/redirectUri", {
+        hasCode: !!code, hasPreSaveId: !!preSaveId, hasRedirectUri: !!redirectUri,
+      }, preSaveId, fanId);
       return new Response(
-        JSON.stringify({ success: false, error: "Missing required parameters" }),
+        JSON.stringify({ success: false, error: "Missing required parameters", step: "missing_callback_params" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     }
@@ -90,8 +93,11 @@ serve(async (req) => {
 
     if (!clientId || !clientSecret) {
       console.error("Spotify credentials not configured");
+      await logFailure("spotify_credentials_missing", "SPOTIFY_CLIENT_ID or SPOTIFY_CLIENT_SECRET not set", {
+        hasClientId: !!clientId, hasClientSecret: !!clientSecret,
+      }, preSaveId, fanId);
       return new Response(
-        JSON.stringify({ success: false, error: "Spotify not configured" }),
+        JSON.stringify({ success: false, error: "Spotify not configured", step: "spotify_credentials_missing" }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     }
@@ -116,8 +122,19 @@ serve(async (req) => {
     if (!tokenResponse.ok) {
       const errorText = await tokenResponse.text();
       console.error("Token exchange failed:", errorText);
+      await logFailure(
+        "token_exchange_failed",
+        `Spotify token exchange returned ${tokenResponse.status}`,
+        { status: tokenResponse.status, response: errorText.slice(0, 1500), redirectUri },
+        preSaveId, fanId,
+      );
       return new Response(
-        JSON.stringify({ success: false, error: "Failed to exchange authorization code" }),
+        JSON.stringify({
+          success: false,
+          error: "Failed to exchange authorization code",
+          step: "token_exchange_failed",
+          detail: errorText.slice(0, 500),
+        }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     }
@@ -162,8 +179,14 @@ serve(async (req) => {
 
     if (insertError) {
       console.error("Error storing pre-save action:", insertError);
+      await logFailure(
+        "presave_action_insert_failed",
+        insertError.message || "Insert into pre_save_actions failed",
+        { code: insertError.code, details: insertError.details, hint: insertError.hint },
+        preSaveId, fanId,
+      );
       return new Response(
-        JSON.stringify({ success: false, error: "Failed to save pre-save" }),
+        JSON.stringify({ success: false, error: "Failed to save pre-save", step: "presave_action_insert_failed" }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     }
@@ -177,8 +200,9 @@ serve(async (req) => {
   } catch (error: unknown) {
     console.error("Error in spotify-oauth-callback:", error);
     const message = error instanceof Error ? error.message : "Unknown error";
+    await logFailure("unhandled_exception", message, {});
     return new Response(
-      JSON.stringify({ success: false, error: message }),
+      JSON.stringify({ success: false, error: message, step: "unhandled_exception" }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
   }
