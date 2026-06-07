@@ -462,6 +462,56 @@ function PreSaveContent({ artistParam, slugParam }: { artistParam?: string; slug
                       Enter your name and email, then connect Spotify. We'll save it to your library and notify you on release day.
                     </p>
                   </div>
+                  {failureMessage && (
+                    <div className="rounded-lg border border-destructive/40 bg-destructive/10 p-3 text-sm">
+                      <div className="flex items-start gap-2">
+                        <AlertCircle className="w-4 h-4 mt-0.5 text-destructive shrink-0" />
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium text-destructive">
+                            We couldn't start your pre-save
+                          </p>
+                          <p className="mt-1 text-xs text-foreground/80 break-words">
+                            <span className="font-mono uppercase text-[10px] bg-destructive/20 px-1.5 py-0.5 rounded mr-1.5">
+                              {failureStep ?? "error"}
+                            </span>
+                            {failureMessage}
+                          </p>
+                          {debugEnabled && (
+                            <button
+                              type="button"
+                              onClick={() => setShowDebug((v) => !v)}
+                              className="mt-2 inline-flex items-center gap-1 text-[11px] text-muted-foreground hover:text-foreground"
+                            >
+                              {showDebug ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+                              {showDebug ? "Hide" : "Show"} debug details
+                            </button>
+                          )}
+                          {debugEnabled && showDebug && (
+                            <pre className="mt-2 max-h-48 overflow-auto rounded bg-background/60 p-2 text-[10px] leading-snug text-muted-foreground whitespace-pre-wrap break-words">
+{JSON.stringify(
+  {
+    step: failureStep,
+    message: failureMessage,
+    origin: typeof window !== "undefined" ? window.location.origin : null,
+    href: typeof window !== "undefined" ? window.location.href : null,
+    redirectUri: typeof window !== "undefined" ? `${window.location.origin}/callback/spotify` : null,
+    preSaveId: preSave?.id,
+    detail: failureDetail,
+  },
+  null,
+  2,
+)}
+                            </pre>
+                          )}
+                          {!debugEnabled && (
+                            <p className="mt-1 text-[11px] text-muted-foreground">
+                              Please try again. If it keeps failing, contact the artist.
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  )}
                   <div>
                     <Label htmlFor="fan-name" className="flex items-center gap-1.5 mb-1"><User className="w-3.5 h-3.5" /> Name</Label>
                     <Input id="fan-name" placeholder="Your name" value={fanName} onChange={(e) => setFanName(e.target.value)} required maxLength={100} />
