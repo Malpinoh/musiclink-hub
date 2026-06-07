@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { Loader2, CheckCircle, XCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
+import { logApiError } from "@/lib/apiLogger";
 
 const SpotifyCallback = () => {
   const [searchParams] = useSearchParams();
@@ -23,11 +24,23 @@ const SpotifyCallback = () => {
     if (error) {
       setStatus("error");
       setMessage("Authorization was cancelled or denied.");
+      logApiError({
+        category: "spotify_oauth",
+        step: "spotify_authorize_denied",
+        message: `Spotify returned error=${error}`,
+        context: { error, errorDescription: searchParams.get("error_description") },
+      });
       return;
     }
     if (!code || !state) {
       setStatus("error");
       setMessage("Invalid callback parameters.");
+      logApiError({
+        category: "spotify_oauth",
+        step: "callback_missing_params",
+        message: "Spotify callback missing code or state",
+        context: { hasCode: !!code, hasState: !!state },
+      });
       return;
     }
 
@@ -67,6 +80,21 @@ const SpotifyCallback = () => {
       console.error("Callback error:", err);
       setStatus("error");
       setMessage(msg);
+      let preSaveId: string | null = null;
+      let fanId: string | null = null;
+      try {
+        const parsed = state ? JSON.parse(atob(state)) : {};
+        preSaveId = parsed.preSaveId ?? null;
+        fanId = parsed.fanId ?? null;
+      } catch {/* ignore */}
+      logApiError({
+        category: "spotify_oauth",
+        step: "callback_exchange_failed",
+        message: msg,
+        preSaveId,
+        fanId,
+        context: { hasCode: !!code, hasState: !!state },
+      });
     }
   };
 
