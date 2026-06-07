@@ -2,6 +2,7 @@
 // The redirect URI must be registered in the Spotify developer dashboard
 // for each origin (preview + production + custom domains).
 import { supabase } from "@/integrations/supabase/client";
+import { logApiError } from "@/lib/apiLogger";
 
 export const SPOTIFY_PRESAVE_SCOPES = [
   "user-library-modify",
@@ -32,11 +33,23 @@ async function getSpotifyClientId(): Promise<string | null> {
     const { data, error } = await supabase.functions.invoke("get-spotify-client-id");
     if (error) throw error;
     const id = (data as { clientId?: string } | null)?.clientId || "";
-    if (!id) return null;
+    if (!id) {
+      await logApiError({
+        category: "spotify_config",
+        step: "client_id_empty",
+        message: "get-spotify-client-id returned an empty client id",
+      });
+      return null;
+    }
     cachedClientId = id;
     return id;
   } catch (e) {
     console.error("Failed to fetch Spotify client id", e);
+    await logApiError({
+      category: "spotify_config",
+      step: "client_id_fetch_failed",
+      message: e instanceof Error ? e.message : "Unknown error fetching Spotify client id",
+    });
     return null;
   }
 }
