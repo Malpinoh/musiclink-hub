@@ -2,7 +2,8 @@ import { useState, useEffect } from "react";
 import { trackEvent } from "@/lib/analytics";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Music2, Bell, Loader2, Calendar, Share2, Copy, Check, Mail, User } from "lucide-react";
+import { Music2, Bell, Loader2, Calendar, Share2, Copy, Check, Mail, User, AlertCircle, ChevronDown, ChevronUp } from "lucide-react";
+import { logApiError } from "@/lib/apiLogger";
 import AudioPreviewPlayer from "@/components/AudioPreviewPlayer";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -128,6 +129,15 @@ function PreSaveContent({ artistParam, slugParam }: { artistParam?: string; slug
   const [fanEmail, setFanEmail] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  // Debug / error surfacing for the Spotify pre-save flow.
+  const [failureStep, setFailureStep] = useState<string | null>(null);
+  const [failureMessage, setFailureMessage] = useState<string | null>(null);
+  const [failureDetail, setFailureDetail] = useState<Record<string, unknown> | null>(null);
+  const [showDebug, setShowDebug] = useState(false);
+  const debugEnabled =
+    typeof window !== "undefined" &&
+    (new URLSearchParams(window.location.search).has("debug") ||
+      window.location.hostname.includes("lovable.app"));
 
   const currentUrl = typeof window !== "undefined" ? window.location.href : "";
   const shareableUrl = artist && slug ? getShareablePresaveUrl(artist, slug) : currentUrl;
