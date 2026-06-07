@@ -62,3 +62,6 @@ verify_jwt = false
 
 [functions.get-spotify-client-id]
 verify_jwt = false
+
+[functions.create-presave-fan]
+verify_jwt = false
