@@ -65,3 +65,6 @@ verify_jwt = false
 
 [functions.create-presave-fan]
 verify_jwt = false
+
+[functions.log-api-error]
+verify_jwt = false
