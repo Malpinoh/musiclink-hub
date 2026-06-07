@@ -175,24 +175,11 @@ function PreSaveContent({ artistParam, slugParam }: { artistParam?: string; slug
   const upsertFan = async (preSaveId: string): Promise<string | null> => {
     const email = fanEmail.trim().toLowerCase();
     const name = fanName.trim();
-    const { data, error } = await supabase.from("presave_fans").insert({
-      pre_save_id: preSaveId,
-      name,
-      email,
-    }).select("id").maybeSingle();
-    if (data?.id) return data.id;
-    if (error && error.code === "23505") {
-      // Duplicate — fetch existing
-      const { data: existing } = await supabase
-        .from("presave_fans")
-        .select("id")
-        .eq("pre_save_id", preSaveId)
-        .eq("email", email)
-        .maybeSingle();
-      return existing?.id ?? null;
-    }
+    const { data, error } = await supabase.functions.invoke("create-presave-fan", {
+      body: { preSaveId, name, email },
+    });
     if (error) throw error;
-    return null;
+    return (data as { fanId?: string } | null)?.fanId ?? null;
   };
 
   const handleNotifyMe = async (e: React.FormEvent) => {
