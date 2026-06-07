@@ -2,7 +2,8 @@ import { useState, useEffect } from "react";
 import { trackEvent } from "@/lib/analytics";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Music2, Bell, Loader2, Calendar, Share2, Copy, Check, Mail, User } from "lucide-react";
+import { Music2, Bell, Loader2, Calendar, Share2, Copy, Check, Mail, User, AlertCircle, ChevronDown, ChevronUp } from "lucide-react";
+import { logApiError } from "@/lib/apiLogger";
 import AudioPreviewPlayer from "@/components/AudioPreviewPlayer";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -128,6 +129,15 @@ function PreSaveContent({ artistParam, slugParam }: { artistParam?: string; slug
   const [fanEmail, setFanEmail] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  // Debug / error surfacing for the Spotify pre-save flow.
+  const [failureStep, setFailureStep] = useState<string | null>(null);
+  const [failureMessage, setFailureMessage] = useState<string | null>(null);
+  const [failureDetail, setFailureDetail] = useState<Record<string, unknown> | null>(null);
+  const [showDebug, setShowDebug] = useState(false);
+  const debugEnabled =
+    typeof window !== "undefined" &&
+    (new URLSearchParams(window.location.search).has("debug") ||
+      window.location.hostname.includes("lovable.app"));
 
   const currentUrl = typeof window !== "undefined" ? window.location.href : "";
   const shareableUrl = artist && slug ? getShareablePresaveUrl(artist, slug) : currentUrl;
@@ -170,30 +180,73 @@ function PreSaveContent({ artistParam, slugParam }: { artistParam?: string; slug
     return true;
   };
 
-  // Insert fan signup, return fan id. Handles duplicate (already on list) by
-  // fetching the existing row.
+  const recordFailure = (step: string, message: string, detail: Record<string, unknown> = {}) => {
+    setFailureStep(step);
+    setFailureMessage(message);
+    setFailureDetail(detail);
+    setShowDebug(true);
+  };
+
+  const clearFailure = () => {
+    setFailureStep(null);
+    setFailureMessage(null);
+    setFailureDetail(null);
+  };
+
+  // Insert fan signup, return fan id. Routes through the edge function so we
+  // get a uniform error surface (including server-side api_logs entries).
   const upsertFan = async (preSaveId: string): Promise<string | null> => {
     const email = fanEmail.trim().toLowerCase();
     const name = fanName.trim();
     const { data, error } = await supabase.functions.invoke("create-presave-fan", {
       body: { preSaveId, name, email },
     });
-    if (error) throw error;
-    return (data as { fanId?: string } | null)?.fanId ?? null;
+    if (error) {
+      const payload = (data as { error?: string; step?: string } | null) ?? null;
+      const step = payload?.step ?? "fan_invoke_failed";
+      const message = payload?.error ?? error.message ?? "Fan signup request failed";
+      recordFailure(step, message, { invokeError: error.message, response: payload });
+      await logApiError({
+        category: "presave_fan_upsert",
+        step,
+        message,
+        preSaveId,
+        context: { invokeError: error.message, response: payload },
+      });
+      throw new Error(message);
+    }
+    const fanId = (data as { fanId?: string } | null)?.fanId ?? null;
+    if (!fanId) {
+      const payload = data as { error?: string; step?: string } | null;
+      const step = payload?.step ?? "fan_no_id";
+      const message = payload?.error ?? "Fan signup did not return an id";
+      recordFailure(step, message, { response: payload });
+      await logApiError({
+        category: "presave_fan_upsert",
+        step,
+        message,
+        preSaveId,
+        context: { response: payload },
+      });
+      throw new Error(message);
+    }
+    return fanId;
   };
 
   const handleNotifyMe = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!preSave || !validateForm()) return;
     setSubmitting(true);
+    clearFailure();
     try {
       const fanId = await upsertFan(preSave.id);
       if (!fanId) throw new Error("Could not create signup");
       trackEvent("fan_collected", { pre_save_id: preSave.id });
       setSubmitted(true);
       toast.success("You're on the list! We'll notify you when it drops.");
-    } catch {
-      toast.error("Something went wrong. Please try again.");
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Something went wrong";
+      toast.error(msg);
     } finally {
       setSubmitting(false);
     }
@@ -202,6 +255,7 @@ function PreSaveContent({ artistParam, slugParam }: { artistParam?: string; slug
   const handleSpotifyPresave = async () => {
     if (!preSave || !validateForm()) return;
     setSubmitting(true);
+    clearFailure();
     try {
       const fanId = await upsertFan(preSave.id);
       if (!fanId) throw new Error("Could not create signup");
@@ -217,10 +271,20 @@ function PreSaveContent({ artistParam, slugParam }: { artistParam?: string; slug
         returnUrl: window.location.pathname,
       });
       if (!authorizeUrl) {
+        const step = "spotify_client_id_missing";
+        const message = "Spotify client id is not configured for this environment.";
+        recordFailure(step, message, { redirectUri, origin: window.location.origin });
+        await logApiError({
+          category: "spotify_config",
+          step,
+          message,
+          preSaveId: preSave.id,
+          fanId,
+          context: { redirectUri, origin: window.location.origin },
+        });
         toast.error("Spotify integration is not configured.");
         return;
       }
-      // Persist fan name/email so the callback can read it without depending on state.
       sessionStorage.setItem(
         `presave_fan_${preSave.id}`,
         JSON.stringify({ fanId, name: fanName.trim(), email: fanEmail.trim().toLowerCase() }),
@@ -228,6 +292,19 @@ function PreSaveContent({ artistParam, slugParam }: { artistParam?: string; slug
       window.location.href = authorizeUrl;
     } catch (err) {
       console.error(err);
+      const message = err instanceof Error ? err.message : "Could not start Spotify pre-save.";
+      // recordFailure was already called inside upsertFan for the fan path;
+      // ensure we surface something for unexpected errors too.
+      if (!failureStep) {
+        recordFailure("spotify_presave_unknown", message, {});
+        await logApiError({
+          category: "spotify_oauth",
+          step: "spotify_presave_unknown",
+          message,
+          preSaveId: preSave.id,
+          context: { origin: window.location.origin },
+        });
+      }
       toast.error("Could not start Spotify pre-save.");
       setSubmitting(false);
     }
@@ -385,6 +462,56 @@ function PreSaveContent({ artistParam, slugParam }: { artistParam?: string; slug
                       Enter your name and email, then connect Spotify. We'll save it to your library and notify you on release day.
                     </p>
                   </div>
+                  {failureMessage && (
+                    <div className="rounded-lg border border-destructive/40 bg-destructive/10 p-3 text-sm">
+                      <div className="flex items-start gap-2">
+                        <AlertCircle className="w-4 h-4 mt-0.5 text-destructive shrink-0" />
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium text-destructive">
+                            We couldn't start your pre-save
+                          </p>
+                          <p className="mt-1 text-xs text-foreground/80 break-words">
+                            <span className="font-mono uppercase text-[10px] bg-destructive/20 px-1.5 py-0.5 rounded mr-1.5">
+                              {failureStep ?? "error"}
+                            </span>
+                            {failureMessage}
+                          </p>
+                          {debugEnabled && (
+                            <button
+                              type="button"
+                              onClick={() => setShowDebug((v) => !v)}
+                              className="mt-2 inline-flex items-center gap-1 text-[11px] text-muted-foreground hover:text-foreground"
+                            >
+                              {showDebug ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+                              {showDebug ? "Hide" : "Show"} debug details
+                            </button>
+                          )}
+                          {debugEnabled && showDebug && (
+                            <pre className="mt-2 max-h-48 overflow-auto rounded bg-background/60 p-2 text-[10px] leading-snug text-muted-foreground whitespace-pre-wrap break-words">
+{JSON.stringify(
+  {
+    step: failureStep,
+    message: failureMessage,
+    origin: typeof window !== "undefined" ? window.location.origin : null,
+    href: typeof window !== "undefined" ? window.location.href : null,
+    redirectUri: typeof window !== "undefined" ? `${window.location.origin}/callback/spotify` : null,
+    preSaveId: preSave?.id,
+    detail: failureDetail,
+  },
+  null,
+  2,
+)}
+                            </pre>
+                          )}
+                          {!debugEnabled && (
+                            <p className="mt-1 text-[11px] text-muted-foreground">
+                              Please try again. If it keeps failing, contact the artist.
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  )}
                   <div>
                     <Label htmlFor="fan-name" className="flex items-center gap-1.5 mb-1"><User className="w-3.5 h-3.5" /> Name</Label>
                     <Input id="fan-name" placeholder="Your name" value={fanName} onChange={(e) => setFanName(e.target.value)} required maxLength={100} />
