@@ -34,6 +34,33 @@ function getClientIP(req: Request): string {
   return "unknown";
 }
 
+async function logFailure(
+  step: string,
+  message: string,
+  context: Record<string, unknown>,
+  preSaveId?: string | null,
+  fanId?: string | null,
+) {
+  try {
+    const supabase = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
+    );
+    await supabase.from("api_logs").insert({
+      category: "spotify_oauth",
+      step,
+      level: "error",
+      message: message.slice(0, 2000),
+      pre_save_id: preSaveId ?? null,
+      fan_id: fanId ?? null,
+      context,
+    });
+  } catch (e) {
+    console.error("api_logs insert failed:", e);
+  }
+}
+
+
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
