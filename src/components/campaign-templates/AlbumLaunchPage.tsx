@@ -184,18 +184,7 @@ const AlbumLaunchPage = ({ campaign }: AlbumLaunchPageProps) => {
       {/* Streaming platforms */}
       <section className="max-w-4xl mx-auto px-6 md:px-12 py-12 border-t border-amber-50/10">
         <p className="text-[11px] uppercase tracking-[0.4em] text-amber-500 mb-6 text-center">Listen on every platform</p>
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-          {STREAM_PLATFORMS.map((p) => (
-            <motion.button
-              key={p.name}
-              whileHover={{ y: -2 }}
-              whileTap={{ scale: 0.97 }}
-              className={`${p.color} text-white rounded-sm py-4 font-display font-bold tracking-wide uppercase text-sm`}
-            >
-              {p.name}
-            </motion.button>
-          ))}
-        </div>
+        <StreamingPlatforms platforms={STREAM_PLATFORMS} variant="cinematic" />
       </section>
 
       <footer className="border-t border-amber-50/10 py-8 text-center mt-8">
