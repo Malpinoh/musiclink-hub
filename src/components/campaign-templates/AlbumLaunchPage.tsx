@@ -19,12 +19,14 @@ interface AlbumLaunchPageProps {
 }
 
 const STREAM_PLATFORMS = [
-  { name: "Spotify", color: "bg-emerald-600" },
-  { name: "Apple Music", color: "bg-rose-500" },
-  { name: "Boomplay", color: "bg-amber-500" },
-  { name: "Audiomack", color: "bg-orange-500" },
-  { name: "YouTube Music", color: "bg-red-600" },
-  { name: "Deezer", color: "bg-fuchsia-600" },
+  { name: "Spotify" },
+  { name: "Apple Music" },
+  { name: "Boomplay" },
+  { name: "Audiomack" },
+  { name: "YouTube Music" },
+  { name: "Deezer" },
+  { name: "Tidal" },
+  { name: "Amazon Music" },
 ];
 
 const AlbumLaunchPage = ({ campaign }: AlbumLaunchPageProps) => {
