@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import logo from "@/assets/logo.png";
 import { Link } from "react-router-dom";
+import StreamingPlatforms from "@/components/StreamingPlatforms";
 
 interface VideoLaunchPageProps {
   campaign: {
