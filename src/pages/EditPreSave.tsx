@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import Header from "@/components/Header";
+import PreSaveThemeCustomizer from "@/components/PreSaveThemeCustomizer";
 import { motion } from "framer-motion";
 import { 
   Save, 
@@ -801,6 +802,20 @@ const EditPreSave = () => {
             {fanCount === 0 && (
               <p className="text-sm text-muted-foreground">No fans have signed up for this pre-save yet.</p>
             )}
+          </motion.div>
+
+          {/* Theme Customization */}
+          <motion.div
+            className="mt-6"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.6 }}
+          >
+            <PreSaveThemeCustomizer
+              preSaveId={preSave.id}
+              theme={preSave}
+              onChange={(patch) => setPreSave({ ...preSave, ...patch })}
+            />
           </motion.div>
         </div>
       </main>

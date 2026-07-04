@@ -793,6 +793,74 @@ export type Database = {
           },
         ]
       }
+      pre_save_themes: {
+        Row: {
+          accent_color: string
+          artist_image_url: string | null
+          background_color: string
+          background_image_url: string | null
+          button_color: string
+          countdown_enabled: boolean
+          created_at: string
+          cta_text: string
+          font_family: string
+          hero_image_url: string | null
+          id: string
+          layout_style: string
+          logo_url: string | null
+          pre_save_id: string
+          section_order: Json
+          text_color: string
+          updated_at: string
+        }
+        Insert: {
+          accent_color?: string
+          artist_image_url?: string | null
+          background_color?: string
+          background_image_url?: string | null
+          button_color?: string
+          countdown_enabled?: boolean
+          created_at?: string
+          cta_text?: string
+          font_family?: string
+          hero_image_url?: string | null
+          id?: string
+          layout_style?: string
+          logo_url?: string | null
+          pre_save_id: string
+          section_order?: Json
+          text_color?: string
+          updated_at?: string
+        }
+        Update: {
+          accent_color?: string
+          artist_image_url?: string | null
+          background_color?: string
+          background_image_url?: string | null
+          button_color?: string
+          countdown_enabled?: boolean
+          created_at?: string
+          cta_text?: string
+          font_family?: string
+          hero_image_url?: string | null
+          id?: string
+          layout_style?: string
+          logo_url?: string | null
+          pre_save_id?: string
+          section_order?: Json
+          text_color?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pre_save_themes_pre_save_id_fkey"
+            columns: ["pre_save_id"]
+            isOneToOne: true
+            referencedRelation: "pre_saves"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       pre_saves: {
         Row: {
           album_title: string | null
