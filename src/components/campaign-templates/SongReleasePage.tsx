@@ -8,6 +8,7 @@ import { toast } from "sonner";
 import logo from "@/assets/logo.png";
 import { Link } from "react-router-dom";
 import AudioPreviewPlayer from "@/components/AudioPreviewPlayer";
+import StreamingPlatforms from "@/components/StreamingPlatforms";
 
 interface SongReleasePageProps {
   campaign: {
