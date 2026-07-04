@@ -803,6 +803,20 @@ const EditPreSave = () => {
               <p className="text-sm text-muted-foreground">No fans have signed up for this pre-save yet.</p>
             )}
           </motion.div>
+
+          {/* Theme Customization */}
+          <motion.div
+            className="mt-6"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.6 }}
+          >
+            <PreSaveThemeCustomizer
+              preSaveId={preSave.id}
+              theme={preSave}
+              onChange={(patch) => setPreSave({ ...preSave, ...patch })}
+            />
+          </motion.div>
         </div>
       </main>
     </div>
