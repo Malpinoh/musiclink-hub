@@ -230,6 +230,23 @@ const VideoLaunchPage = ({ campaign }: VideoLaunchPageProps) => {
       </section>
 
       {/* Share toolkit */}
+      {/* Stream the audio */}
+      <section className="relative z-10 max-w-3xl mx-auto px-6 mb-12">
+        <p className="text-center text-[11px] uppercase tracking-[0.4em] text-white/50 mb-4">Stream the audio</p>
+        <StreamingPlatforms
+          platforms={[
+            { name: "Spotify" },
+            { name: "Apple Music" },
+            { name: "YouTube Music" },
+            { name: "Audiomack" },
+            { name: "Boomplay" },
+            { name: "Deezer" },
+          ]}
+          variant="cinematic"
+        />
+      </section>
+
+      {/* Share toolkit */}
       <section className="relative z-10 max-w-md mx-auto px-6 mb-12">
         <div className="bg-white/5 border border-white/10 rounded-2xl p-4 flex items-center gap-3">
           <input
