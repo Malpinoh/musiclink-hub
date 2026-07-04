@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import logo from "@/assets/logo.png";
 import { Link } from "react-router-dom";
+import StreamingPlatforms from "@/components/StreamingPlatforms";
 
 interface VideoLaunchPageProps {
   campaign: {
@@ -226,6 +227,23 @@ const VideoLaunchPage = ({ campaign }: VideoLaunchPageProps) => {
             </motion.button>
           ))}
         </div>
+      </section>
+
+      {/* Share toolkit */}
+      {/* Stream the audio */}
+      <section className="relative z-10 max-w-3xl mx-auto px-6 mb-12">
+        <p className="text-center text-[11px] uppercase tracking-[0.4em] text-white/50 mb-4">Stream the audio</p>
+        <StreamingPlatforms
+          platforms={[
+            { name: "Spotify" },
+            { name: "Apple Music" },
+            { name: "YouTube Music" },
+            { name: "Audiomack" },
+            { name: "Boomplay" },
+            { name: "Deezer" },
+          ]}
+          variant="cinematic"
+        />
       </section>
 
       {/* Share toolkit */}

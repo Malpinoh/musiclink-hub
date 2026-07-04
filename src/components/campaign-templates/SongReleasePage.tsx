@@ -8,6 +8,7 @@ import { toast } from "sonner";
 import logo from "@/assets/logo.png";
 import { Link } from "react-router-dom";
 import AudioPreviewPlayer from "@/components/AudioPreviewPlayer";
+import StreamingPlatforms from "@/components/StreamingPlatforms";
 
 interface SongReleasePageProps {
   campaign: {
@@ -24,12 +25,14 @@ interface SongReleasePageProps {
 }
 
 const PLATFORMS = [
-  { name: "Spotify", color: "from-emerald-500 to-emerald-700" },
-  { name: "Apple Music", color: "from-rose-500 to-pink-600" },
-  { name: "YouTube Music", color: "from-red-500 to-red-700" },
-  { name: "Deezer", color: "from-fuchsia-500 to-purple-600" },
-  { name: "Tidal", color: "from-slate-400 to-slate-700" },
-  { name: "Boomplay", color: "from-amber-500 to-orange-600" },
+  { name: "Spotify" },
+  { name: "Apple Music" },
+  { name: "YouTube Music" },
+  { name: "Deezer" },
+  { name: "Tidal" },
+  { name: "Boomplay" },
+  { name: "Audiomack" },
+  { name: "Amazon Music" },
 ];
 
 const SongReleasePage = ({ campaign }: SongReleasePageProps) => {
@@ -188,17 +191,9 @@ const SongReleasePage = ({ campaign }: SongReleasePageProps) => {
           )}
 
           {/* Streaming platform cards */}
-          <motion.div className="w-full grid grid-cols-3 gap-2 mb-6" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.35 }}>
-            {PLATFORMS.map((p) => (
-              <motion.div
-                key={p.name}
-                className={`bg-gradient-to-br ${p.color} rounded-xl p-3 text-center cursor-pointer`}
-                whileHover={{ scale: 1.05, y: -2 }}
-                whileTap={{ scale: 0.95 }}
-              >
-                <p className="text-[10px] font-bold text-white uppercase tracking-wide">{p.name}</p>
-              </motion.div>
-            ))}
+          <motion.div className="w-full mb-6" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.35 }}>
+            <p className="text-[10px] uppercase tracking-[0.3em] text-muted-foreground text-center mb-3">Choose your platform</p>
+            <StreamingPlatforms platforms={PLATFORMS} variant="grid" />
           </motion.div>
 
           <motion.div className="w-full" initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }}>

@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import logo from "@/assets/logo.png";
 import { Link } from "react-router-dom";
+import StreamingPlatforms from "@/components/StreamingPlatforms";
 
 interface AlbumLaunchPageProps {
   campaign: {
@@ -18,12 +19,14 @@ interface AlbumLaunchPageProps {
 }
 
 const STREAM_PLATFORMS = [
-  { name: "Spotify", color: "bg-emerald-600" },
-  { name: "Apple Music", color: "bg-rose-500" },
-  { name: "Boomplay", color: "bg-amber-500" },
-  { name: "Audiomack", color: "bg-orange-500" },
-  { name: "YouTube Music", color: "bg-red-600" },
-  { name: "Deezer", color: "bg-fuchsia-600" },
+  { name: "Spotify" },
+  { name: "Apple Music" },
+  { name: "Boomplay" },
+  { name: "Audiomack" },
+  { name: "YouTube Music" },
+  { name: "Deezer" },
+  { name: "Tidal" },
+  { name: "Amazon Music" },
 ];
 
 const AlbumLaunchPage = ({ campaign }: AlbumLaunchPageProps) => {
@@ -181,18 +184,7 @@ const AlbumLaunchPage = ({ campaign }: AlbumLaunchPageProps) => {
       {/* Streaming platforms */}
       <section className="max-w-4xl mx-auto px-6 md:px-12 py-12 border-t border-amber-50/10">
         <p className="text-[11px] uppercase tracking-[0.4em] text-amber-500 mb-6 text-center">Listen on every platform</p>
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-          {STREAM_PLATFORMS.map((p) => (
-            <motion.button
-              key={p.name}
-              whileHover={{ y: -2 }}
-              whileTap={{ scale: 0.97 }}
-              className={`${p.color} text-white rounded-sm py-4 font-display font-bold tracking-wide uppercase text-sm`}
-            >
-              {p.name}
-            </motion.button>
-          ))}
-        </div>
+        <StreamingPlatforms platforms={STREAM_PLATFORMS} variant="cinematic" />
       </section>
 
       <footer className="border-t border-amber-50/10 py-8 text-center mt-8">
