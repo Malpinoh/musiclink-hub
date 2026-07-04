@@ -25,12 +25,14 @@ interface SongReleasePageProps {
 }
 
 const PLATFORMS = [
-  { name: "Spotify", color: "from-emerald-500 to-emerald-700" },
-  { name: "Apple Music", color: "from-rose-500 to-pink-600" },
-  { name: "YouTube Music", color: "from-red-500 to-red-700" },
-  { name: "Deezer", color: "from-fuchsia-500 to-purple-600" },
-  { name: "Tidal", color: "from-slate-400 to-slate-700" },
-  { name: "Boomplay", color: "from-amber-500 to-orange-600" },
+  { name: "Spotify" },
+  { name: "Apple Music" },
+  { name: "YouTube Music" },
+  { name: "Deezer" },
+  { name: "Tidal" },
+  { name: "Boomplay" },
+  { name: "Audiomack" },
+  { name: "Amazon Music" },
 ];
 
 const SongReleasePage = ({ campaign }: SongReleasePageProps) => {
