@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -7,12 +7,16 @@ import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { motion } from "framer-motion";
 import {
-  Plus, Search, Link2, BarChart3, ExternalLink, Trash2, Music2, Loader2,
+  Plus, Search, Link2, BarChart3, ExternalLink, Trash2, Music2,
   Clock, Calendar, Edit, User, Mail, MailCheck, MailX, TrendingUp, Users,
-  Copy, Eye
+  Copy, MousePointerClick,
 } from "lucide-react";
 import ShareButtons from "@/components/ShareButtons";
 import PerformanceChart, { ChartDataPoint } from "@/components/PerformanceChart";
+import HeroMetric from "@/components/dashboard/HeroMetric";
+import HealthScore from "@/components/dashboard/HealthScore";
+import LiveActivityFeed from "@/components/dashboard/LiveActivityFeed";
+import SuggestionsPanel, { Suggestion } from "@/components/dashboard/SuggestionsPanel";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -48,22 +52,6 @@ interface PreSaveStats {
   notificationsSent: number;
 }
 
-const sectionVariants = {
-  hidden: { opacity: 0, y: 24 },
-  visible: (i: number) => ({
-    opacity: 1,
-    y: 0,
-    transition: { delay: i * 0.08, type: "spring" as const, stiffness: 260, damping: 24 },
-  }),
-};
-
-const cardHover = {
-  y: -4,
-  scale: 1.02,
-  boxShadow: "0 12px 32px -8px hsl(var(--primary) / 0.15)",
-  transition: { duration: 0.2 },
-};
-
 const Dashboard = () => {
   const navigate = useNavigate();
   const { user, loading: authLoading } = useAuth();
@@ -76,30 +64,30 @@ const Dashboard = () => {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("fanlinks");
   const [chartData, setChartData] = useState<ChartDataPoint[]>([]);
+  const [displayName, setDisplayName] = useState<string>("");
+  const [weekClicks, setWeekClicks] = useState({ current: 0, previous: 0 });
 
   useEffect(() => {
     if (!authLoading && !user) navigate("/login");
   }, [user, authLoading, navigate]);
 
-  const [verification, setVerification] = useState<{ dbClicks: number; dashClicks: number } | null>(null);
-
   const fetchData = useCallback(async () => {
     if (!user) return;
     try {
-      const [fanlinkRes, presaveRes] = await Promise.all([
+      const [fanlinkRes, presaveRes, profileRes] = await Promise.all([
         supabase.from("fanlinks").select("*").eq("user_id", user.id).order("created_at", { ascending: false }),
         supabase.from("pre_saves").select("*").eq("user_id", user.id).order("created_at", { ascending: false }),
+        supabase.from("profiles").select("full_name").eq("user_id", user.id).maybeSingle(),
       ]);
 
       const fls = fanlinkRes.data || [];
       const pss = presaveRes.data || [];
       setFanlinks(fls);
       setPreSaves(pss);
+      setDisplayName(profileRes.data?.full_name || user.email?.split("@")[0] || "artist");
 
       if (fls.length > 0) {
         const fanlinkIds = fls.map((f) => f.id);
-
-        // Per-fanlink exact counts via parallel HEAD queries — bypasses 1k row cap.
         const perLinkResults = await Promise.all(
           fanlinkIds.map(async (id) => {
             const [clicksCount, fansCount] = await Promise.all([
@@ -109,15 +97,27 @@ const Dashboard = () => {
             return { id, clicks: clicksCount.count || 0, fans: fansCount.count || 0 };
           })
         );
-
         const cc: Record<string, number> = {};
         const fc: Record<string, number> = {};
         perLinkResults.forEach((r) => { cc[r.id] = r.clicks; fc[r.id] = r.fans; });
         setClickCounts(cc);
         setFanContactCounts(fc);
 
-        // Time-series for chart: paginate clicks in 1k chunks (last 30 days only).
-        const thirtyDaysAgo = new Date(Date.now() - 30 * 86400000).toISOString();
+        // Week-over-week clicks (exact counts, no row cap).
+        const now = Date.now();
+        const week = 7 * 86400000;
+        const [curr, prev] = await Promise.all([
+          supabase.from("clicks").select("*", { count: "exact", head: true })
+            .in("fanlink_id", fanlinkIds).gte("clicked_at", new Date(now - week).toISOString()),
+          supabase.from("clicks").select("*", { count: "exact", head: true })
+            .in("fanlink_id", fanlinkIds)
+            .gte("clicked_at", new Date(now - 2 * week).toISOString())
+            .lt("clicked_at", new Date(now - week).toISOString()),
+        ]);
+        setWeekClicks({ current: curr.count || 0, previous: prev.count || 0 });
+
+        // Chart series (last 30 days, paginated).
+        const thirtyDaysAgo = new Date(now - 30 * 86400000).toISOString();
         const dateMap: Record<string, { clicks: number; fans: number; presaves: number }> = {};
         let from = 0;
         const PAGE = 1000;
@@ -140,14 +140,6 @@ const Dashboard = () => {
           from += PAGE;
         }
         setChartData(Object.entries(dateMap).map(([date, v]) => ({ date, ...v })).slice(-30));
-
-        // Verification: total DB clicks across all fanlinks via exact count.
-        const { count: totalDbClicks } = await supabase
-          .from("clicks")
-          .select("*", { count: "exact", head: true })
-          .in("fanlink_id", fanlinkIds);
-        const dashSum = perLinkResults.reduce((s, r) => s + r.clicks, 0);
-        setVerification({ dbClicks: totalDbClicks || 0, dashClicks: dashSum });
       }
 
       if (pss.length > 0) {
@@ -175,12 +167,11 @@ const Dashboard = () => {
     if (user) fetchData();
   }, [user, fetchData]);
 
-  // Realtime: refresh totals when new clicks/fans/pre-saves arrive.
+  // Realtime totals refresh (cheap — activity feed handles its own live inserts).
   useEffect(() => {
     if (!user) return;
     const channel = supabase
-      .channel(`dashboard-${user.id}`)
-      .on("postgres_changes", { event: "INSERT", schema: "public", table: "clicks" }, () => fetchData())
+      .channel(`dashboard-totals-${user.id}`)
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "fan_contacts" }, () => fetchData())
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "presave_fans" }, () => fetchData())
       .subscribe();
@@ -194,9 +185,7 @@ const Dashboard = () => {
       if (error) throw error;
       setFanlinks(fanlinks.filter((f) => f.id !== id));
       toast.success("Fanlink deleted");
-    } catch {
-      toast.error("Failed to delete fanlink");
-    }
+    } catch { toast.error("Failed to delete fanlink"); }
   };
 
   const handleDeletePreSave = async (id: string) => {
@@ -206,9 +195,7 @@ const Dashboard = () => {
       if (error) throw error;
       setPreSaves(preSaves.filter((p) => p.id !== id));
       toast.success("Pre-save deleted");
-    } catch {
-      toast.error("Failed to delete pre-save");
-    }
+    } catch { toast.error("Failed to delete pre-save"); }
   };
 
   const getFanlinkUrl = (artistSlug: string, slug: string) => `${window.location.origin}/${artistSlug}/${slug}`;
@@ -226,7 +213,11 @@ const Dashboard = () => {
   const totalClicks = Object.values(clickCounts).reduce((s, c) => s + c, 0);
   const totalFans = Object.values(fanContactCounts).reduce((s, c) => s + c, 0);
   const totalPreSaveSignups = Object.values(preSaveStats).reduce((s, st) => s + st.fanSignups, 0);
-  const conversionRate = totalClicks > 0 ? ((totalFans / totalClicks) * 100).toFixed(1) : "0.0";
+  const conversionRate = totalClicks > 0 ? (totalFans / totalClicks) * 100 : 0;
+
+  const weekDelta = weekClicks.previous > 0
+    ? Math.round(((weekClicks.current - weekClicks.previous) / weekClicks.previous) * 100)
+    : (weekClicks.current > 0 ? 100 : 0);
 
   const handleCopyLatest = () => {
     const latest = fanlinks[0];
@@ -235,184 +226,177 @@ const Dashboard = () => {
     toast.success("Latest link copied!");
   };
 
+  // Health score
+  const healthBreakdown = useMemo(() => {
+    const hasLink = fanlinks.length > 0;
+    const hasPresave = preSaves.length > 0;
+    const hasClicks = totalClicks >= 10;
+    const hasFans = totalFans >= 1;
+    const hasConversion = conversionRate >= 3;
+    return [
+      { label: "First fanlink created", ok: hasLink, hint: "Ship a link" },
+      { label: "First pre-save live", ok: hasPresave, hint: "Set up a release" },
+      { label: "10+ clicks landed", ok: hasClicks, hint: "Share on social" },
+      { label: "1+ fan collected", ok: hasFans, hint: "Turn on fan gate" },
+      { label: "≥3% conversion rate", ok: hasConversion, hint: "Tune your CTA" },
+    ];
+  }, [fanlinks.length, preSaves.length, totalClicks, totalFans, conversionRate]);
+  const healthScore = Math.round((healthBreakdown.filter((b) => b.ok).length / healthBreakdown.length) * 100);
+
+  const linkNames = useMemo(() => {
+    const m: Record<string, string> = {};
+    fanlinks.forEach((f) => { m[f.id] = f.title; });
+    return m;
+  }, [fanlinks]);
+  const presaveNames = useMemo(() => {
+    const m: Record<string, string> = {};
+    preSaves.forEach((p) => { m[p.id] = p.title; });
+    return m;
+  }, [preSaves]);
+
+  const suggestions = useMemo<Suggestion[]>(() => {
+    const out: Suggestion[] = [];
+    if (fanlinks.length === 0) out.push({ id: "s1", title: "Create your first fanlink", body: "Route every listener to the platform of their choice from one URL.", cta: "Create fanlink", href: "/create", tone: "primary" });
+    if (preSaves.length === 0) out.push({ id: "s2", title: "Launch a pre-save campaign", body: "Convert fans before release day with automated Spotify saves.", cta: "New pre-save", href: "/presave/create", tone: "accent" });
+    if (conversionRate < 3 && totalClicks >= 20) out.push({ id: "s3", title: "Boost your conversion rate", body: `You're at ${conversionRate.toFixed(1)}%. Try a stronger CTA or fan gate.`, cta: "Edit your links", href: "/artist/campaigns/list", tone: "warning" });
+    if (totalFans >= 10 && preSaves.length === 0) out.push({ id: "s4", title: "Turn fans into pre-saves", body: `${totalFans} fans are waiting. Announce your next release.`, cta: "Announce release", href: "/presave/create", tone: "success" });
+    if (fanlinks.length > 0 && totalClicks < 5) out.push({ id: "s5", title: "Share your link on socials", body: "Zero clicks so far. Drop your link on IG, TikTok, or X to get moving.", cta: "Copy latest link", href: "#", tone: "primary" });
+    if (fanlinks.length > 0 && preSaves.length > 0) out.push({ id: "s6", title: "Level up with campaigns", body: "Bundle assets, timelines, and analytics into one release story.", cta: "Open campaigns", href: "/artist/campaigns", tone: "accent" });
+    return out.slice(0, 3);
+  }, [fanlinks.length, preSaves.length, conversionRate, totalClicks, totalFans]);
+
   if (authLoading || loading) return <DashboardSkeleton />;
 
-  const stats = [
-    { label: "Total Clicks", value: totalClicks.toLocaleString(), icon: BarChart3, color: "text-primary", bg: "bg-primary/15" },
-    { label: "Fans Collected", value: totalFans.toLocaleString(), icon: Users, color: "text-accent", bg: "bg-accent/15" },
-    { label: "Pre-save Signups", value: totalPreSaveSignups.toLocaleString(), icon: Music2, color: "text-green-500", bg: "bg-green-500/15" },
-    { label: "Conversion Rate", value: `${conversionRate}%`, icon: TrendingUp, color: "text-yellow-500", bg: "bg-yellow-500/15" },
-  ];
-
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background relative overflow-hidden">
+      {/* Ambient gradient mesh */}
+      <div
+        className="pointer-events-none fixed inset-0 opacity-60"
+        style={{ background: "var(--gradient-mesh)" }}
+        aria-hidden
+      />
+
       <Header />
-      <main className="pt-24 pb-12 px-4">
+      <main className="pt-24 pb-12 px-4 relative">
         <div className="container mx-auto max-w-6xl space-y-6">
-          {/* ── Section: Page Header ── */}
+
+          {/* ── Hero ── */}
           <motion.div
-            className="flex flex-col md:flex-row md:items-center md:justify-between gap-4"
-            custom={0}
-            variants={sectionVariants}
-            initial="hidden"
-            animate="visible"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ ease: [0.16, 1, 0.3, 1], duration: 0.6 }}
+            className="relative rounded-3xl border border-border/50 bg-card/40 backdrop-blur-xl p-6 md:p-8 overflow-hidden"
           >
-            <div>
-              <h1 className="font-display text-3xl md:text-4xl font-bold mb-1">Dashboard</h1>
-              <p className="text-muted-foreground">Welcome back! Here's your overview.</p>
-            </div>
-            <div className="flex flex-wrap gap-2">
-              <Button variant="glass" asChild>
-                <Link to="/artist/campaigns"><BarChart3 className="w-4 h-4 mr-2" />Campaigns</Link>
-              </Button>
-              <Button variant="glass" asChild>
-                <Link to="/artist-bio/edit"><User className="w-4 h-4 mr-2" />Artist Bio</Link>
-              </Button>
+            <div className="pointer-events-none absolute inset-0" style={{ background: "var(--gradient-hero)" }} />
+            <div className="relative flex flex-col md:flex-row md:items-end md:justify-between gap-6">
+              <div>
+                <p className="text-xs uppercase tracking-[0.25em] text-primary/80 mb-2 font-semibold">Command Center</p>
+                <h1 className="font-display text-3xl md:text-5xl font-bold mb-2 leading-[1.1]">
+                  Welcome back, <span className="bg-gradient-to-r from-primary via-primary-glow to-accent bg-clip-text text-transparent">{displayName}</span>
+                </h1>
+                <p className="text-muted-foreground max-w-lg">
+                  You've collected <b className="text-foreground">{totalFans.toLocaleString()}</b> fans and driven{" "}
+                  <b className="text-foreground">{totalClicks.toLocaleString()}</b> clicks across your catalogue.
+                </p>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <Button variant="hero" size="lg" asChild><Link to="/create"><Plus className="w-4 h-4 mr-2" />New Fanlink</Link></Button>
+                <Button variant="glass" size="lg" asChild><Link to="/presave/create"><Music2 className="w-4 h-4 mr-2" />New Pre-save</Link></Button>
+                <Button variant="ghost" size="lg" onClick={handleCopyLatest}><Copy className="w-4 h-4 mr-2" />Copy link</Button>
+              </div>
             </div>
           </motion.div>
 
-          {/* ── Section 1: Top Stats Grid ── */}
-          <motion.section
-            className="rounded-2xl border border-border/50 bg-card/50 backdrop-blur-sm p-6"
-            custom={1}
-            variants={sectionVariants}
-            initial="hidden"
-            animate="visible"
-          >
-            <h2 className="font-display text-lg font-semibold mb-4 text-muted-foreground">Overview</h2>
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-              {stats.map((s, i) => (
-                <motion.div
-                  key={s.label}
-                  className="rounded-2xl border border-border/40 bg-background/60 p-5 cursor-default"
-                  whileHover={cardHover}
-                >
-                  <div className="flex items-center gap-3">
-                    <div className={`w-11 h-11 rounded-2xl ${s.bg} flex items-center justify-center`}>
-                      <s.icon className={`w-5 h-5 ${s.color}`} />
-                    </div>
-                    <div>
-                      <p className="text-xs text-muted-foreground">{s.label}</p>
-                      <p className="font-display text-xl font-bold">{s.value}</p>
-                    </div>
-                  </div>
-                </motion.div>
-              ))}
-            </div>
-            {verification && (
-              <div className="mt-4 rounded-xl border border-border/30 bg-background/40 p-3 text-xs text-muted-foreground flex flex-wrap items-center gap-x-4 gap-y-1">
-                <span className="font-medium text-foreground">Analytics integrity</span>
-                <span>DB clicks: <b className="text-foreground">{verification.dbClicks.toLocaleString()}</b></span>
-                <span>Dashboard clicks: <b className="text-foreground">{verification.dashClicks.toLocaleString()}</b></span>
-                <span>Diff: <b className={verification.dbClicks === verification.dashClicks ? "text-green-500" : "text-yellow-500"}>{(verification.dbClicks - verification.dashClicks).toLocaleString()}</b></span>
-              </div>
-            )}
-          </motion.section>
+          {/* ── Hero metrics ── */}
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+            <HeroMetric label="Total Clicks" value={totalClicks} icon={MousePointerClick} tone="primary"
+              delta={weekClicks.previous > 0 || weekClicks.current > 0 ? { value: weekDelta, label: `${weekClicks.current} this week` } : undefined} />
+            <HeroMetric label="Fans Collected" value={totalFans} icon={Users} tone="accent" />
+            <HeroMetric label="Pre-save Signups" value={totalPreSaveSignups} icon={Music2} tone="success" />
+            <HeroMetric label="Conversion" value={Number(conversionRate.toFixed(1))} suffix="%" icon={TrendingUp} tone="warning" />
+          </div>
 
-          {/* ── Section 2: Quick Actions Panel ── */}
-          <motion.section
-            className="rounded-2xl border border-border/50 bg-card/50 backdrop-blur-sm p-6"
-            custom={2}
-            variants={sectionVariants}
-            initial="hidden"
-            animate="visible"
-          >
-            <h2 className="font-display text-lg font-semibold mb-4 text-muted-foreground">Quick Actions</h2>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-              <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
-                <Button variant="hero" size="lg" className="w-full rounded-2xl py-6" asChild>
-                  <Link to="/create"><Plus className="w-5 h-5 mr-2" />New Fanlink</Link>
-                </Button>
-              </motion.div>
-              <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
-                <Button variant="hero" size="lg" className="w-full rounded-2xl py-6 from-accent to-primary" asChild>
-                  <Link to="/presave/create"><Music2 className="w-5 h-5 mr-2" />New Pre-save</Link>
-                </Button>
-              </motion.div>
-              <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
-                <Button variant="outline" size="lg" className="w-full rounded-2xl py-6" asChild>
-                  <Link to="/artist/campaigns"><Eye className="w-5 h-5 mr-2" />Campaigns</Link>
-                </Button>
-              </motion.div>
-              <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
-                <Button variant="outline" size="lg" className="w-full rounded-2xl py-6" onClick={handleCopyLatest}>
-                  <Copy className="w-5 h-5 mr-2" />Copy Link
-                </Button>
-              </motion.div>
-            </div>
-          </motion.section>
+          {/* ── Health + Live Activity ── */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <HealthScore score={healthScore} breakdown={healthBreakdown} />
+            <LiveActivityFeed
+              userId={user!.id}
+              fanlinkIds={fanlinks.map((f) => f.id)}
+              presaveIds={preSaves.map((p) => p.id)}
+              linkNames={linkNames}
+              presaveNames={presaveNames}
+            />
+          </div>
 
-          {/* ── Section 3: Performance Chart (full-width) ── */}
+          {/* ── Suggestions ── */}
+          <SuggestionsPanel suggestions={suggestions} />
+
+          {/* ── Performance chart ── */}
           {chartData.length > 0 && (
             <motion.section
-              className="rounded-2xl border border-border/50 bg-card/50 backdrop-blur-sm p-6"
-              custom={3}
-              variants={sectionVariants}
-              initial="hidden"
-              animate="visible"
+              className="rounded-2xl border border-border/50 bg-card/60 backdrop-blur-md p-6 shadow-[var(--shadow-md)]"
+              initial={{ opacity: 0, y: 15 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.2 }}
             >
-              <h2 className="font-display text-lg font-semibold mb-4 text-muted-foreground">Performance</h2>
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="font-display text-sm font-semibold text-muted-foreground uppercase tracking-wider">Performance — 30 days</h2>
+                <Button variant="ghost" size="sm" asChild><Link to="/artist/campaigns"><BarChart3 className="w-4 h-4 mr-2" />Deep dive</Link></Button>
+              </div>
               <PerformanceChart data={chartData} />
             </motion.section>
           )}
 
-          {/* ── Section 4: Links Table ── */}
+          {/* ── Links & Pre-saves ── */}
           <motion.section
-            className="rounded-2xl border border-border/50 bg-card/50 backdrop-blur-sm p-6"
-            custom={4}
-            variants={sectionVariants}
-            initial="hidden"
-            animate="visible"
+            className="rounded-2xl border border-border/50 bg-card/60 backdrop-blur-md p-6 shadow-[var(--shadow-md)]"
+            initial={{ opacity: 0, y: 15 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.25 }}
           >
-            <h2 className="font-display text-lg font-semibold mb-4 text-muted-foreground">Your Links</h2>
-
-            {/* Search */}
-            <div className="relative mb-6">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-              <Input placeholder="Search links..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="pl-12 rounded-2xl" />
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6">
+              <h2 className="font-display text-sm font-semibold text-muted-foreground uppercase tracking-wider">Your Catalogue</h2>
+              <div className="flex gap-2">
+                <Button variant="ghost" size="sm" asChild><Link to="/artist/campaigns"><BarChart3 className="w-4 h-4 mr-2" />Campaigns</Link></Button>
+                <Button variant="ghost" size="sm" asChild><Link to="/artist-bio/edit"><User className="w-4 h-4 mr-2" />Artist Bio</Link></Button>
+              </div>
             </div>
 
-            {/* Tabs */}
+            <div className="relative mb-6">
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+              <Input placeholder="Search links..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="pl-11 rounded-2xl bg-background/60" />
+            </div>
+
             <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
               <TabsList className="mb-6">
-                <TabsTrigger value="fanlinks" className="flex items-center gap-2">
-                  <Link2 className="w-4 h-4" />Fanlinks ({fanlinks.length})
-                </TabsTrigger>
-                <TabsTrigger value="presaves" className="flex items-center gap-2">
-                  <Clock className="w-4 h-4" />Pre-Saves ({preSaves.length})
-                </TabsTrigger>
+                <TabsTrigger value="fanlinks" className="flex items-center gap-2"><Link2 className="w-4 h-4" />Fanlinks ({fanlinks.length})</TabsTrigger>
+                <TabsTrigger value="presaves" className="flex items-center gap-2"><Clock className="w-4 h-4" />Pre-Saves ({preSaves.length})</TabsTrigger>
               </TabsList>
 
               <TabsContent value="fanlinks">
                 <motion.div className="space-y-3" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
                   {filteredFanlinks.length === 0 ? (
-                    <div className="rounded-2xl border border-border/40 bg-background/60 p-12 text-center">
+                    <div className="rounded-2xl border border-dashed border-border/40 bg-background/40 p-12 text-center">
                       <Music2 className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
                       <h3 className="font-display text-xl font-semibold mb-2">No fanlinks found</h3>
                       <p className="text-muted-foreground mb-6">{searchQuery ? "Try a different search" : "Create your first fanlink"}</p>
                       {!searchQuery && (
-                        <Button variant="hero" asChild>
-                          <Link to="/create"><Plus className="w-5 h-5 mr-2" />Create Fanlink</Link>
-                        </Button>
+                        <Button variant="hero" asChild><Link to="/create"><Plus className="w-5 h-5 mr-2" />Create Fanlink</Link></Button>
                       )}
                     </div>
                   ) : (
                     filteredFanlinks.map((link, i) => (
                       <motion.div
                         key={link.id}
-                        className="rounded-2xl border border-border/40 bg-background/60 p-4 transition-all duration-300"
-                        initial={{ opacity: 0, y: 15 }}
+                        className="rounded-2xl border border-border/40 bg-background/40 hover:bg-background/60 p-4 transition-all"
+                        initial={{ opacity: 0, y: 12 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: i * 0.03 }}
-                        whileHover={{ y: -2, boxShadow: "0 8px 24px -6px hsl(var(--primary) / 0.1)" }}
+                        whileHover={{ y: -2, boxShadow: "var(--shadow-md)" }}
                       >
                         <div className="flex items-center gap-4">
-                          <div className="w-14 h-14 rounded-2xl bg-secondary flex items-center justify-center overflow-hidden flex-shrink-0">
-                            {link.artwork_url ? (
-                              <img src={link.artwork_url} alt={link.title} className="w-full h-full object-cover" />
-                            ) : (
-                              <Music2 className="w-7 h-7 text-muted-foreground" />
-                            )}
+                          <div className="w-14 h-14 rounded-2xl bg-secondary flex items-center justify-center overflow-hidden flex-shrink-0 ring-1 ring-border/40">
+                            {link.artwork_url ? <img src={link.artwork_url} alt={link.title} className="w-full h-full object-cover" /> : <Music2 className="w-7 h-7 text-muted-foreground" />}
                           </div>
                           <div className="flex-1 min-w-0">
                             <h3 className="font-display font-semibold truncate">{link.title}</h3>
@@ -431,7 +415,7 @@ const Dashboard = () => {
                             </div>
                           </div>
                           {!isActive(link) && (
-                            <div className={`px-2 py-1 rounded-full text-xs font-medium ${isExpired(link) ? "bg-yellow-500/20 text-yellow-400" : "bg-destructive/20 text-destructive"}`}>
+                            <div className={`px-2 py-1 rounded-full text-xs font-medium ${isExpired(link) ? "bg-warning/20 text-warning" : "bg-destructive/20 text-destructive"}`}>
                               {isExpired(link) ? "Expired" : "Disabled"}
                             </div>
                           )}
@@ -452,44 +436,34 @@ const Dashboard = () => {
               <TabsContent value="presaves">
                 <motion.div className="space-y-3" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
                   {filteredPreSaves.length === 0 ? (
-                    <div className="rounded-2xl border border-border/40 bg-background/60 p-12 text-center">
+                    <div className="rounded-2xl border border-dashed border-border/40 bg-background/40 p-12 text-center">
                       <Clock className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
                       <h3 className="font-display text-xl font-semibold mb-2">No pre-saves found</h3>
                       <p className="text-muted-foreground mb-6">{searchQuery ? "Try a different search" : "Create a pre-save for upcoming releases"}</p>
                       {!searchQuery && (
-                        <Button variant="hero" asChild>
-                          <Link to="/presave/create"><Clock className="w-5 h-5 mr-2" />Create Pre-Save</Link>
-                        </Button>
+                        <Button variant="hero" asChild><Link to="/presave/create"><Clock className="w-5 h-5 mr-2" />Create Pre-Save</Link></Button>
                       )}
                     </div>
                   ) : (
                     filteredPreSaves.map((ps, i) => (
                       <motion.div
                         key={ps.id}
-                        className="rounded-2xl border border-border/40 bg-background/60 p-4 transition-all duration-300"
-                        initial={{ opacity: 0, y: 15 }}
+                        className="rounded-2xl border border-border/40 bg-background/40 hover:bg-background/60 p-4 transition-all"
+                        initial={{ opacity: 0, y: 12 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: i * 0.03 }}
-                        whileHover={{ y: -2, boxShadow: "0 8px 24px -6px hsl(var(--primary) / 0.1)" }}
+                        whileHover={{ y: -2, boxShadow: "var(--shadow-md)" }}
                       >
                         <div className="flex items-center gap-4">
-                          <div className="w-14 h-14 rounded-2xl bg-secondary flex items-center justify-center overflow-hidden relative flex-shrink-0">
-                            {ps.artwork_url ? (
-                              <img src={ps.artwork_url} alt={ps.title} className="w-full h-full object-cover" />
-                            ) : (
-                              <Music2 className="w-7 h-7 text-muted-foreground" />
-                            )}
-                            {!ps.is_released && (
-                              <div className="absolute bottom-0 left-0 right-0 bg-primary/90 text-[10px] text-center py-0.5 font-semibold">PRE-SAVE</div>
-                            )}
+                          <div className="w-14 h-14 rounded-2xl bg-secondary flex items-center justify-center overflow-hidden relative flex-shrink-0 ring-1 ring-border/40">
+                            {ps.artwork_url ? <img src={ps.artwork_url} alt={ps.title} className="w-full h-full object-cover" /> : <Music2 className="w-7 h-7 text-muted-foreground" />}
+                            {!ps.is_released && <div className="absolute bottom-0 left-0 right-0 bg-primary/90 text-[10px] text-center py-0.5 font-semibold text-primary-foreground">PRE-SAVE</div>}
                           </div>
                           <div className="flex-1 min-w-0">
                             <h3 className="font-display font-semibold truncate">{ps.title}</h3>
                             <p className="text-sm text-muted-foreground truncate">{ps.artist}</p>
                             {ps.release_date && (
-                              <p className="text-xs text-muted-foreground/60 mt-0.5 flex items-center gap-1">
-                                <Calendar className="w-3 h-3" />{ps.release_date}
-                              </p>
+                              <p className="text-xs text-muted-foreground/60 mt-0.5 flex items-center gap-1"><Calendar className="w-3 h-3" />{ps.release_date}</p>
                             )}
                           </div>
                           <div className="hidden md:flex items-center gap-4">
@@ -497,14 +471,14 @@ const Dashboard = () => {
                               <p className="font-display font-semibold">{(preSaveStats[ps.id]?.fanSignups || 0).toLocaleString()}</p>
                               <p className="text-xs text-muted-foreground">fans</p>
                             </div>
-                            <div className={`px-3 py-1 rounded-full text-xs font-medium ${ps.is_released ? "bg-green-500/20 text-green-400" : "bg-primary/20 text-primary"}`}>
+                            <div className={`px-3 py-1 rounded-full text-xs font-medium ${ps.is_released ? "bg-success/20 text-success" : "bg-primary/20 text-primary"}`}>
                               {ps.is_released ? "Released" : "Upcoming"}
                             </div>
                             {ps.is_released && (preSaveStats[ps.id]?.fanSignups || 0) > 0 && (
                               <div className={`flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${
                                 (preSaveStats[ps.id]?.notificationsSent || 0) >= (preSaveStats[ps.id]?.fanSignups || 0)
-                                  ? "bg-green-500/20 text-green-400"
-                                  : (preSaveStats[ps.id]?.notificationsSent || 0) > 0 ? "bg-yellow-500/20 text-yellow-400" : "bg-destructive/20 text-destructive"
+                                  ? "bg-success/20 text-success"
+                                  : (preSaveStats[ps.id]?.notificationsSent || 0) > 0 ? "bg-warning/20 text-warning" : "bg-destructive/20 text-destructive"
                               }`}>
                                 {(preSaveStats[ps.id]?.notificationsSent || 0) >= (preSaveStats[ps.id]?.fanSignups || 0)
                                   ? <><MailCheck className="w-3 h-3" /> All sent</>
