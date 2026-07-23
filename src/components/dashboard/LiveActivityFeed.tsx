@@ -104,31 +104,34 @@ const LiveActivityFeed = ({ userId, fanlinkIds, presaveIds, linkNames, presaveNa
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "clicks" }, (p) => {
         const r = p.new as { id: string; fanlink_id: string; platform_name: string | null; clicked_at: string };
         if (!fanlinkIds.includes(r.fanlink_id)) return;
-        setEvents((prev) => [{
+        const evt: Event = {
           id: `c-${r.id}`, kind: "click",
           label: `Click on ${linkNames[r.fanlink_id] || "a fanlink"}`,
           meta: r.platform_name || undefined,
           at: new Date(r.clicked_at).getTime(),
-        }, ...prev].slice(0, 10));
+        };
+        setEvents((prev) => [evt, ...prev].slice(0, 10));
       })
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "fan_contacts" }, (p) => {
         const r = p.new as { id: string; link_id: string; email: string | null; collected_at: string };
         if (!fanlinkIds.includes(r.link_id)) return;
-        setEvents((prev) => [{
+        const evt: Event = {
           id: `f-${r.id}`, kind: "fan",
           label: `New fan on ${linkNames[r.link_id] || "a fanlink"}`,
           meta: r.email ? r.email.replace(/(.{2}).*(@.*)/, "$1•••$2") : undefined,
           at: new Date(r.collected_at).getTime(),
-        }, ...prev].slice(0, 10));
+        };
+        setEvents((prev) => [evt, ...prev].slice(0, 10));
       })
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "pre_save_actions" }, (p) => {
         const r = p.new as { id: string; pre_save_id: string; created_at: string };
         if (!presaveIds.includes(r.pre_save_id)) return;
-        setEvents((prev) => [{
+        const evt: Event = {
           id: `p-${r.id}`, kind: "presave",
           label: `Pre-save on ${presaveNames[r.pre_save_id] || "a release"}`,
           at: new Date(r.created_at).getTime(),
-        }, ...prev].slice(0, 10));
+        };
+        setEvents((prev) => [evt, ...prev].slice(0, 10));
       })
       .subscribe();
     return () => { supabase.removeChannel(ch); };
