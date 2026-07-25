@@ -394,13 +394,17 @@ const Dashboard = () => {
                         transition={{ delay: i * 0.03 }}
                         whileHover={{ y: -2, boxShadow: "var(--shadow-md)" }}
                       >
-                        <div className="flex items-center gap-4">
-                          <div className="w-14 h-14 rounded-2xl bg-secondary flex items-center justify-center overflow-hidden flex-shrink-0 ring-1 ring-border/40">
+                        <div className="flex flex-wrap items-center gap-3 sm:gap-4">
+                          <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-secondary flex items-center justify-center overflow-hidden flex-shrink-0 ring-1 ring-border/40">
                             {link.artwork_url ? <img src={link.artwork_url} alt={link.title} className="w-full h-full object-cover" /> : <Music2 className="w-7 h-7 text-muted-foreground" />}
                           </div>
                           <div className="flex-1 min-w-0">
                             <h3 className="font-display font-semibold truncate">{link.title}</h3>
                             <p className="text-sm text-muted-foreground truncate">{link.artist}</p>
+                            <div className="flex items-center gap-3 mt-1 md:hidden text-xs text-muted-foreground">
+                              <span><b className="text-foreground">{(clickCounts[link.id] || 0).toLocaleString()}</b> clicks</span>
+                              {(fanContactCounts[link.id] || 0) > 0 && <span><b className="text-foreground">{fanContactCounts[link.id].toLocaleString()}</b> fans</span>}
+                            </div>
                           </div>
                           <div className="hidden md:flex items-center gap-6">
                             {(fanContactCounts[link.id] || 0) > 0 && (
@@ -419,7 +423,7 @@ const Dashboard = () => {
                               {isExpired(link) ? "Expired" : "Disabled"}
                             </div>
                           )}
-                          <div className="flex items-center gap-1">
+                          <div className="flex items-center gap-1 w-full sm:w-auto sm:ml-auto justify-end flex-wrap">
                             <Button variant="ghost" size="icon" asChild title="Analytics"><Link to={`/analytics/fanlink/${link.id}`}><BarChart3 className="w-4 h-4" /></Link></Button>
                             <Button variant="ghost" size="icon" asChild title="Edit"><Link to={`/edit/fanlink/${link.id}`}><Edit className="w-4 h-4" /></Link></Button>
                             <Button variant="ghost" size="icon" asChild title="View"><Link to={`/${link.artist_slug}/${link.slug}`} target="_blank"><ExternalLink className="w-4 h-4" /></Link></Button>
