@@ -1,31 +1,34 @@
 import { useState, useEffect, useRef } from "react";
-import { trackEvent } from "@/lib/analytics";
-import AudioPreviewUploader from "@/components/AudioPreviewUploader";
 import { useNavigate } from "react-router-dom";
-import { motion } from "framer-motion";
-import { 
-  Music2, 
-  Search, 
-  Loader2, 
-  Calendar,
-  User,
+import { toast } from "sonner";
+import {
+  Music2,
+  Search,
+  Loader2,
   Disc3,
   CheckCircle,
-  ArrowRight,
-  Clock,
   Edit3,
   Image as ImageIcon,
   AlertCircle,
   Upload,
-  X
+  X,
+  Calendar,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import Header from "@/components/Header";
+import WizardShell from "@/components/wizard/WizardShell";
+import DevicePreview from "@/components/wizard/DevicePreview";
+import AudioPreviewUploader from "@/components/AudioPreviewUploader";
+import { trackEvent } from "@/lib/analytics";
+import {
+  SpotifyIcon,
+  AppleMusicIcon,
+  YouTubeIcon,
+  DeezerIcon,
+} from "@/components/icons/PlatformIcons";
 
 interface PreSaveMetadata {
   title: string;
@@ -40,29 +43,23 @@ interface PreSaveMetadata {
   upc: string;
 }
 
-const slugify = (text: string): string => {
-  return text
-    .toLowerCase()
-    .trim()
-    .replace(/[^\w\s-]/g, '')
-    .replace(/[\s_-]+/g, '-')
-    .replace(/^-+|-+$/g, '');
-};
+const slugify = (t: string) =>
+  t.toLowerCase().trim().replace(/[^\w\s-]/g, "").replace(/[\s_-]+/g, "-").replace(/^-+|-+$/g, "");
 
 const CreatePreSave = () => {
   const navigate = useNavigate();
   const { user, loading: authLoading } = useAuth();
   const fileInputRef = useRef<HTMLInputElement>(null);
-  
-  // Mode: "search" for Spotify lookup, "manual" for distributor metadata entry
-  const [mode, setMode] = useState<"search" | "manual">("manual");
-  
-  // Search mode state
+
+  const [step, setStep] = useState(0);
+  const [mode, setMode] = useState<"manual" | "search">("manual");
+
+  // Search mode
   const [inputValue, setInputValue] = useState("");
   const [inputType, setInputType] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-  
-  // Manual entry state
+
+  // Manual mode
   const [manualData, setManualData] = useState({
     title: "",
     artist: "",
@@ -70,107 +67,67 @@ const CreatePreSave = () => {
     isrc: "",
     releaseDate: "",
     artworkUrl: "",
-    description: ""
+    description: "",
   });
-  
-  // Artwork upload state
+
+  // Artwork upload
   const [artworkFile, setArtworkFile] = useState<File | null>(null);
   const [artworkPreview, setArtworkPreview] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
-  
+
+  // Audio
   const [previewAudioUrl, setPreviewAudioUrl] = useState<string | null>(null);
   const [previewStart, setPreviewStart] = useState(0);
   const [previewEnd, setPreviewEnd] = useState(30);
   const [waveformData, setWaveformData] = useState<number[]>([]);
+
   const [creating, setCreating] = useState(false);
   const [metadata, setMetadata] = useState<PreSaveMetadata | null>(null);
 
   useEffect(() => {
-    if (!authLoading && !user) {
-      navigate("/login");
-    }
+    if (!authLoading && !user) navigate("/login");
   }, [user, authLoading, navigate]);
 
-  const detectInputType = (input: string): string | null => {
-    const trimmed = input.trim();
-    if (/^\d{12,14}$/.test(trimmed)) return "UPC";
-    if (/^[A-Z]{2}[A-Z0-9]{10}$/.test(trimmed.toUpperCase())) return "ISRC";
-    if (trimmed.includes("spotify.com") || trimmed.includes("open.spotify")) return "Spotify Link";
+  const detectInputType = (input: string) => {
+    const t = input.trim();
+    if (/^\d{12,14}$/.test(t)) return "UPC";
+    if (/^[A-Z]{2}[A-Z0-9]{10}$/.test(t.toUpperCase())) return "ISRC";
+    if (t.includes("spotify.com") || t.includes("open.spotify")) return "Spotify Link";
     return null;
   };
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value;
-    setInputValue(value);
-    setInputType(detectInputType(value));
-  };
-
-  const handleManualChange = (field: keyof typeof manualData, value: string) => {
-    setManualData(prev => ({ ...prev, [field]: value }));
-  };
-
-  // Handle artwork file selection
   const handleArtworkSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-
-    // Validate file type
-    if (!file.type.startsWith('image/')) {
-      toast.error("Please select an image file");
-      return;
-    }
-
-    // Validate file size (max 5MB)
-    if (file.size > 5 * 1024 * 1024) {
-      toast.error("Image must be less than 5MB");
-      return;
-    }
-
+    if (!file.type.startsWith("image/")) return toast.error("Select an image file");
+    if (file.size > 5 * 1024 * 1024) return toast.error("Image must be < 5MB");
     setArtworkFile(file);
-    
-    // Create preview
     const reader = new FileReader();
-    reader.onloadend = () => {
-      setArtworkPreview(reader.result as string);
-    };
+    reader.onloadend = () => setArtworkPreview(reader.result as string);
     reader.readAsDataURL(file);
   };
 
   const clearArtwork = () => {
     setArtworkFile(null);
     setArtworkPreview(null);
-    setManualData(prev => ({ ...prev, artworkUrl: "" }));
-    if (fileInputRef.current) {
-      fileInputRef.current.value = "";
-    }
+    setManualData((p) => ({ ...p, artworkUrl: "" }));
+    if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
-  // Upload artwork to storage
   const uploadArtwork = async (): Promise<string | null> => {
     if (!artworkFile || !user) return null;
-
     setUploading(true);
     try {
-      const fileExt = artworkFile.name.split('.').pop();
-      const fileName = `${user.id}/${Date.now()}.${fileExt}`;
-
-      const { error: uploadError } = await supabase.storage
-        .from('artwork')
-        .upload(fileName, artworkFile, {
-          cacheControl: '3600',
-          upsert: false
-        });
-
-      if (uploadError) throw uploadError;
-
-      // Get public URL
-      const { data: { publicUrl } } = supabase.storage
-        .from('artwork')
-        .getPublicUrl(fileName);
-
-      return publicUrl;
-    } catch (error: any) {
-      console.error("Error uploading artwork:", error);
+      const ext = artworkFile.name.split(".").pop();
+      const name = `${user.id}/${Date.now()}.${ext}`;
+      const { error } = await supabase.storage.from("artwork").upload(name, artworkFile, {
+        cacheControl: "3600",
+        upsert: false,
+      });
+      if (error) throw error;
+      const { data } = supabase.storage.from("artwork").getPublicUrl(name);
+      return data.publicUrl;
+    } catch (e) {
       toast.error("Failed to upload artwork");
       return null;
     } finally {
@@ -178,99 +135,75 @@ const CreatePreSave = () => {
     }
   };
 
-  // Build metadata from manual entry
-  const handleManualSubmit = async () => {
+  const handleManualBuild = async (): Promise<boolean> => {
     const { title, artist, upc, releaseDate } = manualData;
-    
     if (!title.trim() || !artist.trim()) {
-      toast.error("Please enter at least title and artist");
-      return;
+      toast.error("Enter title and artist");
+      return false;
     }
-
     if (!upc.trim() || !/^\d{12,14}$/.test(upc.trim())) {
-      toast.error("Please enter a valid UPC (12-14 digits)");
-      return;
+      toast.error("Enter a valid UPC (12–14 digits)");
+      return false;
     }
-
     if (!releaseDate) {
-      toast.error("Please enter the release date");
-      return;
+      toast.error("Enter release date");
+      return false;
     }
-
-    // Upload artwork if file selected
     let artworkUrl = manualData.artworkUrl.trim();
     if (artworkFile) {
-      const uploadedUrl = await uploadArtwork();
-      if (uploadedUrl) {
-        artworkUrl = uploadedUrl;
-      }
+      const uploaded = await uploadArtwork();
+      if (uploaded) artworkUrl = uploaded;
     }
-
     setMetadata({
       title: title.trim(),
       artist: artist.trim(),
       album: title.trim(),
-      artworkUrl: artworkUrl,
-      releaseDate: releaseDate,
+      artworkUrl,
+      releaseDate,
       spotifyUri: "",
       spotifyAlbumId: "",
       spotifyArtistId: "",
       isrc: manualData.isrc.trim().toUpperCase(),
-      upc: upc.trim()
+      upc: upc.trim(),
     });
-
-    toast.success("Release details ready! Pre-save available, streaming links activate on release day.");
+    return true;
   };
 
-  const handleFetch = async () => {
+  const handleFetch = async (): Promise<boolean> => {
     if (!inputValue.trim()) {
-      toast.error("Please enter a Spotify URL, UPC, or ISRC");
-      return;
+      toast.error("Enter a Spotify URL, UPC, or ISRC");
+      return false;
     }
-
     setLoading(true);
     try {
-      const { data, error } = await supabase.functions.invoke('generate-link', {
-        body: { input: inputValue.trim() }
+      const { data, error } = await supabase.functions.invoke("generate-link", {
+        body: { input: inputValue.trim() },
       });
-
       if (error) throw error;
-
-      // If not found, suggest manual mode for unreleased tracks
       if (data?.not_found || data?.error) {
-        toast.info("Track not indexed yet. Use Manual Entry for unreleased music.", {
-          description: "Enter your distributor-provided metadata (UPC, release date, artwork).",
-          duration: 5000
-        });
+        toast.info("Track not indexed yet. Use Manual Entry.");
         setMode("manual");
-        return;
+        return false;
       }
-      
-      if (!data) {
-        toast.error("Could not find release information");
-        return;
-      }
-
       const md = data.metadata || data;
-      
       setMetadata({
-        title: md.title || '',
-        artist: md.artist || '',
-        album: md.album || md.title || '',
-        artworkUrl: md.artwork?.large || md.artwork?.medium || '',
-        releaseDate: md.release_date || '',
-        spotifyUri: md.spotify_track_url ? `spotify:track:${md.spotify_track_url.split('/').pop()}` : '',
-        spotifyAlbumId: md.album_id || '',
-        spotifyArtistId: md.artist_id || '',
-        isrc: md.isrc || '',
-        upc: md.upc || ''
+        title: md.title || "",
+        artist: md.artist || "",
+        album: md.album || md.title || "",
+        artworkUrl: md.artwork?.large || md.artwork?.medium || "",
+        releaseDate: md.release_date || "",
+        spotifyUri: md.spotify_track_url ? `spotify:track:${md.spotify_track_url.split("/").pop()}` : "",
+        spotifyAlbumId: md.album_id || "",
+        spotifyArtistId: md.artist_id || "",
+        isrc: md.isrc || "",
+        upc: md.upc || "",
       });
-
-      toast.success("Release metadata fetched!");
-    } catch (error: any) {
-      console.error("Error fetching metadata:", error);
-      toast.info("Track not found. Switch to Manual Entry for unreleased music.");
+      toast.success("Release metadata fetched");
+      return true;
+    } catch (e) {
+      toast.info("Track not found. Switch to Manual Entry.");
       setMode("manual");
+      return false;
     } finally {
       setLoading(false);
     }
@@ -278,20 +211,16 @@ const CreatePreSave = () => {
 
   const handleCreate = async () => {
     if (!metadata || !user) return;
-
     setCreating(true);
     try {
-      const artistSlug = slugify(metadata.artist);
-      const titleSlug = slugify(metadata.title);
-
-      const { data, error } = await supabase
+      const { error } = await supabase
         .from("pre_saves")
         .insert({
           user_id: user.id,
           title: metadata.title,
           artist: metadata.artist,
-          slug: titleSlug,
-          artist_slug: artistSlug,
+          slug: slugify(metadata.title),
+          artist_slug: slugify(metadata.artist),
           artwork_url: metadata.artworkUrl || null,
           release_date: metadata.releaseDate,
           spotify_uri: metadata.spotifyUri || null,
@@ -305,26 +234,68 @@ const CreatePreSave = () => {
           preview_audio_url: previewAudioUrl || null,
           preview_start: previewStart,
           preview_end: previewEnd,
-          waveform_data: waveformData.length > 0 ? waveformData : null
-        })
-        .select()
-        .single();
-
+          waveform_data: waveformData.length > 0 ? waveformData : null,
+        });
       if (error) throw error;
-
-      trackEvent("presave_created", { title: metadata?.title, artist: metadata?.artist });
-      toast.success("Pre-save link created! Streaming links will activate on release day.");
+      trackEvent("presave_created", { title: metadata.title, artist: metadata.artist });
+      toast.success("Pre-save link created!");
       navigate("/dashboard");
-    } catch (error: any) {
-      console.error("Error creating pre-save:", error);
-      if (error.code === "23505") {
-        toast.error("A pre-save for this release already exists");
-      } else {
-        toast.error("Failed to create pre-save link");
-      }
+    } catch (e: any) {
+      toast.error(e?.code === "23505" ? "A pre-save for this release already exists" : "Failed to create pre-save");
     } finally {
       setCreating(false);
     }
+  };
+
+  const currentArtwork = metadata?.artworkUrl || artworkPreview || manualData.artworkUrl;
+  const currentTitle = metadata?.title || manualData.title;
+  const currentArtist = metadata?.artist || manualData.artist;
+
+  const preview = (
+    <DevicePreview
+      artworkUrl={currentArtwork || null}
+      title={currentTitle}
+      artist={currentArtist}
+      subtitle="Pre-save · Coming soon"
+      platforms={[
+        { name: "Spotify", icon: <SpotifyIcon />, color: "#1DB954", hasUrl: !!metadata },
+        { name: "Apple Music", icon: <AppleMusicIcon />, color: "#FA243C", hasUrl: !!metadata?.upc },
+        { name: "YouTube Music", icon: <YouTubeIcon />, color: "#FF0000", hasUrl: !!metadata?.upc },
+        { name: "Deezer", icon: <DeezerIcon />, color: "#FEAA2D", hasUrl: !!metadata?.upc },
+      ]}
+      footerNote={previewAudioUrl ? "🎧 Audio preview attached" : undefined}
+    />
+  );
+
+  const steps = [
+    { id: "source", label: "Source" },
+    { id: "details", label: "Details" },
+    { id: "audio", label: "Audio" },
+    { id: "publish", label: "Publish" },
+  ];
+
+  const canProceed =
+    (step === 0 &&
+      (mode === "manual"
+        ? !!manualData.title && !!manualData.artist && !!manualData.upc && !!manualData.releaseDate
+        : !!inputValue.trim() || !!metadata)) ||
+    (step === 1 && !!metadata) ||
+    step === 2 ||
+    (step === 3 && !!metadata);
+
+  const onNext = async () => {
+    if (step === 0) {
+      if (mode === "manual") {
+        const ok = await handleManualBuild();
+        if (ok) setStep(1);
+      } else {
+        const ok = metadata ? true : await handleFetch();
+        if (ok) setStep(1);
+      }
+      return;
+    }
+    if (step < 3) setStep(step + 1);
+    else handleCreate();
   };
 
   if (authLoading) {
@@ -335,453 +306,236 @@ const CreatePreSave = () => {
     );
   }
 
-  const isReleaseUpcoming = metadata?.releaseDate && new Date(metadata.releaseDate) > new Date();
-
   return (
-    <div className="min-h-screen bg-background">
-      <Header />
-
-      <main className="container max-w-4xl mx-auto px-4 py-8">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="mb-8"
-        >
-          <h1 className="font-display text-3xl font-bold mb-2">
-            Create <span className="gradient-text">Pre-Save Link</span>
-          </h1>
-          <p className="text-muted-foreground">
-            Build hype before your release drops. Enter your distributor-provided metadata.
-          </p>
-        </motion.div>
-
-        {/* Mode Toggle */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.05 }}
-          className="flex gap-2 mb-6"
-        >
-          <Button
-            variant={mode === "manual" ? "default" : "outline"}
-            onClick={() => { setMode("manual"); setMetadata(null); }}
-            className="flex-1"
-          >
-            <Edit3 className="w-4 h-4 mr-2" />
-            Manual Entry (Recommended)
-          </Button>
-          <Button
-            variant={mode === "search" ? "default" : "outline"}
-            onClick={() => { setMode("search"); setMetadata(null); }}
-            className="flex-1"
-          >
-            <Search className="w-4 h-4 mr-2" />
-            Search Released Track
-          </Button>
-        </motion.div>
-
-        {/* Manual Entry Mode */}
-        {mode === "manual" && !metadata && (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 }}
-            className="glass-card p-6 mb-6"
-          >
-            <div className="flex items-center gap-2 mb-4">
-              <Edit3 className="w-5 h-5 text-primary" />
-              <h2 className="font-display font-semibold">Distributor Metadata</h2>
-            </div>
-
-            <div className="bg-primary/10 border border-primary/20 rounded-lg p-4 mb-6 flex items-start gap-3">
-              <AlertCircle className="w-5 h-5 text-primary mt-0.5 flex-shrink-0" />
-              <div className="text-sm">
-                <p className="font-medium text-primary mb-1">For Unreleased Music</p>
-                <p className="text-muted-foreground">
-                  Enter the metadata from your distributor (ONErpm, DistroKid, etc.). 
-                  Streaming links will automatically activate once the release goes live.
-                </p>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="title">Track/Album Title *</Label>
-                <Input
-                  id="title"
-                  placeholder="Enter release title"
-                  value={manualData.title}
-                  onChange={(e) => handleManualChange("title", e.target.value)}
-                  className="mt-1"
-                />
-              </div>
-              <div>
-                <Label htmlFor="artist">Artist Name *</Label>
-                <Input
-                  id="artist"
-                  placeholder="Enter artist name"
-                  value={manualData.artist}
-                  onChange={(e) => handleManualChange("artist", e.target.value)}
-                  className="mt-1"
-                />
-              </div>
-              <div>
-                <Label htmlFor="upc">UPC Code *</Label>
-                <Input
-                  id="upc"
-                  placeholder="12-14 digit UPC from distributor"
-                  value={manualData.upc}
-                  onChange={(e) => handleManualChange("upc", e.target.value)}
-                  className="mt-1"
-                />
-              </div>
-              <div>
-                <Label htmlFor="isrc">ISRC (Optional)</Label>
-                <Input
-                  id="isrc"
-                  placeholder="e.g., USRC12345678"
-                  value={manualData.isrc}
-                  onChange={(e) => handleManualChange("isrc", e.target.value)}
-                  className="mt-1"
-                />
-              </div>
-              <div>
-                <Label htmlFor="releaseDate">Release Date *</Label>
-                <Input
-                  id="releaseDate"
-                  type="date"
-                  value={manualData.releaseDate}
-                  onChange={(e) => handleManualChange("releaseDate", e.target.value)}
-                  className="mt-1"
-                />
-              </div>
-              
-              {/* Description */}
-              <div className="md:col-span-2">
-                <Label htmlFor="description">Description (Optional)</Label>
-                <Input
-                  id="description"
-                  placeholder="Tell fans about this release..."
-                  value={manualData.description}
-                  onChange={(e) => handleManualChange("description", e.target.value)}
-                  className="mt-1"
-                  maxLength={500}
-                />
-              </div>
-              
-              {/* Artwork Upload */}
-              <div className="md:col-span-2">
-                <Label>Cover Artwork</Label>
-                <div className="mt-1 flex gap-4 items-start">
-                  {/* Upload area */}
-                  <div 
-                    className={`relative flex-1 border-2 border-dashed rounded-lg p-4 transition-colors cursor-pointer hover:border-primary/50 ${
-                      artworkPreview ? 'border-primary' : 'border-muted-foreground/25'
-                    }`}
-                    onClick={() => fileInputRef.current?.click()}
-                  >
-                    <input
-                      ref={fileInputRef}
-                      type="file"
-                      accept="image/*"
-                      onChange={handleArtworkSelect}
-                      className="hidden"
-                    />
-                    
-                    {artworkPreview ? (
-                      <div className="flex items-center gap-4">
-                        <img 
-                          src={artworkPreview} 
-                          alt="Artwork preview" 
-                          className="w-20 h-20 rounded-lg object-cover"
-                        />
-                        <div className="flex-1">
-                          <p className="text-sm font-medium">{artworkFile?.name}</p>
-                          <p className="text-xs text-muted-foreground">
-                            {artworkFile && (artworkFile.size / 1024 / 1024).toFixed(2)} MB
-                          </p>
-                        </div>
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="icon"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            clearArtwork();
-                          }}
-                        >
-                          <X className="w-4 h-4" />
-                        </Button>
-                      </div>
-                    ) : (
-                      <div className="text-center py-4">
-                        <Upload className="w-8 h-8 mx-auto text-muted-foreground mb-2" />
-                        <p className="text-sm text-muted-foreground">
-                          Click to upload artwork
-                        </p>
-                        <p className="text-xs text-muted-foreground mt-1">
-                          PNG, JPG up to 5MB
-                        </p>
-                      </div>
-                    )}
-                  </div>
-                </div>
-                
-                {/* Or URL input */}
-                {!artworkFile && (
-                  <div className="mt-3">
-                    <div className="flex items-center gap-2 mb-2">
-                      <div className="flex-1 h-px bg-border" />
-                      <span className="text-xs text-muted-foreground">or paste URL</span>
-                      <div className="flex-1 h-px bg-border" />
-                    </div>
-                    <Input
-                      placeholder="https://..."
-                      value={manualData.artworkUrl}
-                      onChange={(e) => handleManualChange("artworkUrl", e.target.value)}
-                    />
-                  </div>
-                )}
-              </div>
-            </div>
-
-
-
+    <WizardShell
+      title={<>Create a <span className="bg-gradient-to-r from-primary via-primary-glow to-accent bg-clip-text text-transparent">Pre-save</span></>}
+      subtitle="Build hype before drop day. Fans commit once — you convert on release."
+      steps={steps}
+      currentStep={step}
+      onStepChange={(s) => s <= step && setStep(s)}
+      canProceed={canProceed}
+      onNext={onNext}
+      onBack={() => setStep((s) => Math.max(0, s - 1))}
+      submitLabel="Publish Pre-save"
+      submitting={creating || uploading || loading}
+      preview={preview}
+    >
+      {step === 0 && (
+        <div className="space-y-5">
+          <div className="flex gap-2">
             <Button
-              onClick={handleManualSubmit}
-              disabled={uploading}
-              className="mt-6 w-full"
-              size="lg"
+              variant={mode === "manual" ? "default" : "outline"}
+              onClick={() => { setMode("manual"); setMetadata(null); }}
+              className="flex-1"
             >
-              {uploading ? (
-                <>
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  Uploading...
-                </>
-              ) : (
-                <>
-                  <CheckCircle className="w-4 h-4 mr-2" />
-                  Continue with Release Details
-                </>
-              )}
+              <Edit3 className="w-4 h-4 mr-2" />
+              Manual entry
             </Button>
-          </motion.div>
-        )}
+            <Button
+              variant={mode === "search" ? "default" : "outline"}
+              onClick={() => { setMode("search"); setMetadata(null); }}
+              className="flex-1"
+            >
+              <Search className="w-4 h-4 mr-2" />
+              Search released
+            </Button>
+          </div>
 
-        {/* Search Mode */}
-        {mode === "search" && !metadata && (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 }}
-            className="glass-card p-6 mb-6"
-          >
-            <div className="flex items-center gap-2 mb-4">
-              <Clock className="w-5 h-5 text-primary" />
-              <h2 className="font-display font-semibold">Search Released Track</h2>
-            </div>
+          {mode === "manual" ? (
+            <div className="rounded-2xl border border-border/50 bg-card/60 backdrop-blur-xl p-6 shadow-[var(--shadow-md)] space-y-4">
+              <div className="flex items-start gap-3 rounded-xl bg-primary/10 border border-primary/20 p-3">
+                <AlertCircle className="w-4 h-4 text-primary mt-0.5 shrink-0" />
+                <p className="text-xs text-muted-foreground">
+                  Enter distributor metadata (ONErpm, DistroKid, etc.). Streaming links activate on release day automatically.
+                </p>
+              </div>
 
-            <p className="text-sm text-muted-foreground mb-4">
-              Only works for tracks already live on Spotify. For unreleased music, use Manual Entry.
-            </p>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <Label>Title *</Label>
+                  <Input value={manualData.title} onChange={(e) => setManualData({ ...manualData, title: e.target.value })} placeholder="Release title" />
+                </div>
+                <div>
+                  <Label>Artist *</Label>
+                  <Input value={manualData.artist} onChange={(e) => setManualData({ ...manualData, artist: e.target.value })} placeholder="Artist name" />
+                </div>
+                <div>
+                  <Label>UPC *</Label>
+                  <Input value={manualData.upc} onChange={(e) => setManualData({ ...manualData, upc: e.target.value })} placeholder="12–14 digits" />
+                </div>
+                <div>
+                  <Label>ISRC</Label>
+                  <Input value={manualData.isrc} onChange={(e) => setManualData({ ...manualData, isrc: e.target.value })} placeholder="Optional" />
+                </div>
+                <div>
+                  <Label>Release date *</Label>
+                  <Input type="date" value={manualData.releaseDate} onChange={(e) => setManualData({ ...manualData, releaseDate: e.target.value })} />
+                </div>
+                <div>
+                  <Label>Description</Label>
+                  <Input value={manualData.description} onChange={(e) => setManualData({ ...manualData, description: e.target.value })} placeholder="Tell fans about it…" maxLength={500} />
+                </div>
+              </div>
 
-            <div className="space-y-4">
               <div>
-                <Label htmlFor="input">Spotify URL, UPC, or ISRC</Label>
-                <div className="flex gap-2 mt-1">
-                  <div className="relative flex-1">
-                    <Input
-                      id="input"
-                      placeholder="Paste Spotify album/track URL, UPC, or ISRC..."
-                      value={inputValue}
-                      onChange={handleInputChange}
-                      className="pr-24"
-                    />
-                    {inputType && (
-                      <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs bg-primary/20 text-primary px-2 py-1 rounded">
-                        {inputType}
-                      </span>
-                    )}
-                  </div>
-                  <Button
-                    onClick={handleFetch}
-                    disabled={loading || !inputValue.trim()}
-                    className="min-w-[100px]"
-                  >
-                    {loading ? (
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                    ) : (
-                      <>
-                        <Search className="w-4 h-4 mr-2" />
-                        Fetch
-                      </>
-                    )}
-                  </Button>
+                <Label>Cover artwork</Label>
+                <div
+                  className={`mt-1 relative border-2 border-dashed rounded-xl p-4 transition-colors cursor-pointer ${artworkPreview ? "border-primary" : "border-border hover:border-primary/50"}`}
+                  onClick={() => fileInputRef.current?.click()}
+                >
+                  <input ref={fileInputRef} type="file" accept="image/*" onChange={handleArtworkSelect} className="hidden" />
+                  {artworkPreview ? (
+                    <div className="flex items-center gap-4">
+                      <img src={artworkPreview} alt="" className="w-20 h-20 rounded-lg object-cover" />
+                      <div className="flex-1">
+                        <p className="text-sm font-medium">{artworkFile?.name}</p>
+                        <p className="text-xs text-muted-foreground">{artworkFile && (artworkFile.size / 1024 / 1024).toFixed(2)} MB</p>
+                      </div>
+                      <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); clearArtwork(); }}>
+                        <X className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="text-center py-4">
+                      <Upload className="w-6 h-6 mx-auto text-muted-foreground mb-2" />
+                      <p className="text-sm text-muted-foreground">Click to upload artwork</p>
+                      <p className="text-xs text-muted-foreground mt-1">PNG or JPG · Max 5MB</p>
+                    </div>
+                  )}
                 </div>
-              </div>
-            </div>
-          </motion.div>
-        )}
-
-        {/* Metadata Preview */}
-        {metadata && (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="glass-card p-6 mb-6"
-          >
-            <div className="flex items-center gap-2 mb-4">
-              <Disc3 className="w-5 h-5 text-primary" />
-              <h2 className="font-display font-semibold">Release Preview</h2>
-              {isReleaseUpcoming && (
-                <span className="ml-auto text-xs bg-accent/20 text-accent px-2 py-1 rounded-full">
-                  Upcoming Release
-                </span>
-              )}
-            </div>
-
-            <div className="flex gap-6">
-              {/* Artwork */}
-              <div className="relative flex-shrink-0">
-                <div className="absolute -inset-2 bg-gradient-to-r from-primary/20 to-accent/20 blur-xl rounded-xl" />
-                {metadata.artworkUrl ? (
-                  <img
-                    src={metadata.artworkUrl}
-                    alt={metadata.title}
-                    className="relative w-40 h-40 rounded-xl object-cover shadow-xl"
+                {!artworkFile && (
+                  <Input
+                    className="mt-3"
+                    placeholder="Or paste artwork URL"
+                    value={manualData.artworkUrl}
+                    onChange={(e) => setManualData({ ...manualData, artworkUrl: e.target.value })}
                   />
-                ) : (
-                  <div className="relative w-40 h-40 rounded-xl bg-secondary flex items-center justify-center shadow-xl">
-                    <ImageIcon className="w-12 h-12 text-muted-foreground" />
-                  </div>
-                )}
-              </div>
-
-              {/* Info */}
-              <div className="flex-1 space-y-3">
-                <div>
-                  <p className="text-sm text-muted-foreground">Title</p>
-                  <p className="font-display font-semibold text-lg">{metadata.title}</p>
-                </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">Artist</p>
-                  <p className="flex items-center gap-2">
-                    <User className="w-4 h-4 text-primary" />
-                    {metadata.artist}
-                  </p>
-                </div>
-                {metadata.releaseDate && (
-                  <div>
-                    <p className="text-sm text-muted-foreground">Release Date</p>
-                    <p className="flex items-center gap-2">
-                      <Calendar className="w-4 h-4 text-primary" />
-                      {metadata.releaseDate}
-                    </p>
-                  </div>
-                )}
-                {metadata.upc && (
-                  <div>
-                    <p className="text-sm text-muted-foreground">UPC</p>
-                    <p className="font-mono text-sm">{metadata.upc}</p>
-                  </div>
                 )}
               </div>
             </div>
-
-            {/* Status Message */}
-            {isReleaseUpcoming && (
-              <div className="mt-6 p-4 bg-accent/10 border border-accent/20 rounded-lg">
-                <p className="text-sm text-accent font-medium">
-                  ✨ Pre-save available, streaming links activate on release day.
-                </p>
-              </div>
-            )}
-
-            {/* Pre-save Link Preview */}
-            <div className="mt-4 p-4 bg-secondary/50 rounded-lg">
-              <p className="text-sm text-muted-foreground mb-1">Smart Link Preview</p>
-              <code className="text-sm text-primary">
-                https://md.malpinohdistro.com.ng/pre/{slugify(metadata.artist)}-{slugify(metadata.title)}
-              </code>
-            </div>
-
-            {/* Features */}
-            <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <CheckCircle className="w-4 h-4 text-primary" />
-                Pre-save to Library
-              </div>
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <CheckCircle className="w-4 h-4 text-primary" />
-                Auto-resolve on Release
-              </div>
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <CheckCircle className="w-4 h-4 text-primary" />
-                Multi-Platform Support
-              </div>
-            </div>
-
-            {/* Audio Preview Upload */}
-            {user && (
-              <div className="mt-6 p-4 border border-primary/20 rounded-xl bg-primary/5">
-                <div className="flex items-center gap-2 mb-3">
-                  <Music2 className="w-5 h-5 text-primary" />
-                  <h3 className="font-display font-semibold">🎧 Upload Pre-Release Audio Preview</h3>
-                </div>
-                <p className="text-sm text-muted-foreground mb-4">
-                  Upload a snippet of your unreleased track. Fans will hear a 30-second preview on your pre-save page.
-                </p>
-                <AudioPreviewUploader
-                  userId={user.id}
-                  currentUrl={previewAudioUrl}
-                  onUploaded={(url, start, end, waveform) => {
-                    setPreviewAudioUrl(url);
-                    setPreviewStart(start);
-                    setPreviewEnd(end);
-                    setWaveformData(waveform);
-                  }}
+          ) : (
+            <div className="rounded-2xl border border-border/50 bg-card/60 backdrop-blur-xl p-6 shadow-[var(--shadow-md)] space-y-3">
+              <p className="text-xs text-muted-foreground">
+                Only for tracks already live on Spotify. For unreleased music, use Manual entry.
+              </p>
+              <div className="relative">
+                <Input
+                  placeholder="Paste Spotify URL, UPC, or ISRC…"
+                  value={inputValue}
+                  onChange={(e) => { setInputValue(e.target.value); setInputType(detectInputType(e.target.value)); }}
+                  className="pr-24"
                 />
+                {inputType && (
+                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] bg-primary/20 text-primary px-2 py-0.5 rounded-full font-medium">
+                    {inputType}
+                  </span>
+                )}
               </div>
-            )}
-
-
-            <div className="mt-6 flex gap-2">
-              <Button
-                variant="outline"
-                onClick={() => setMetadata(null)}
-                className="flex-1"
-              >
-                <Edit3 className="w-4 h-4 mr-2" />
-                Edit Details
+              <Button onClick={handleFetch} disabled={loading || !inputValue.trim()} variant="premium" className="w-full">
+                {loading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Search className="w-4 h-4 mr-2" />}
+                Fetch metadata
               </Button>
             </div>
-          </motion.div>
-        )}
+          )}
+        </div>
+      )}
 
-        {/* Create Button */}
-        {metadata && (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="flex justify-end"
-          >
-            <Button
-              onClick={handleCreate}
-              disabled={creating}
-              size="lg"
-              variant="hero"
-            >
-              {creating ? (
-                <Loader2 className="w-5 h-5 animate-spin mr-2" />
-              ) : (
-                <ArrowRight className="w-5 h-5 mr-2" />
+      {step === 1 && metadata && (
+        <div className="rounded-2xl border border-border/50 bg-card/60 backdrop-blur-xl p-6 shadow-[var(--shadow-md)]">
+          <div className="flex items-center gap-2 mb-5">
+            <Disc3 className="w-4 h-4 text-primary" />
+            <h2 className="font-display text-sm font-semibold uppercase tracking-widest text-muted-foreground">
+              Release preview
+            </h2>
+          </div>
+          <div className="flex flex-col sm:flex-row gap-5">
+            {metadata.artworkUrl ? (
+              <img src={metadata.artworkUrl} alt="" className="w-36 h-36 rounded-xl object-cover shadow-lg" />
+            ) : (
+              <div className="w-36 h-36 rounded-xl bg-secondary flex items-center justify-center">
+                <ImageIcon className="w-10 h-10 text-muted-foreground" />
+              </div>
+            )}
+            <div className="flex-1 space-y-3">
+              <div>
+                <p className="text-[10px] uppercase tracking-widest text-muted-foreground">Title</p>
+                <p className="font-display font-semibold text-lg">{metadata.title}</p>
+              </div>
+              <div>
+                <p className="text-[10px] uppercase tracking-widest text-muted-foreground">Artist</p>
+                <p>{metadata.artist}</p>
+              </div>
+              {metadata.releaseDate && (
+                <div className="flex items-center gap-2 text-sm">
+                  <Calendar className="w-4 h-4 text-primary" />
+                  {metadata.releaseDate}
+                </div>
               )}
-              Create Smart Link
-            </Button>
-          </motion.div>
-        )}
-      </main>
-    </div>
+              <div className="flex flex-wrap gap-2 pt-1">
+                {metadata.upc && <span className="chip chip-accent">UPC {metadata.upc}</span>}
+                {metadata.isrc && <span className="chip chip-primary">ISRC {metadata.isrc}</span>}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {step === 2 && (
+        <div className="rounded-2xl border border-border/50 bg-card/60 backdrop-blur-xl p-6 shadow-[var(--shadow-md)]">
+          <div className="flex items-center gap-2 mb-3">
+            <Music2 className="w-4 h-4 text-primary" />
+            <h2 className="font-display text-sm font-semibold uppercase tracking-widest text-muted-foreground">
+              Audio preview (optional)
+            </h2>
+          </div>
+          <p className="text-sm text-muted-foreground mb-5">
+            Upload a snippet of your unreleased track. Fans hear a 30-second preview on the pre-save page.
+          </p>
+          {user && (
+            <AudioPreviewUploader
+              userId={user.id}
+              currentUrl={previewAudioUrl}
+              onUploaded={(url, start, end, waveform) => {
+                setPreviewAudioUrl(url);
+                setPreviewStart(start);
+                setPreviewEnd(end);
+                setWaveformData(waveform);
+              }}
+            />
+          )}
+        </div>
+      )}
+
+      {step === 3 && metadata && (
+        <div className="space-y-5">
+          <div className="rounded-2xl border border-border/50 bg-card/60 backdrop-blur-xl p-6 shadow-[var(--shadow-md)]">
+            <h2 className="font-display text-lg font-semibold mb-2">Ready to publish</h2>
+            <p className="text-sm text-muted-foreground mb-5">
+              Streaming links auto-activate on release day. Fans who pre-save get notified.
+            </p>
+            <div className="rounded-xl bg-secondary/50 p-4 font-mono text-sm break-all border border-border/50">
+              <span className="text-muted-foreground">md.malpinohdistro.com.ng/pre/</span>
+              <span className="text-primary">{slugify(metadata.artist)}-{slugify(metadata.title)}</span>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-3 gap-3">
+            <div className="rounded-xl border border-border/50 bg-card/40 p-4 text-center">
+              <CheckCircle className="w-4 h-4 text-success mx-auto mb-1" />
+              <p className="text-[10px] uppercase tracking-widest text-muted-foreground">Metadata</p>
+            </div>
+            <div className="rounded-xl border border-border/50 bg-card/40 p-4 text-center">
+              {previewAudioUrl ? <CheckCircle className="w-4 h-4 text-success mx-auto mb-1" /> : <AlertCircle className="w-4 h-4 text-muted-foreground mx-auto mb-1" />}
+              <p className="text-[10px] uppercase tracking-widest text-muted-foreground">Audio</p>
+            </div>
+            <div className="rounded-xl border border-border/50 bg-card/40 p-4 text-center">
+              {metadata.artworkUrl ? <CheckCircle className="w-4 h-4 text-success mx-auto mb-1" /> : <AlertCircle className="w-4 h-4 text-muted-foreground mx-auto mb-1" />}
+              <p className="text-[10px] uppercase tracking-widest text-muted-foreground">Artwork</p>
+            </div>
+          </div>
+        </div>
+      )}
+    </WizardShell>
   );
 };
 
