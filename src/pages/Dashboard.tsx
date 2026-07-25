@@ -277,7 +277,7 @@ const Dashboard = () => {
       />
 
       <Header />
-      <main className="pt-24 pb-12 px-4 relative">
+      <main className="pt-20 md:pt-24 pb-28 md:pb-12 px-3 sm:px-4 relative">
         <div className="container mx-auto max-w-6xl space-y-6">
 
           {/* ── Hero ── */}
@@ -285,24 +285,24 @@ const Dashboard = () => {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ ease: [0.16, 1, 0.3, 1], duration: 0.6 }}
-            className="relative rounded-3xl border border-border/50 bg-card/40 backdrop-blur-xl p-6 md:p-8 overflow-hidden"
+            className="relative rounded-3xl border border-border/50 bg-card/40 backdrop-blur-xl p-5 sm:p-6 md:p-8 overflow-hidden"
           >
             <div className="pointer-events-none absolute inset-0" style={{ background: "var(--gradient-hero)" }} />
-            <div className="relative flex flex-col md:flex-row md:items-end md:justify-between gap-6">
+            <div className="relative flex flex-col md:flex-row md:items-end md:justify-between gap-5">
               <div>
-                <p className="text-xs uppercase tracking-[0.25em] text-primary/80 mb-2 font-semibold">Command Center</p>
-                <h1 className="font-display text-3xl md:text-5xl font-bold mb-2 leading-[1.1]">
+                <p className="text-[10px] sm:text-xs uppercase tracking-[0.25em] text-primary/80 mb-2 font-semibold">Command Center</p>
+                <h1 className="font-display text-2xl sm:text-3xl md:text-5xl font-bold mb-2 leading-[1.1]">
                   Welcome back, <span className="bg-gradient-to-r from-primary via-primary-glow to-accent bg-clip-text text-transparent">{displayName}</span>
                 </h1>
-                <p className="text-muted-foreground max-w-lg">
+                <p className="text-sm sm:text-base text-muted-foreground max-w-lg">
                   You've collected <b className="text-foreground">{totalFans.toLocaleString()}</b> fans and driven{" "}
                   <b className="text-foreground">{totalClicks.toLocaleString()}</b> clicks across your catalogue.
                 </p>
               </div>
               <div className="flex flex-wrap gap-2">
-                <Button variant="hero" size="lg" asChild><Link to="/create"><Plus className="w-4 h-4 mr-2" />New Fanlink</Link></Button>
-                <Button variant="glass" size="lg" asChild><Link to="/presave/create"><Music2 className="w-4 h-4 mr-2" />New Pre-save</Link></Button>
-                <Button variant="ghost" size="lg" onClick={handleCopyLatest}><Copy className="w-4 h-4 mr-2" />Copy link</Button>
+                <Button variant="hero" size="default" className="md:h-12 md:px-6 md:text-base" asChild><Link to="/create"><Plus className="w-4 h-4 mr-2" />New Fanlink</Link></Button>
+                <Button variant="glass" size="default" className="md:h-12 md:px-6 md:text-base" asChild><Link to="/presave/create"><Music2 className="w-4 h-4 mr-2" />New Pre-save</Link></Button>
+                <Button variant="ghost" size="default" className="md:h-12 md:px-6 md:text-base" onClick={handleCopyLatest}><Copy className="w-4 h-4 mr-2" />Copy link</Button>
               </div>
             </div>
           </motion.div>
@@ -334,7 +334,7 @@ const Dashboard = () => {
           {/* ── Performance chart ── */}
           {chartData.length > 0 && (
             <motion.section
-              className="rounded-2xl border border-border/50 bg-card/60 backdrop-blur-md p-6 shadow-[var(--shadow-md)]"
+              className="rounded-2xl border border-border/50 bg-card/60 backdrop-blur-md p-4 sm:p-6 shadow-[var(--shadow-md)]"
               initial={{ opacity: 0, y: 15 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.2 }}
@@ -349,7 +349,7 @@ const Dashboard = () => {
 
           {/* ── Links & Pre-saves ── */}
           <motion.section
-            className="rounded-2xl border border-border/50 bg-card/60 backdrop-blur-md p-6 shadow-[var(--shadow-md)]"
+            className="rounded-2xl border border-border/50 bg-card/60 backdrop-blur-md p-4 sm:p-6 shadow-[var(--shadow-md)]"
             initial={{ opacity: 0, y: 15 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.25 }}
@@ -394,13 +394,17 @@ const Dashboard = () => {
                         transition={{ delay: i * 0.03 }}
                         whileHover={{ y: -2, boxShadow: "var(--shadow-md)" }}
                       >
-                        <div className="flex items-center gap-4">
-                          <div className="w-14 h-14 rounded-2xl bg-secondary flex items-center justify-center overflow-hidden flex-shrink-0 ring-1 ring-border/40">
+                        <div className="flex flex-wrap items-center gap-3 sm:gap-4">
+                          <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-secondary flex items-center justify-center overflow-hidden flex-shrink-0 ring-1 ring-border/40">
                             {link.artwork_url ? <img src={link.artwork_url} alt={link.title} className="w-full h-full object-cover" /> : <Music2 className="w-7 h-7 text-muted-foreground" />}
                           </div>
                           <div className="flex-1 min-w-0">
                             <h3 className="font-display font-semibold truncate">{link.title}</h3>
                             <p className="text-sm text-muted-foreground truncate">{link.artist}</p>
+                            <div className="flex items-center gap-3 mt-1 md:hidden text-xs text-muted-foreground">
+                              <span><b className="text-foreground">{(clickCounts[link.id] || 0).toLocaleString()}</b> clicks</span>
+                              {(fanContactCounts[link.id] || 0) > 0 && <span><b className="text-foreground">{fanContactCounts[link.id].toLocaleString()}</b> fans</span>}
+                            </div>
                           </div>
                           <div className="hidden md:flex items-center gap-6">
                             {(fanContactCounts[link.id] || 0) > 0 && (
@@ -419,7 +423,7 @@ const Dashboard = () => {
                               {isExpired(link) ? "Expired" : "Disabled"}
                             </div>
                           )}
-                          <div className="flex items-center gap-1">
+                          <div className="flex items-center gap-1 w-full sm:w-auto sm:ml-auto justify-end flex-wrap">
                             <Button variant="ghost" size="icon" asChild title="Analytics"><Link to={`/analytics/fanlink/${link.id}`}><BarChart3 className="w-4 h-4" /></Link></Button>
                             <Button variant="ghost" size="icon" asChild title="Edit"><Link to={`/edit/fanlink/${link.id}`}><Edit className="w-4 h-4" /></Link></Button>
                             <Button variant="ghost" size="icon" asChild title="View"><Link to={`/${link.artist_slug}/${link.slug}`} target="_blank"><ExternalLink className="w-4 h-4" /></Link></Button>
@@ -454,10 +458,10 @@ const Dashboard = () => {
                         transition={{ delay: i * 0.03 }}
                         whileHover={{ y: -2, boxShadow: "var(--shadow-md)" }}
                       >
-                        <div className="flex items-center gap-4">
-                          <div className="w-14 h-14 rounded-2xl bg-secondary flex items-center justify-center overflow-hidden relative flex-shrink-0 ring-1 ring-border/40">
+                        <div className="flex flex-wrap items-center gap-3 sm:gap-4">
+                          <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-secondary flex items-center justify-center overflow-hidden relative flex-shrink-0 ring-1 ring-border/40">
                             {ps.artwork_url ? <img src={ps.artwork_url} alt={ps.title} className="w-full h-full object-cover" /> : <Music2 className="w-7 h-7 text-muted-foreground" />}
-                            {!ps.is_released && <div className="absolute bottom-0 left-0 right-0 bg-primary/90 text-[10px] text-center py-0.5 font-semibold text-primary-foreground">PRE-SAVE</div>}
+                            {!ps.is_released && <div className="absolute bottom-0 left-0 right-0 bg-primary/90 text-[9px] text-center py-0.5 font-semibold text-primary-foreground">PRE-SAVE</div>}
                           </div>
                           <div className="flex-1 min-w-0">
                             <h3 className="font-display font-semibold truncate">{ps.title}</h3>
@@ -465,6 +469,12 @@ const Dashboard = () => {
                             {ps.release_date && (
                               <p className="text-xs text-muted-foreground/60 mt-0.5 flex items-center gap-1"><Calendar className="w-3 h-3" />{ps.release_date}</p>
                             )}
+                            <div className="flex items-center gap-2 mt-1 md:hidden text-xs">
+                              <span className="text-muted-foreground"><b className="text-foreground">{(preSaveStats[ps.id]?.fanSignups || 0).toLocaleString()}</b> fans</span>
+                              <span className={`px-2 py-0.5 rounded-full font-medium ${ps.is_released ? "bg-success/20 text-success" : "bg-primary/20 text-primary"}`}>
+                                {ps.is_released ? "Released" : "Upcoming"}
+                              </span>
+                            </div>
                           </div>
                           <div className="hidden md:flex items-center gap-4">
                             <div className="text-right">
@@ -486,7 +496,7 @@ const Dashboard = () => {
                               </div>
                             )}
                           </div>
-                          <div className="flex items-center gap-1">
+                          <div className="flex items-center gap-1 w-full sm:w-auto sm:ml-auto justify-end flex-wrap">
                             <Button variant="ghost" size="icon" asChild title="Analytics"><Link to={`/analytics/presave/${ps.id}`}><BarChart3 className="w-4 h-4" /></Link></Button>
                             <Button variant="ghost" size="icon" asChild title="Edit"><Link to={`/edit/presave/${ps.id}`}><Edit className="w-4 h-4" /></Link></Button>
                             <Button variant="ghost" size="icon" asChild title="View"><Link to={ps.is_released ? `/listen/${ps.artist_slug}-${ps.slug}` : `/pre/${ps.artist_slug}-${ps.slug}`} target="_blank"><ExternalLink className="w-4 h-4" /></Link></Button>
