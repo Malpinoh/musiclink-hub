@@ -458,10 +458,10 @@ const Dashboard = () => {
                         transition={{ delay: i * 0.03 }}
                         whileHover={{ y: -2, boxShadow: "var(--shadow-md)" }}
                       >
-                        <div className="flex items-center gap-4">
-                          <div className="w-14 h-14 rounded-2xl bg-secondary flex items-center justify-center overflow-hidden relative flex-shrink-0 ring-1 ring-border/40">
+                        <div className="flex flex-wrap items-center gap-3 sm:gap-4">
+                          <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-secondary flex items-center justify-center overflow-hidden relative flex-shrink-0 ring-1 ring-border/40">
                             {ps.artwork_url ? <img src={ps.artwork_url} alt={ps.title} className="w-full h-full object-cover" /> : <Music2 className="w-7 h-7 text-muted-foreground" />}
-                            {!ps.is_released && <div className="absolute bottom-0 left-0 right-0 bg-primary/90 text-[10px] text-center py-0.5 font-semibold text-primary-foreground">PRE-SAVE</div>}
+                            {!ps.is_released && <div className="absolute bottom-0 left-0 right-0 bg-primary/90 text-[9px] text-center py-0.5 font-semibold text-primary-foreground">PRE-SAVE</div>}
                           </div>
                           <div className="flex-1 min-w-0">
                             <h3 className="font-display font-semibold truncate">{ps.title}</h3>
@@ -469,6 +469,12 @@ const Dashboard = () => {
                             {ps.release_date && (
                               <p className="text-xs text-muted-foreground/60 mt-0.5 flex items-center gap-1"><Calendar className="w-3 h-3" />{ps.release_date}</p>
                             )}
+                            <div className="flex items-center gap-2 mt-1 md:hidden text-xs">
+                              <span className="text-muted-foreground"><b className="text-foreground">{(preSaveStats[ps.id]?.fanSignups || 0).toLocaleString()}</b> fans</span>
+                              <span className={`px-2 py-0.5 rounded-full font-medium ${ps.is_released ? "bg-success/20 text-success" : "bg-primary/20 text-primary"}`}>
+                                {ps.is_released ? "Released" : "Upcoming"}
+                              </span>
+                            </div>
                           </div>
                           <div className="hidden md:flex items-center gap-4">
                             <div className="text-right">
@@ -490,7 +496,7 @@ const Dashboard = () => {
                               </div>
                             )}
                           </div>
-                          <div className="flex items-center gap-1">
+                          <div className="flex items-center gap-1 w-full sm:w-auto sm:ml-auto justify-end flex-wrap">
                             <Button variant="ghost" size="icon" asChild title="Analytics"><Link to={`/analytics/presave/${ps.id}`}><BarChart3 className="w-4 h-4" /></Link></Button>
                             <Button variant="ghost" size="icon" asChild title="Edit"><Link to={`/edit/presave/${ps.id}`}><Edit className="w-4 h-4" /></Link></Button>
                             <Button variant="ghost" size="icon" asChild title="View"><Link to={ps.is_released ? `/listen/${ps.artist_slug}-${ps.slug}` : `/pre/${ps.artist_slug}-${ps.slug}`} target="_blank"><ExternalLink className="w-4 h-4" /></Link></Button>
