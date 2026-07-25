@@ -277,7 +277,7 @@ const Dashboard = () => {
       />
 
       <Header />
-      <main className="pt-24 pb-12 px-4 relative">
+      <main className="pt-20 md:pt-24 pb-28 md:pb-12 px-3 sm:px-4 relative">
         <div className="container mx-auto max-w-6xl space-y-6">
 
           {/* ── Hero ── */}
