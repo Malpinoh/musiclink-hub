@@ -285,24 +285,24 @@ const Dashboard = () => {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ ease: [0.16, 1, 0.3, 1], duration: 0.6 }}
-            className="relative rounded-3xl border border-border/50 bg-card/40 backdrop-blur-xl p-6 md:p-8 overflow-hidden"
+            className="relative rounded-3xl border border-border/50 bg-card/40 backdrop-blur-xl p-5 sm:p-6 md:p-8 overflow-hidden"
           >
             <div className="pointer-events-none absolute inset-0" style={{ background: "var(--gradient-hero)" }} />
-            <div className="relative flex flex-col md:flex-row md:items-end md:justify-between gap-6">
+            <div className="relative flex flex-col md:flex-row md:items-end md:justify-between gap-5">
               <div>
-                <p className="text-xs uppercase tracking-[0.25em] text-primary/80 mb-2 font-semibold">Command Center</p>
-                <h1 className="font-display text-3xl md:text-5xl font-bold mb-2 leading-[1.1]">
+                <p className="text-[10px] sm:text-xs uppercase tracking-[0.25em] text-primary/80 mb-2 font-semibold">Command Center</p>
+                <h1 className="font-display text-2xl sm:text-3xl md:text-5xl font-bold mb-2 leading-[1.1]">
                   Welcome back, <span className="bg-gradient-to-r from-primary via-primary-glow to-accent bg-clip-text text-transparent">{displayName}</span>
                 </h1>
-                <p className="text-muted-foreground max-w-lg">
+                <p className="text-sm sm:text-base text-muted-foreground max-w-lg">
                   You've collected <b className="text-foreground">{totalFans.toLocaleString()}</b> fans and driven{" "}
                   <b className="text-foreground">{totalClicks.toLocaleString()}</b> clicks across your catalogue.
                 </p>
               </div>
               <div className="flex flex-wrap gap-2">
-                <Button variant="hero" size="lg" asChild><Link to="/create"><Plus className="w-4 h-4 mr-2" />New Fanlink</Link></Button>
-                <Button variant="glass" size="lg" asChild><Link to="/presave/create"><Music2 className="w-4 h-4 mr-2" />New Pre-save</Link></Button>
-                <Button variant="ghost" size="lg" onClick={handleCopyLatest}><Copy className="w-4 h-4 mr-2" />Copy link</Button>
+                <Button variant="hero" size="default" className="md:h-12 md:px-6 md:text-base" asChild><Link to="/create"><Plus className="w-4 h-4 mr-2" />New Fanlink</Link></Button>
+                <Button variant="glass" size="default" className="md:h-12 md:px-6 md:text-base" asChild><Link to="/presave/create"><Music2 className="w-4 h-4 mr-2" />New Pre-save</Link></Button>
+                <Button variant="ghost" size="default" className="md:h-12 md:px-6 md:text-base" onClick={handleCopyLatest}><Copy className="w-4 h-4 mr-2" />Copy link</Button>
               </div>
             </div>
           </motion.div>
