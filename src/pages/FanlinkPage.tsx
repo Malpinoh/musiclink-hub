@@ -288,7 +288,7 @@ const FanlinkPage = () => {
 
   return (
     <div
-      className="min-h-screen relative overflow-hidden"
+      className="min-h-screen relative overflow-hidden bg-background"
       style={{
         backgroundColor: theme?.background_color || undefined,
         color: theme?.text_color || undefined,
@@ -304,183 +304,222 @@ const FanlinkPage = () => {
         type="fanlink"
       />
 
-      {/* Background with artwork blur */}
-      <div className="absolute inset-0 z-0">
+      {/* Ambient background */}
+      <div className="absolute inset-0 z-0" aria-hidden>
         {theme?.background_image_url ? (
           <img src={theme.background_image_url} alt="" className="w-full h-full object-cover opacity-30" />
         ) : (
           <img
             src={fanlink.artwork_url || demoArtwork}
             alt=""
-            className="w-full h-full object-cover opacity-20 blur-3xl scale-110"
+            loading="lazy"
+            className="w-full h-full object-cover opacity-25 blur-3xl scale-125"
           />
         )}
-        <div className="absolute inset-0 bg-gradient-to-b from-background/80 via-background/90 to-background" style={theme ? { background: `linear-gradient(to bottom, ${theme.background_color}CC, ${theme.background_color}E6, ${theme.background_color})` } : undefined} />
+        <div
+          className="absolute inset-0 bg-gradient-to-b from-background/70 via-background/90 to-background"
+          style={theme ? { background: `linear-gradient(to bottom, ${theme.background_color}B3, ${theme.background_color}E6, ${theme.background_color})` } : undefined}
+        />
+        {!theme && <div className="absolute inset-0 opacity-70" style={{ background: "var(--gradient-mesh)" }} />}
       </div>
 
       <div className="relative z-10 min-h-screen flex flex-col">
         {/* Header */}
-        <header className="p-4 flex justify-between items-center">
-          <Link to="/" className="flex items-center gap-2 opacity-70 hover:opacity-100 transition-opacity">
+        <header className="sticky top-0 z-30 px-3 sm:px-5 py-3 flex justify-between items-center backdrop-blur-xl bg-background/40 border-b border-border/30">
+          <Link to="/" className="flex items-center gap-2 opacity-80 hover:opacity-100 transition-opacity">
             {theme?.logo_url ? (
               <img src={theme.logo_url} alt="Logo" className="w-8 h-8 rounded-lg object-cover" />
             ) : (
               <img src={logo} alt="MDistro Link" className="w-8 h-8 rounded-lg" />
             )}
-            <span className="font-display font-semibold text-sm" style={{ color: theme?.text_color }}>MDistro Link</span>
+            <span className="font-display font-semibold text-sm tracking-tight" style={{ color: theme?.text_color }}>MDistro Link</span>
           </Link>
 
-          <div className="flex gap-2">
-            <Button variant="ghost" size="icon" onClick={() => setShowQR(!showQR)}>
+          <div className="flex gap-1">
+            <Button variant="ghost" size="icon" aria-label="Show QR code" onClick={() => setShowQR(!showQR)}>
               <svg viewBox="0 0 24 24" className="w-5 h-5" fill="currentColor">
                 <path d="M3 11h8V3H3v8zm2-6h4v4H5V5zm8-2v8h8V3h-8zm6 6h-4V5h4v4zM3 21h8v-8H3v8zm2-6h4v4H5v-4zm13 2h-2v4h2v-4zm2-2h-2v2h2v-2zm2 0h-2v2h2v-2zm0 4h-2v2h2v-2zm-4 2h-2v2h2v-2zm-4 0h-2v2h2v-2zm4-6h2v2h-2v-2zm-4 0h2v2h-2v-2z"/>
               </svg>
             </Button>
-            <Button variant="ghost" size="icon" onClick={handleShare}>
+            <Button variant="ghost" size="icon" aria-label="Share" onClick={handleShare}>
               <Share2 className="w-5 h-5" />
             </Button>
-            <Button variant="ghost" size="icon" onClick={handleCopyLink}>
+            <Button variant="ghost" size="icon" aria-label="Copy link" onClick={handleCopyLink}>
               {copied ? <Check className="w-5 h-5 text-primary" /> : <Copy className="w-5 h-5" />}
             </Button>
           </div>
         </header>
 
-        {/* QR Code Modal */}
+        {/* QR Code popover */}
         {showQR && (
           <motion.div
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="absolute top-16 right-4 z-50 glass-card p-4"
+            initial={{ opacity: 0, y: -12, scale: 0.96 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            className="absolute top-16 right-3 sm:right-5 z-40 rounded-2xl border border-border/50 bg-card/80 backdrop-blur-xl p-4 shadow-[var(--shadow-xl)]"
           >
-            <QRCodeSVG
-              value={shareableUrl}
-              size={150}
-              bgColor="transparent"
-              fgColor="white"
-              level="H"
-            />
+            <QRCodeSVG value={shareableUrl} size={150} bgColor="transparent" fgColor="currentColor" level="H" />
             <p className="text-xs text-center text-muted-foreground mt-2">Scan to open</p>
           </motion.div>
         )}
 
         {/* Main Content */}
-        <main className="flex-1 flex flex-col items-center justify-center px-4 py-8">
-          <motion.div
-            className="w-full max-w-md mx-auto text-center"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-          >
-            {/* Artwork */}
+        <main className="flex-1 px-4 py-8 sm:py-12">
+          <div className="mx-auto w-full max-w-5xl grid gap-8 lg:gap-14 lg:grid-cols-[minmax(0,380px)_minmax(0,1fr)] lg:items-start">
+            {/* ── Left: release identity ── */}
             <motion.div
-              className="relative mb-8"
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              transition={{ delay: 0.1 }}
-            >
-              <div className="absolute -inset-4 bg-gradient-to-r from-primary/30 to-accent/30 blur-2xl rounded-full opacity-50" />
-              <img
-                src={fanlink.artwork_url || demoArtwork}
-                alt={`${fanlink.title} artwork`}
-                className="relative w-56 h-56 md:w-64 md:h-64 mx-auto rounded-2xl shadow-2xl object-cover"
-              />
-            </motion.div>
-
-            {/* Track Info */}
-            <motion.div
-              initial={{ opacity: 0, y: 10 }}
+              className="text-center lg:text-left lg:sticky lg:top-24"
+              initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.2 }}
-              className="mb-8"
+              transition={{ ease: [0.16, 1, 0.3, 1], duration: 0.6 }}
             >
-              <h1 className="font-display text-2xl md:text-3xl font-bold mb-2">
-                {fanlink.title}
-              </h1>
-              <p className="text-lg text-muted-foreground">{fanlink.artist}</p>
-              {fanlink.release_type && fanlink.release_date && (
-                <p className="text-sm text-muted-foreground/60 mt-1">
-                  {fanlink.release_type} • {fanlink.release_date}
-                </p>
-              )}
+              <motion.div
+                className="relative mb-6 sm:mb-8 inline-block"
+                initial={{ scale: 0.92, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                transition={{ delay: 0.08, ease: [0.16, 1, 0.3, 1], duration: 0.7 }}
+              >
+                <div className="absolute -inset-6 bg-gradient-to-br from-primary/40 via-accent/30 to-transparent blur-3xl rounded-full opacity-60" aria-hidden />
+                <img
+                  src={fanlink.artwork_url || demoArtwork}
+                  alt={`${fanlink.title} artwork`}
+                  fetchPriority="high"
+                  className="relative w-56 h-56 sm:w-64 sm:h-64 lg:w-[340px] lg:h-[340px] mx-auto rounded-[1.75rem] object-cover shadow-[var(--shadow-xl)] ring-1 ring-border/40"
+                />
+              </motion.div>
+
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.18 }}
+              >
+                {fanlink.release_type && (
+                  <span className="inline-flex items-center rounded-full border border-primary/30 bg-primary/10 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.2em] text-primary mb-3">
+                    {fanlink.release_type}
+                  </span>
+                )}
+                <h1 className="font-display text-3xl sm:text-4xl lg:text-5xl font-bold leading-[1.05] tracking-tight text-balance mb-2">
+                  {fanlink.title}
+                </h1>
+                <p className="text-lg text-muted-foreground">{fanlink.artist}</p>
+                {fanlink.release_date && (
+                  <p className="text-sm text-muted-foreground/70 mt-1">Out {fanlink.release_date}</p>
+                )}
+              </motion.div>
             </motion.div>
 
-            {/* Fan Contact Form */}
-            {showContactForm && !contactSubmitted && (
-              <FanContactForm
-                linkId={fanlink.id}
-                collectEmail={fanlink.collect_email ?? false}
-                collectPhone={fanlink.collect_phone ?? false}
-                requireContact={fanlink.require_contact ?? false}
-                onContinue={() => {
-                  setContactSubmitted(true);
-                  setShowContactForm(false);
-                }}
-                artistName={fanlink.artist}
-                themeColors={{
-                  buttonColor: theme?.button_color,
-                  textColor: theme?.text_color,
-                  buttonTextColor: theme?.button_color ? getContrastColor(theme.button_color) : undefined,
-                }}
-              />
-            )}
-
-            {/* Platform Links */}
-            {(!showContactForm || contactSubmitted) && (
-            <motion.div
-              className="space-y-3"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.3 }}
-            >
-              {platformLinks.length > 0 ? (
-                platformLinks.map((link, index) => {
-                  const config = platformConfig[link.platform_name] || { 
-                    icon: <Music2 className="w-6 h-6" />, 
-                    color: "#888" 
-                  };
-                  
-                    return (
-                      <motion.a
-                        key={link.id}
-                        href={link.platform_url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        onClick={() => handlePlatformClick(link.platform_name)}
-                        className="flex items-center gap-4 p-4 rounded-xl backdrop-blur-sm border border-border/30 hover:opacity-90 transition-all duration-300 group"
-                        initial={{ opacity: 0, x: -20 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{ delay: 0.3 + index * 0.05 }}
-                        whileHover={{ scale: 1.02 }}
-                        whileTap={{ scale: 0.98 }}
-                        style={{
-                          backgroundColor: theme?.button_color || undefined,
-                          color: theme?.button_color ? getContrastColor(theme.button_color) : undefined,
-                          borderLeftColor: config.color,
-                          borderLeftWidth: "3px",
-                        }}
-                      >
-                        <span className="w-8 h-8 flex items-center justify-center" style={{ color: config.color }}>
-                          {config.icon}
-                        </span>
-                        <span className="flex-1 text-left font-medium">
-                          Listen on {formatPlatformName(link.platform_name)}
-                        </span>
-                        <ExternalLink className="w-4 h-4 opacity-60 group-hover:opacity-100 transition-colors" />
-                      </motion.a>
-                    );
-                })
-              ) : (
-                <p className="text-muted-foreground">No streaming links available yet.</p>
+            {/* ── Right: actions ── */}
+            <div className="w-full max-w-md mx-auto lg:max-w-none">
+              {/* Fan Contact Form */}
+              {showContactForm && !contactSubmitted && (
+                <FanContactForm
+                  linkId={fanlink.id}
+                  collectEmail={fanlink.collect_email ?? false}
+                  collectPhone={fanlink.collect_phone ?? false}
+                  requireContact={fanlink.require_contact ?? false}
+                  onContinue={() => {
+                    setContactSubmitted(true);
+                    setShowContactForm(false);
+                  }}
+                  artistName={fanlink.artist}
+                  themeColors={{
+                    buttonColor: theme?.button_color,
+                    textColor: theme?.text_color,
+                    buttonTextColor: theme?.button_color ? getContrastColor(theme.button_color) : undefined,
+                  }}
+                />
               )}
-            </motion.div>
-            )}
-          </motion.div>
+
+              {/* Platform Links */}
+              {(!showContactForm || contactSubmitted) && (
+                <motion.div
+                  className="rounded-3xl border border-border/40 bg-card/50 backdrop-blur-xl p-4 sm:p-5 shadow-[var(--shadow-lg)]"
+                  initial={{ opacity: 0, y: 16 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.22, ease: [0.16, 1, 0.3, 1] }}
+                >
+                  <p className="text-[10px] uppercase tracking-[0.25em] text-muted-foreground mb-4 px-1">
+                    Choose your platform
+                  </p>
+
+                  <div className="space-y-2.5">
+                    {platformLinks.length > 0 ? (
+                      platformLinks.map((link, index) => {
+                        const config = platformConfig[link.platform_name] || {
+                          icon: <Music2 className="w-6 h-6" />,
+                          color: "#888",
+                        };
+
+                        return (
+                          <motion.a
+                            key={link.id}
+                            href={link.platform_url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            onClick={() => handlePlatformClick(link.platform_name)}
+                            className="group relative flex items-center gap-3 sm:gap-4 rounded-2xl border border-border/40 bg-background/50 p-3 sm:p-4 overflow-hidden transition-all duration-300 hover:border-border hover:shadow-[var(--shadow-md)]"
+                            initial={{ opacity: 0, y: 10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ delay: 0.28 + index * 0.045, ease: [0.16, 1, 0.3, 1] }}
+                            whileHover={{ y: -2 }}
+                            whileTap={{ scale: 0.985 }}
+                            style={{
+                              backgroundColor: theme?.button_color || undefined,
+                              color: theme?.button_color ? getContrastColor(theme.button_color) : undefined,
+                            }}
+                          >
+                            {/* brand wash */}
+                            <span
+                              className="pointer-events-none absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+                              style={{ background: `linear-gradient(90deg, ${config.color}22, transparent 70%)` }}
+                              aria-hidden
+                            />
+                            <span
+                              className="relative w-10 h-10 sm:w-11 sm:h-11 rounded-xl flex items-center justify-center flex-shrink-0 transition-transform duration-300 group-hover:scale-105"
+                              style={{ color: config.color, backgroundColor: `${config.color}1F` }}
+                            >
+                              {config.icon}
+                            </span>
+                            <span className="relative flex-1 min-w-0 text-left">
+                              <span className="block font-semibold text-sm sm:text-base truncate">
+                                {formatPlatformName(link.platform_name)}
+                              </span>
+                              <span className="block text-[11px] text-muted-foreground">Play now</span>
+                            </span>
+                            <span className="relative inline-flex items-center gap-1 text-xs font-semibold uppercase tracking-wider opacity-70 group-hover:opacity-100 transition-opacity">
+                              <span className="hidden sm:inline">Listen</span>
+                              <ExternalLink className="w-4 h-4" />
+                            </span>
+                          </motion.a>
+                        );
+                      })
+                    ) : (
+                      <div className="rounded-2xl border border-dashed border-border/50 p-8 text-center">
+                        <Music2 className="w-8 h-8 mx-auto text-muted-foreground mb-3" />
+                        <p className="text-sm text-muted-foreground">No streaming links available yet.</p>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="mt-4 flex gap-2">
+                    <Button variant="glass" className="flex-1 h-11" onClick={handleShare}>
+                      <Share2 className="w-4 h-4 mr-2" /> Share
+                    </Button>
+                    <Button variant="ghost" className="flex-1 h-11" onClick={handleCopyLink}>
+                      {copied ? <Check className="w-4 h-4 mr-2 text-primary" /> : <Copy className="w-4 h-4 mr-2" />}
+                      {copied ? "Copied" : "Copy link"}
+                    </Button>
+                  </div>
+                </motion.div>
+              )}
+            </div>
+          </div>
         </main>
 
         {/* Footer */}
-        <footer className="p-4 text-center">
+        <footer className="p-6 text-center">
           <Link
             to="/"
-            className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
+            className="inline-flex items-center gap-2 text-xs text-muted-foreground hover:text-foreground transition-colors"
           >
             <img src={logo} alt="MDistro Link" className="w-4 h-4 rounded" />
             <span>Powered by MDistro Link</span>
@@ -490,5 +529,6 @@ const FanlinkPage = () => {
     </div>
   );
 };
+
 
 export default FanlinkPage;
