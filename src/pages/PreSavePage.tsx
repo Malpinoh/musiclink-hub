@@ -373,11 +373,12 @@ function PreSaveContent({ artistParam, slugParam }: { artistParam?: string; slug
           alt=""
           className={preSave.theme_bg_image_url ? "w-full h-full object-cover opacity-40" : "w-full h-full object-cover opacity-20 blur-3xl scale-110"}
         />
-        <div className="absolute inset-0 bg-gradient-to-b from-background/80 via-background/90 to-background" />
+        <div className="absolute inset-0 bg-gradient-to-b from-background/75 via-background/90 to-background" />
+        {!preSave.theme_bg_color && <div className="absolute inset-0 opacity-70" style={{ background: "var(--gradient-mesh)" }} />}
       </div>
 
       <div className="relative z-10 min-h-screen flex flex-col">
-        <header className="p-4 flex justify-between items-center">
+        <header className="sticky top-0 z-30 px-3 sm:px-5 py-3 flex justify-between items-center backdrop-blur-xl bg-background/40 border-b border-border/30">
           <Link to="/" className="flex items-center gap-2 opacity-70 hover:opacity-100 transition-opacity">
             <img src={logo} alt="MDistro Link" className="w-8 h-8 rounded-lg" />
             <span className="font-display font-semibold text-sm">MDistro Link</span>
@@ -389,11 +390,11 @@ function PreSaveContent({ artistParam, slugParam }: { artistParam?: string; slug
         </header>
 
         <main className="flex-1 flex flex-col items-center justify-center px-4 py-8">
-          <motion.div className="w-full max-w-md mx-auto text-center" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
+          <motion.div className="w-full max-w-md mx-auto text-center" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ ease: [0.16, 1, 0.3, 1], duration: 0.6 }}>
             {/* Artwork */}
             <motion.div className="relative mb-8" initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ delay: 0.1 }}>
               <div className="absolute -inset-4 bg-gradient-to-r from-primary/30 to-accent/30 blur-2xl rounded-full opacity-50 animate-pulse-glow" />
-              <img src={preSave.theme_hero_image_url || preSave.artwork_url || demoArtwork} alt={`${preSave.title} artwork`} className="relative w-56 h-56 md:w-64 md:h-64 mx-auto rounded-2xl shadow-2xl object-cover" />
+              <img src={preSave.theme_hero_image_url || preSave.artwork_url || demoArtwork} alt={`${preSave.title} artwork`} fetchPriority="high" className="relative w-56 h-56 sm:w-64 sm:h-64 mx-auto rounded-[1.75rem] object-cover shadow-[var(--shadow-xl)] ring-1 ring-border/40" />
               {!preSave.is_released && (
                 <div className="absolute -bottom-3 left-1/2 -translate-x-1/2 bg-gradient-to-r from-primary to-accent px-4 py-1 rounded-full">
                   <span className="text-xs font-semibold text-primary-foreground">PRE-SAVE</span>
@@ -416,7 +417,7 @@ function PreSaveContent({ artistParam, slugParam }: { artistParam?: string; slug
 
 
             <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="mb-6">
-              <h1 className="font-display text-2xl md:text-3xl font-bold mb-2">{preSave.title}</h1>
+              <h1 className="font-display text-3xl sm:text-4xl font-bold tracking-tight leading-[1.05] text-balance mb-2">{preSave.title}</h1>
               <p className="text-lg text-muted-foreground">{preSave.artist}</p>
               {preSave.description && <p className="text-sm text-muted-foreground mt-3 max-w-sm mx-auto">{preSave.description}</p>}
               {preSave.release_date && !preSave.is_released && (
@@ -431,11 +432,11 @@ function PreSaveContent({ artistParam, slugParam }: { artistParam?: string; slug
             {countdown && !preSave.is_released && (preSave.theme_countdown_enabled ?? true) && (
               <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.25 }} className="mb-8">
                 <p className="text-xs uppercase tracking-widest text-muted-foreground mb-3">Drops in</p>
-                <div className="flex justify-center gap-4">
+                <div className="flex justify-center gap-2.5 sm:gap-4">
                   {[{ value: countdown.days, label: "Days" }, { value: countdown.hours, label: "Hours" }, { value: countdown.minutes, label: "Min" }].map((item) => (
                     <div key={item.label} className="flex flex-col items-center">
-                      <div className="w-16 h-16 rounded-xl bg-secondary/80 border border-border/50 flex items-center justify-center">
-                        <span className="font-display text-2xl font-bold text-primary">{item.value}</span>
+                      <div className="w-[4.25rem] h-[4.25rem] sm:w-20 sm:h-20 rounded-2xl bg-card/60 backdrop-blur-md border border-border/50 shadow-[var(--shadow-md)] flex items-center justify-center">
+                        <span className="font-display text-2xl sm:text-3xl font-bold text-primary tabular-nums">{item.value}</span>
                       </div>
                       <span className="text-[10px] uppercase tracking-wider text-muted-foreground mt-1">{item.label}</span>
                     </div>
@@ -447,7 +448,7 @@ function PreSaveContent({ artistParam, slugParam }: { artistParam?: string; slug
             {/* Fan Notification Form */}
             <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}>
               {submitted ? (
-                <div className="glass-card p-6 text-center">
+                <div className="rounded-3xl border border-border/40 bg-card/60 backdrop-blur-xl p-6 text-center shadow-[var(--shadow-lg)]">
                   <div className="w-16 h-16 mx-auto rounded-full bg-primary/20 flex items-center justify-center mb-4">
                     <Bell className="w-8 h-8 text-primary" />
                   </div>
@@ -455,7 +456,7 @@ function PreSaveContent({ artistParam, slugParam }: { artistParam?: string; slug
                   <p className="text-sm text-muted-foreground">We'll send you a notification as soon as <strong>{preSave.title}</strong> drops.</p>
                 </div>
               ) : (
-                <form onSubmit={handleNotifyMe} className="glass-card p-6 text-left space-y-4">
+                <form onSubmit={handleNotifyMe} className="rounded-3xl border border-border/40 bg-card/60 backdrop-blur-xl p-5 sm:p-6 text-left space-y-4 shadow-[var(--shadow-lg)]">
                   <div className="text-center mb-2">
                     <h3 className="font-display font-semibold text-lg">Pre-save on Spotify</h3>
                     <p className="text-xs text-muted-foreground mt-1">
@@ -524,7 +525,7 @@ function PreSaveContent({ artistParam, slugParam }: { artistParam?: string; slug
                     type="button"
                     variant="hero"
                     size="lg"
-                    className="w-full bg-[#1DB954] hover:bg-[#1ed760] text-black"
+                    className="w-full h-12 rounded-xl font-semibold bg-[#1DB954] hover:bg-[#1ed760] text-black"
                     style={
                       preSave.theme_button_color
                         ? { backgroundColor: preSave.theme_button_color, color: preSave.theme_button_text_color || undefined }
@@ -550,8 +551,8 @@ function PreSaveContent({ artistParam, slugParam }: { artistParam?: string; slug
           </motion.div>
         </main>
 
-        <footer className="p-4 text-center">
-          <Link to="/" className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors">
+        <footer className="p-6 text-center">
+          <Link to="/" className="inline-flex items-center gap-2 text-xs text-muted-foreground hover:text-foreground transition-colors">
             <img src={logo} alt="MDistro Link" className="w-4 h-4 rounded" />
             <span>Powered by MDistro Link</span>
           </Link>
