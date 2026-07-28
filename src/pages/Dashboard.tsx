@@ -278,7 +278,7 @@ const Dashboard = () => {
 
       <Header />
       <main className="pt-20 md:pt-24 pb-28 md:pb-12 px-3 sm:px-4 relative">
-        <div className="container mx-auto max-w-6xl space-y-6">
+        <div className="container mx-auto max-w-6xl space-y-4 sm:space-y-6">
 
           {/* ── Hero ── */}
           <motion.div
@@ -308,7 +308,7 @@ const Dashboard = () => {
           </motion.div>
 
           {/* ── Hero metrics ── */}
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-4">
             <HeroMetric label="Total Clicks" value={totalClicks} icon={MousePointerClick} tone="primary"
               delta={weekClicks.previous > 0 || weekClicks.current > 0 ? { value: weekDelta, label: `${weekClicks.current} this week` } : undefined} />
             <HeroMetric label="Fans Collected" value={totalFans} icon={Users} tone="accent" />
@@ -317,7 +317,7 @@ const Dashboard = () => {
           </div>
 
           {/* ── Health + Live Activity ── */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4">
             <HealthScore score={healthScore} breakdown={healthBreakdown} />
             <LiveActivityFeed
               userId={user!.id}
@@ -368,7 +368,7 @@ const Dashboard = () => {
             </div>
 
             <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-              <TabsList className="mb-6">
+              <TabsList className="mb-6 w-full grid grid-cols-2 sm:inline-flex sm:w-auto">
                 <TabsTrigger value="fanlinks" className="flex items-center gap-2"><Link2 className="w-4 h-4" />Fanlinks ({fanlinks.length})</TabsTrigger>
                 <TabsTrigger value="presaves" className="flex items-center gap-2"><Clock className="w-4 h-4" />Pre-Saves ({preSaves.length})</TabsTrigger>
               </TabsList>

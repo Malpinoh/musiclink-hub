@@ -138,7 +138,7 @@ const LiveActivityFeed = ({ userId, fanlinkIds, presaveIds, linkNames, presaveNa
   }, [userId, fanlinkIds.join(","), presaveIds.join(",")]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
-    <div className="rounded-2xl border border-border/50 bg-card/60 backdrop-blur-md p-6 shadow-[var(--shadow-md)] h-full flex flex-col">
+    <div className="rounded-2xl border border-border/50 bg-card/60 backdrop-blur-md p-4 sm:p-6 shadow-[var(--shadow-md)] h-full flex flex-col">
       <div className="flex items-center gap-2 mb-4">
         <Radio className="w-4 h-4 text-primary animate-pulse" />
         <h3 className="font-display text-sm font-semibold text-muted-foreground uppercase tracking-wider">

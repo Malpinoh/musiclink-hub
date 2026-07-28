@@ -21,7 +21,7 @@ const toneClasses: Record<Suggestion["tone"], string> = {
 const SuggestionsPanel = ({ suggestions }: { suggestions: Suggestion[] }) => {
   if (suggestions.length === 0) return null;
   return (
-    <div className="rounded-2xl border border-border/50 bg-card/60 backdrop-blur-md p-6 shadow-[var(--shadow-md)]">
+    <div className="rounded-2xl border border-border/50 bg-card/60 backdrop-blur-md p-4 sm:p-6 shadow-[var(--shadow-md)]">
       <div className="flex items-center gap-2 mb-4">
         <Sparkles className="w-4 h-4 text-accent" />
         <h3 className="font-display text-sm font-semibold text-muted-foreground uppercase tracking-wider">

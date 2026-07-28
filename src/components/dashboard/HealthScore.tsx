@@ -20,7 +20,7 @@ const HealthScore = ({ score, breakdown }: HealthScoreProps) => {
     "Needs love";
 
   return (
-    <div className="rounded-2xl border border-border/50 bg-card/60 backdrop-blur-md p-6 shadow-[var(--shadow-md)] h-full">
+    <div className="rounded-2xl border border-border/50 bg-card/60 backdrop-blur-md p-4 sm:p-6 shadow-[var(--shadow-md)] h-full">
       <div className="flex items-center gap-2 mb-4">
         <div className="w-2 h-2 rounded-full animate-pulse" style={{ background: tone }} />
         <h3 className="font-display text-sm font-semibold text-muted-foreground uppercase tracking-wider">
@@ -28,9 +28,9 @@ const HealthScore = ({ score, breakdown }: HealthScoreProps) => {
         </h3>
       </div>
 
-      <div className="flex items-center gap-5">
-        <div className="relative w-32 h-32 flex-shrink-0">
-          <svg width="128" height="128" viewBox="0 0 128 128" className="-rotate-90">
+      <div className="flex items-center gap-4 sm:gap-5">
+        <div className="relative w-24 h-24 sm:w-32 sm:h-32 flex-shrink-0">
+          <svg viewBox="0 0 128 128" className="w-full h-full -rotate-90">
             <circle cx="64" cy="64" r={radius} fill="none" stroke="hsl(var(--border))" strokeWidth="10" />
             <motion.circle
               cx="64" cy="64" r={radius} fill="none" stroke={tone}
@@ -41,10 +41,11 @@ const HealthScore = ({ score, breakdown }: HealthScoreProps) => {
             />
           </svg>
           <div className="absolute inset-0 flex flex-col items-center justify-center">
-            <span className="font-display text-3xl font-bold">{clamped}</span>
-            <span className="text-[10px] uppercase tracking-widest text-muted-foreground">score</span>
+            <span className="font-display text-2xl sm:text-3xl font-bold">{clamped}</span>
+            <span className="text-[9px] sm:text-[10px] uppercase tracking-widest text-muted-foreground">score</span>
           </div>
         </div>
+
 
         <div className="flex-1 min-w-0">
           <p className="font-display text-lg font-semibold mb-2" style={{ color: tone }}>{label}</p>
