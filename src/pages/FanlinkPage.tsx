@@ -382,7 +382,7 @@ const FanlinkPage = () => {
                 <img
                   src={fanlink.artwork_url || demoArtwork}
                   alt={`${fanlink.title} artwork`}
-                  fetchPriority="high"
+                  fetchpriority="high"
                   className="relative w-56 h-56 sm:w-64 sm:h-64 lg:w-[340px] lg:h-[340px] mx-auto rounded-[1.75rem] object-cover shadow-[var(--shadow-xl)] ring-1 ring-border/40"
                 />
               </motion.div>
