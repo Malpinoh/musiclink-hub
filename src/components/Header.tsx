@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Menu, X, LogOut, BarChart3 } from "lucide-react";
+import { Menu, X, LogOut, BarChart3, User } from "lucide-react";
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "@/contexts/AuthContext";
@@ -40,6 +40,11 @@ const Header = () => {
                 <BarChart3 className="w-4 h-4" />
                 Campaigns
               </Link>
+              <Link to="/artist-bio/edit" className="text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1">
+                <User className="w-4 h-4" />
+                Artist Bio
+              </Link>
+
             </>
           )}
         </div>
@@ -108,6 +113,14 @@ const Header = () => {
                   >
                     <BarChart3 className="w-4 h-4" />
                     Campaigns
+                  </Link>
+                  <Link 
+                    to="/artist-bio/edit" 
+                    className="py-2 text-muted-foreground hover:text-foreground transition-colors flex items-center gap-2"
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
+                    <User className="w-4 h-4" />
+                    Artist Bio
                   </Link>
                 </>
               )}
