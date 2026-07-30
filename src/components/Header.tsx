@@ -114,6 +114,14 @@ const Header = () => {
                     <BarChart3 className="w-4 h-4" />
                     Campaigns
                   </Link>
+                  <Link 
+                    to="/artist-bio/edit" 
+                    className="py-2 text-muted-foreground hover:text-foreground transition-colors flex items-center gap-2"
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
+                    <User className="w-4 h-4" />
+                    Artist Bio
+                  </Link>
                 </>
               )}
               <div className="flex flex-col gap-2 pt-4 border-t border-border">
