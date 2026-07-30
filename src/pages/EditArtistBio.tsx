@@ -111,7 +111,7 @@ const EditArtistBio = () => {
         .from("artist_profiles")
         .select("*")
         .eq("user_id", user!.id)
-        .single();
+        .maybeSingle();
 
       if (data) {
         setProfileId(data.id);
@@ -267,11 +267,11 @@ const EditArtistBio = () => {
 
       toast.success("Artist Bio page saved!");
     } catch (err: any) {
+      console.error(err);
       if (err?.code === "23505") {
         toast.error("That username is already taken. Please choose another.");
       } else {
-        toast.error("Failed to save. Please try again.");
-        console.error(err);
+        toast.error(err?.message ? `Failed to save: ${err.message}` : "Failed to save. Please try again.");
       }
     } finally {
       setSaving(false);

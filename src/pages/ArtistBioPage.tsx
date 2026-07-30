@@ -84,7 +84,7 @@ const ReleaseCard = ({
 
   return (
     <motion.div
-      className="rounded-2xl overflow-hidden border border-border/50 bg-card/40 backdrop-blur-sm hover:border-primary/30 transition-all duration-300"
+      className="glass-panel rounded-2xl overflow-hidden hover:border-primary/30 hover:shadow-[var(--shadow-lg)] transition-all duration-500"
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: 0.3 + index * 0.08 }}
@@ -311,7 +311,7 @@ const ArtistBioPage = () => {
   const socialLinks = SOCIAL_PLATFORMS.filter(s => profile[s.key as keyof ArtistProfile]);
 
   return (
-    <div className="min-h-screen bg-background relative overflow-x-hidden">
+    <div className="min-h-screen bg-background mesh-bg relative overflow-x-hidden">
       {/* Blurred background from profile picture */}
       {profile.profile_picture_url && (
         <div className="fixed inset-0 z-0 pointer-events-none">
@@ -455,7 +455,7 @@ const ArtistBioPage = () => {
                 target="_blank"
                 rel="noopener noreferrer"
                 onClick={() => trackLinkClick("custom", btn.title, btn.url)}
-                className="flex items-center justify-between w-full px-5 py-4 rounded-2xl bg-secondary/60 border border-border/50 hover:border-primary/50 hover:bg-secondary/80 transition-all duration-200 group"
+                className="flex items-center justify-between w-full px-5 py-4 rounded-2xl glass-card hover-lift hover:border-primary/50 transition-all duration-300 group"
                 whileHover={{ scale: 1.01 }}
                 whileTap={{ scale: 0.99 }}
                 initial={{ opacity: 0, y: 10 }}
