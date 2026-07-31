@@ -401,7 +401,7 @@ const CreateFanlink = () => {
             <div className="flex items-center gap-2 mb-5">
               <Edit3 className="w-4 h-4 text-primary" />
               <h2 className="font-display text-sm font-semibold uppercase tracking-widest text-muted-foreground">
-                Refine track details
+                {contentType === "release" ? "Refine release details" : "Refine track details"}
               </h2>
             </div>
 
@@ -433,6 +433,11 @@ const CreateFanlink = () => {
                   {metadata.isrc && <span className="chip chip-primary">ISRC {metadata.isrc}</span>}
                   {metadata.upc && <span className="chip chip-accent">UPC {metadata.upc}</span>}
                   {metadata.release_date && <span className="chip">{metadata.release_date}</span>}
+                  {contentType === "release" && (
+                    <span className="chip chip-success">
+                      {metadata.release_type || "Album"} · {metadata.total_tracks ?? tracklist.length} tracks
+                    </span>
+                  )}
                 </div>
                 {metadata.spotify_track_url && (
                   <a
@@ -500,6 +505,13 @@ const CreateFanlink = () => {
               <span className="text-primary">
                 {slugify(metadata.artist || "artist")}/{slugify(metadata.title || "track")}
               </span>
+              {contentType === "release" && (
+                <p className="mt-2 text-xs text-muted-foreground">
+                  Also reachable at <span className="text-primary">/release/{slugify(metadata.title || "release")}</span>
+                  {metadata.upc ? <> or <span className="text-primary">/release/{metadata.upc}</span></> : null} — every
+                  platform button opens the full {(metadata.release_type || "release").toLowerCase()}.
+                </p>
+              )}
             </div>
           </div>
 
