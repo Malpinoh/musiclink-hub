@@ -177,7 +177,7 @@ const CreateFanlink = () => {
           release_date: metadata.release_date,
           release_type: contentType === "release" ? metadata.release_type || "Album" : "Single",
           content_type: contentType,
-          tracklist: contentType === "release" ? tracklist : [],
+          tracklist: (contentType === "release" ? tracklist : []) as unknown as never,
           total_tracks: contentType === "release" ? metadata.total_tracks ?? tracklist.length : 1,
           upc: metadata.upc,
           isrc: metadata.isrc,
