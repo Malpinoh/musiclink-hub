@@ -653,9 +653,28 @@ serve(async (req) => {
     let inputType = "query";
 
     // Detect input type and search accordingly
-    const isUPC = /^\d{12,13}$/.test(trimmedInput);
+    const isUPC = /^\d{12,14}$/.test(trimmedInput);
     const isISRC = /^[A-Z]{2}[A-Z0-9]{3}\d{7}$/i.test(trimmedInput);
     const isSpotifyUrl = trimmedInput.includes("spotify.com");
+    const parsedSpotify = isSpotifyUrl ? parseSpotifyUrl(trimmedInput) : null;
+
+    // ---- RELEASE MODE: a UPC (or a Spotify album URL) identifies a RELEASE ----
+    if (isUPC || parsedSpotify?.type === "album") {
+      console.log("Release-level resolution for:", trimmedInput);
+      const release = await buildReleaseResult(token, {
+        upc: isUPC ? trimmedInput : null,
+        albumId: parsedSpotify?.type === "album" ? parsedSpotify.id : null,
+      });
+
+      if (release) {
+        return new Response(JSON.stringify({ success: true, ...release }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      console.log("No release found, falling back to track resolution");
+    }
+
+
     
     // Store UPC for Apple Music lookup
     let upcForAppleMusic: string | null = null;
