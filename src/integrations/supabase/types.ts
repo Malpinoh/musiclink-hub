@@ -466,6 +466,7 @@ export type Database = {
         Row: {
           city: string | null
           clicked_at: string
+          content_type: string
           country: string | null
           device_type: string | null
           fanlink_id: string
@@ -477,6 +478,7 @@ export type Database = {
         Insert: {
           city?: string | null
           clicked_at?: string
+          content_type?: string
           country?: string | null
           device_type?: string | null
           fanlink_id: string
@@ -488,6 +490,7 @@ export type Database = {
         Update: {
           city?: string | null
           clicked_at?: string
+          content_type?: string
           country?: string | null
           device_type?: string | null
           fanlink_id?: string
@@ -557,6 +560,7 @@ export type Database = {
           artwork_url: string | null
           collect_email: boolean | null
           collect_phone: boolean | null
+          content_type: string
           created_at: string
           expires_at: string | null
           id: string
@@ -567,6 +571,8 @@ export type Database = {
           require_contact: boolean | null
           slug: string
           title: string
+          total_tracks: number | null
+          tracklist: Json
           upc: string | null
           updated_at: string
           user_id: string
@@ -577,6 +583,7 @@ export type Database = {
           artwork_url?: string | null
           collect_email?: boolean | null
           collect_phone?: boolean | null
+          content_type?: string
           created_at?: string
           expires_at?: string | null
           id?: string
@@ -587,6 +594,8 @@ export type Database = {
           require_contact?: boolean | null
           slug: string
           title: string
+          total_tracks?: number | null
+          tracklist?: Json
           upc?: string | null
           updated_at?: string
           user_id: string
@@ -597,6 +606,7 @@ export type Database = {
           artwork_url?: string | null
           collect_email?: boolean | null
           collect_phone?: boolean | null
+          content_type?: string
           created_at?: string
           expires_at?: string | null
           id?: string
@@ -607,6 +617,8 @@ export type Database = {
           require_contact?: boolean | null
           slug?: string
           title?: string
+          total_tracks?: number | null
+          tracklist?: Json
           upc?: string | null
           updated_at?: string
           user_id?: string
@@ -1143,6 +1155,145 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      releases: {
+        Row: {
+          amazon_release_url: string | null
+          apple_release_url: string | null
+          artist_name: string
+          artwork: string | null
+          audiomack_release_url: string | null
+          boomplay_release_url: string | null
+          created_at: string
+          deezer_release_url: string | null
+          fanlink_id: string | null
+          id: string
+          release_date: string | null
+          release_title: string
+          release_type: string
+          spotify_release_url: string | null
+          tidal_release_url: string | null
+          upc: string | null
+          updated_at: string
+          user_id: string
+          youtube_release_url: string | null
+        }
+        Insert: {
+          amazon_release_url?: string | null
+          apple_release_url?: string | null
+          artist_name: string
+          artwork?: string | null
+          audiomack_release_url?: string | null
+          boomplay_release_url?: string | null
+          created_at?: string
+          deezer_release_url?: string | null
+          fanlink_id?: string | null
+          id?: string
+          release_date?: string | null
+          release_title: string
+          release_type?: string
+          spotify_release_url?: string | null
+          tidal_release_url?: string | null
+          upc?: string | null
+          updated_at?: string
+          user_id: string
+          youtube_release_url?: string | null
+        }
+        Update: {
+          amazon_release_url?: string | null
+          apple_release_url?: string | null
+          artist_name?: string
+          artwork?: string | null
+          audiomack_release_url?: string | null
+          boomplay_release_url?: string | null
+          created_at?: string
+          deezer_release_url?: string | null
+          fanlink_id?: string | null
+          id?: string
+          release_date?: string | null
+          release_title?: string
+          release_type?: string
+          spotify_release_url?: string | null
+          tidal_release_url?: string | null
+          upc?: string | null
+          updated_at?: string
+          user_id?: string
+          youtube_release_url?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "releases_fanlink_id_fkey"
+            columns: ["fanlink_id"]
+            isOneToOne: false
+            referencedRelation: "fanlinks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tracks: {
+        Row: {
+          amazon_track_url: string | null
+          apple_track_url: string | null
+          audiomack_track_url: string | null
+          boomplay_track_url: string | null
+          created_at: string
+          deezer_track_url: string | null
+          duration_ms: number | null
+          id: string
+          isrc: string | null
+          release_id: string
+          spotify_track_url: string | null
+          tidal_track_url: string | null
+          track_number: number | null
+          track_title: string
+          updated_at: string
+          youtube_track_url: string | null
+        }
+        Insert: {
+          amazon_track_url?: string | null
+          apple_track_url?: string | null
+          audiomack_track_url?: string | null
+          boomplay_track_url?: string | null
+          created_at?: string
+          deezer_track_url?: string | null
+          duration_ms?: number | null
+          id?: string
+          isrc?: string | null
+          release_id: string
+          spotify_track_url?: string | null
+          tidal_track_url?: string | null
+          track_number?: number | null
+          track_title: string
+          updated_at?: string
+          youtube_track_url?: string | null
+        }
+        Update: {
+          amazon_track_url?: string | null
+          apple_track_url?: string | null
+          audiomack_track_url?: string | null
+          boomplay_track_url?: string | null
+          created_at?: string
+          deezer_track_url?: string | null
+          duration_ms?: number | null
+          id?: string
+          isrc?: string | null
+          release_id?: string
+          spotify_track_url?: string | null
+          tidal_track_url?: string | null
+          track_number?: number | null
+          track_title?: string
+          updated_at?: string
+          youtube_track_url?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tracks_release_id_fkey"
+            columns: ["release_id"]
+            isOneToOne: false
+            referencedRelation: "releases"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_roles: {
         Row: {
