@@ -417,11 +417,18 @@ const FanlinkPage = () => {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.18 }}
               >
-                {fanlink.release_type && (
-                  <span className="inline-flex items-center rounded-full border border-primary/30 bg-primary/10 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.2em] text-primary mb-3">
-                    {fanlink.release_type}
-                  </span>
-                )}
+                <div className="flex flex-wrap items-center justify-center lg:justify-start gap-2 mb-3">
+                  {fanlink.release_type && (
+                    <span className="inline-flex items-center rounded-full border border-primary/30 bg-primary/10 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.2em] text-primary">
+                      {fanlink.release_type}
+                    </span>
+                  )}
+                  {isRelease && (fanlink.total_tracks || tracklist.length) > 0 && (
+                    <span className="inline-flex items-center rounded-full border border-border/50 bg-background/40 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.2em] text-muted-foreground">
+                      {fanlink.total_tracks || tracklist.length} tracks
+                    </span>
+                  )}
+                </div>
                 <h1 className="font-display text-3xl sm:text-4xl lg:text-5xl font-bold leading-[1.05] tracking-tight text-balance mb-2">
                   {fanlink.title}
                 </h1>
@@ -536,6 +543,36 @@ const FanlinkPage = () => {
                       {copied ? "Copied" : "Copy link"}
                     </Button>
                   </div>
+                </motion.div>
+              )}
+
+              {/* Tracklist (release links only) */}
+              {isRelease && tracklist.length > 0 && (!showContactForm || contactSubmitted) && (
+                <motion.div
+                  className="mt-5 rounded-3xl border border-border/40 bg-card/40 backdrop-blur-xl p-4 sm:p-5 shadow-[var(--shadow-md)]"
+                  initial={{ opacity: 0, y: 16 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.34, ease: [0.16, 1, 0.3, 1] }}
+                >
+                  <p className="text-[10px] uppercase tracking-[0.25em] text-muted-foreground mb-3 px-1">
+                    Tracklist
+                  </p>
+                  <ol className="divide-y divide-border/30">
+                    {tracklist.map((t, i) => (
+                      <li key={`${t.track_number ?? i}-${t.title}`} className="flex items-center gap-3 py-2.5">
+                        <span className="w-6 text-xs tabular-nums text-muted-foreground text-right">
+                          {t.track_number ?? i + 1}
+                        </span>
+                        <span className="flex-1 min-w-0 truncate text-sm">{t.title}</span>
+                        {t.duration_ms ? (
+                          <span className="text-xs tabular-nums text-muted-foreground">
+                            {Math.floor(t.duration_ms / 60000)}:
+                            {String(Math.floor((t.duration_ms % 60000) / 1000)).padStart(2, "0")}
+                          </span>
+                        ) : null}
+                      </li>
+                    ))}
+                  </ol>
                 </motion.div>
               )}
             </div>
