@@ -48,6 +48,17 @@ interface LinkMetadata {
   spotify_track_url: string | null;
   spotify_artist_url: string | null;
   spotify_album_url: string | null;
+  release_type?: string | null;
+  total_tracks?: number | null;
+}
+
+interface ReleaseTrack {
+  track_number: number;
+  title: string;
+  isrc: string | null;
+  duration_ms: number | null;
+  spotify_track_url: string | null;
+  apple_track_url: string | null;
 }
 
 interface AccuracyBreakdown {
@@ -85,6 +96,8 @@ const CreateFanlink = () => {
   const [accuracyScore, setAccuracyScore] = useState(0);
   const [accuracyBreakdown, setAccuracyBreakdown] = useState<AccuracyBreakdown | null>(null);
   const [fetchError, setFetchError] = useState<string | null>(null);
+  const [contentType, setContentType] = useState<"release" | "track">("track");
+  const [tracklist, setTracklist] = useState<ReleaseTrack[]>([]);
 
   useEffect(() => {
     if (!authLoading && !user) navigate("/login");
@@ -128,7 +141,13 @@ const CreateFanlink = () => {
       setPlatformUrls(data.streaming_links || {});
       setAccuracyScore(data.accuracy_score || 0);
       setAccuracyBreakdown(data.accuracy_breakdown || null);
-      toast.success(`Track found with ${data.accuracy_score}% accuracy!`);
+      setContentType(data.content_type === "release" ? "release" : "track");
+      setTracklist(Array.isArray(data.tracklist) ? data.tracklist : []);
+      toast.success(
+        data.content_type === "release"
+          ? `Release found (${data.metadata?.total_tracks || data.tracklist?.length || 0} tracks) — ${data.accuracy_score}% accuracy`
+          : `Track found with ${data.accuracy_score}% accuracy!`
+      );
       setStep(1);
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : "Failed to fetch";
@@ -156,7 +175,10 @@ const CreateFanlink = () => {
           artist: metadata.artist,
           artwork_url: metadata.artwork?.large || metadata.artwork?.medium || null,
           release_date: metadata.release_date,
-          release_type: "Single",
+          release_type: contentType === "release" ? metadata.release_type || "Album" : "Single",
+          content_type: contentType,
+          tracklist: (contentType === "release" ? tracklist : []) as unknown as never,
+          total_tracks: contentType === "release" ? metadata.total_tracks ?? tracklist.length : 1,
           upc: metadata.upc,
           isrc: metadata.isrc,
           slug,
@@ -180,8 +202,54 @@ const CreateFanlink = () => {
       }
       await supabase.from("link_themes").insert({ link_id: fanlink.id });
 
-      trackEvent("fanlink_created", { title: metadata.title, artist: metadata.artist });
-      toast.success("Fanlink created!");
+      // Persist normalized release + tracks for UPC-based (release-level) links
+      if (contentType === "release") {
+        const { data: release, error: rErr } = await supabase
+          .from("releases")
+          .insert({
+            user_id: user?.id,
+            fanlink_id: fanlink.id,
+            upc: metadata.upc,
+            artist_name: metadata.artist,
+            release_title: metadata.title,
+            release_type: metadata.release_type || "Album",
+            artwork: metadata.artwork?.large || null,
+            release_date: metadata.release_date,
+            spotify_release_url: platformUrls.spotify || null,
+            apple_release_url: platformUrls.apple_music?.startsWith("http") ? platformUrls.apple_music : null,
+            youtube_release_url: platformUrls.youtube || null,
+            deezer_release_url: platformUrls.deezer || null,
+            tidal_release_url: platformUrls.tidal || null,
+            amazon_release_url: platformUrls.amazon || null,
+            boomplay_release_url: platformUrls.boomplay || null,
+            audiomack_release_url: platformUrls.audiomack || null,
+          })
+          .select()
+          .single();
+
+        if (rErr) {
+          console.error("Failed to save release row", rErr);
+        } else if (release && tracklist.length) {
+          const trackRows = tracklist.map((t, i) => ({
+            release_id: release.id,
+            isrc: t.isrc,
+            track_number: t.track_number ?? i + 1,
+            track_title: t.title,
+            duration_ms: t.duration_ms,
+            spotify_track_url: t.spotify_track_url,
+            apple_track_url: t.apple_track_url,
+          }));
+          const { error: tErr } = await supabase.from("tracks").insert(trackRows);
+          if (tErr) console.error("Failed to save tracks", tErr);
+        }
+      }
+
+      trackEvent("fanlink_created", {
+        title: metadata.title,
+        artist: metadata.artist,
+        content_type: contentType,
+      });
+      toast.success(contentType === "release" ? "Release link created!" : "Fanlink created!");
       navigate("/dashboard");
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : "Failed to create";
@@ -333,7 +401,7 @@ const CreateFanlink = () => {
             <div className="flex items-center gap-2 mb-5">
               <Edit3 className="w-4 h-4 text-primary" />
               <h2 className="font-display text-sm font-semibold uppercase tracking-widest text-muted-foreground">
-                Refine track details
+                {contentType === "release" ? "Refine release details" : "Refine track details"}
               </h2>
             </div>
 
@@ -365,6 +433,11 @@ const CreateFanlink = () => {
                   {metadata.isrc && <span className="chip chip-primary">ISRC {metadata.isrc}</span>}
                   {metadata.upc && <span className="chip chip-accent">UPC {metadata.upc}</span>}
                   {metadata.release_date && <span className="chip">{metadata.release_date}</span>}
+                  {contentType === "release" && (
+                    <span className="chip chip-success">
+                      {metadata.release_type || "Album"} · {metadata.total_tracks ?? tracklist.length} tracks
+                    </span>
+                  )}
                 </div>
                 {metadata.spotify_track_url && (
                   <a
@@ -432,6 +505,13 @@ const CreateFanlink = () => {
               <span className="text-primary">
                 {slugify(metadata.artist || "artist")}/{slugify(metadata.title || "track")}
               </span>
+              {contentType === "release" && (
+                <p className="mt-2 text-xs text-muted-foreground">
+                  Also reachable at <span className="text-primary">/release/{slugify(metadata.title || "release")}</span>
+                  {metadata.upc ? <> or <span className="text-primary">/release/{metadata.upc}</span></> : null} — every
+                  platform button opens the full {(metadata.release_type || "release").toLowerCase()}.
+                </p>
+              )}
             </div>
           </div>
 

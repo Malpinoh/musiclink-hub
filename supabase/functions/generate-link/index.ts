@@ -409,6 +409,218 @@ async function generateStreamingLinks(
   return links;
 }
 
+/* ------------------------------------------------------------------ *
+ * RELEASE-LEVEL (UPC / album) resolution
+ * ------------------------------------------------------------------ */
+
+interface ReleaseTrack {
+  track_number: number;
+  title: string;
+  isrc: string | null;
+  duration_ms: number | null;
+  spotify_track_url: string | null;
+  apple_track_url: string | null;
+}
+
+function normalizeReleaseType(albumType: string | undefined, totalTracks: number): string {
+  const t = (albumType || "").toLowerCase();
+  if (t === "single" || totalTracks === 1) return "Single";
+  if (t === "compilation") return "Compilation";
+  if (totalTracks <= 6) return "EP";
+  return "Album";
+}
+
+async function getSpotifyAlbumByUPC(token: string, upc: string): Promise<any | null> {
+  try {
+    const res = await fetch(`https://api.spotify.com/v1/search?q=upc:${upc}&type=album&limit=1`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (!res.ok) return null;
+    const data = await res.json();
+    const id = data.albums?.items?.[0]?.id;
+    if (!id) return null;
+    return await getSpotifyAlbumById(token, id);
+  } catch (e) {
+    console.error("getSpotifyAlbumByUPC error:", e);
+    return null;
+  }
+}
+
+async function getSpotifyAlbumById(token: string, albumId: string): Promise<any | null> {
+  try {
+    const res = await fetch(`https://api.spotify.com/v1/albums/${albumId}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (!res.ok) return null;
+    return await res.json();
+  } catch (e) {
+    console.error("getSpotifyAlbumById error:", e);
+    return null;
+  }
+}
+
+// Apple Music ALBUM url — strictly via UPC lookup
+async function fetchAppleAlbumByUPC(upc: string): Promise<{ albumUrl: string | null; tracks: any[] }> {
+  try {
+    const res = await fetch(`https://itunes.apple.com/lookup?upc=${encodeURIComponent(upc)}&entity=song&limit=200`);
+    const data = await res.json();
+    const results: any[] = data.results || [];
+    const collection = results.find((r) => r.wrapperType === "collection" && r.collectionViewUrl);
+    const tracks = results.filter((r) => r.wrapperType === "track");
+    return { albumUrl: collection?.collectionViewUrl || null, tracks };
+  } catch (e) {
+    console.error("fetchAppleAlbumByUPC error:", e);
+    return { albumUrl: null, tracks: [] };
+  }
+}
+
+async function fetchDeezerAlbumByUPC(upc: string, query: string): Promise<string | null> {
+  try {
+    const res = await fetch(`https://api.deezer.com/album/upc:${encodeURIComponent(upc)}`);
+    if (res.ok) {
+      const data = await res.json();
+      if (data?.link) return data.link;
+    }
+  } catch (e) {
+    console.error("deezer upc lookup error:", e);
+  }
+  try {
+    const res = await fetch(`https://api.deezer.com/search/album?q=${query}&limit=1`);
+    const data = await res.json();
+    return data.data?.[0]?.link || null;
+  } catch {
+    return null;
+  }
+}
+
+// Build a full release-level result
+async function buildReleaseResult(
+  token: string,
+  opts: { upc: string | null; albumId: string | null }
+): Promise<Record<string, unknown> | null> {
+  let album: any | null = null;
+  if (opts.albumId) album = await getSpotifyAlbumById(token, opts.albumId);
+  if (!album && opts.upc) album = await getSpotifyAlbumByUPC(token, opts.upc);
+
+  const upc: string | null = opts.upc || album?.external_ids?.upc || null;
+
+  // Apple Music (album-level, UPC only)
+  const apple = upc ? await fetchAppleAlbumByUPC(upc) : { albumUrl: null, tracks: [] };
+
+  let title: string;
+  let artist: string;
+  let artwork: string | null;
+  let releaseDate: string | null;
+  let releaseType: string;
+  let totalTracks: number;
+  let tracks: ReleaseTrack[] = [];
+  let spotifyAlbumUrl: string | null = null;
+  let spotifyArtistUrl: string | null = null;
+
+  if (album) {
+    title = album.name;
+    artist = album.artists?.[0]?.name || "Unknown Artist";
+    artwork = album.images?.[0]?.url || null;
+    releaseDate = album.release_date || null;
+    totalTracks = album.total_tracks || album.tracks?.items?.length || 0;
+    releaseType = normalizeReleaseType(album.album_type, totalTracks);
+    spotifyAlbumUrl = album.external_urls?.spotify || null;
+    spotifyArtistUrl = album.artists?.[0]?.external_urls?.spotify || null;
+
+    const items: any[] = album.tracks?.items || [];
+    tracks = items.map((t, i) => {
+      const appleMatch = apple.tracks.find(
+        (a) => (a.trackNumber === (t.track_number ?? i + 1)) ||
+               a.trackName?.toLowerCase() === t.name?.toLowerCase()
+      );
+      return {
+        track_number: t.track_number ?? i + 1,
+        title: t.name,
+        isrc: t.external_ids?.isrc || null,
+        duration_ms: t.duration_ms ?? null,
+        spotify_track_url: t.external_urls?.spotify || null,
+        apple_track_url: appleMatch?.trackViewUrl || null,
+      };
+    });
+  } else if (apple.tracks.length > 0 || apple.albumUrl) {
+    // iTunes-only fallback
+    const first = apple.tracks[0];
+    title = first?.collectionName || "Unknown Release";
+    artist = first?.artistName || "Unknown Artist";
+    artwork = (first?.artworkUrl100 || "").replace("100x100", "600x600") || null;
+    releaseDate = first?.releaseDate ? first.releaseDate.split("T")[0] : null;
+    totalTracks = first?.trackCount || apple.tracks.length;
+    releaseType = normalizeReleaseType(undefined, totalTracks);
+    tracks = apple.tracks.map((a, i) => ({
+      track_number: a.trackNumber ?? i + 1,
+      title: a.trackName,
+      isrc: null,
+      duration_ms: a.trackTimeMillis ?? null,
+      spotify_track_url: null,
+      apple_track_url: a.trackViewUrl || null,
+    }));
+  } else {
+    return null;
+  }
+
+  tracks.sort((a, b) => a.track_number - b.track_number);
+
+  const query = encodeURIComponent(`${artist} ${title}`);
+  const deezerUrl = upc ? await fetchDeezerAlbumByUPC(upc, query) : null;
+
+  const streaming_links: Record<string, string> = {
+    spotify: spotifyAlbumUrl || `https://open.spotify.com/search/${query}`,
+    apple_music: apple.albumUrl || "Apple Music link not available yet.",
+    youtube: `https://music.youtube.com/search?q=${query}%20album`,
+    deezer: deezerUrl || `https://www.deezer.com/search/${query}/album`,
+    audiomack: `https://audiomack.com/search?q=${query}`,
+    boomplay: `https://www.boomplay.com/search/default/${query}`,
+    tidal: `https://tidal.com/search?q=${query}`,
+    amazon: `https://music.amazon.com/search/${query}`,
+    soundcloud: `https://soundcloud.com/search/sets?q=${query}`,
+    shazam: `https://www.shazam.com/search/${encodeURIComponent(artist)}-${encodeURIComponent(title)}`,
+  };
+
+  const accuracy_breakdown = {
+    isrc_match: false,
+    upc_match: !!upc,
+    artist_similarity: 100,
+    title_similarity: 100,
+    album_match: true,
+  };
+
+  return {
+    content_type: "release",
+    source: album ? "spotify" : "itunes",
+    metadata: {
+      title,
+      artist,
+      album: title,
+      album_id: album?.id || "",
+      artist_id: album?.artists?.[0]?.id || "",
+      isrc: null,
+      upc,
+      release_date: releaseDate,
+      release_type: releaseType,
+      total_tracks: totalTracks,
+      artwork: {
+        large: artwork,
+        medium: artwork,
+        small: artwork,
+      },
+      spotify_track_url: null,
+      spotify_artist_url: spotifyArtistUrl,
+      spotify_album_url: spotifyAlbumUrl,
+    },
+    tracklist: tracks,
+    streaming_links,
+    accuracy_score: album && upc ? 100 : 85,
+    accuracy_breakdown,
+  };
+}
+
+
+
 serve(async (req) => {
   // Handle CORS preflight
   if (req.method === "OPTIONS") {
@@ -441,9 +653,28 @@ serve(async (req) => {
     let inputType = "query";
 
     // Detect input type and search accordingly
-    const isUPC = /^\d{12,13}$/.test(trimmedInput);
+    const isUPC = /^\d{12,14}$/.test(trimmedInput);
     const isISRC = /^[A-Z]{2}[A-Z0-9]{3}\d{7}$/i.test(trimmedInput);
     const isSpotifyUrl = trimmedInput.includes("spotify.com");
+    const parsedSpotify = isSpotifyUrl ? parseSpotifyUrl(trimmedInput) : null;
+
+    // ---- RELEASE MODE: a UPC (or a Spotify album URL) identifies a RELEASE ----
+    if (isUPC || parsedSpotify?.type === "album") {
+      console.log("Release-level resolution for:", trimmedInput);
+      const release = await buildReleaseResult(token, {
+        upc: isUPC ? trimmedInput : null,
+        albumId: parsedSpotify?.type === "album" ? parsedSpotify.id : null,
+      });
+
+      if (release) {
+        return new Response(JSON.stringify({ success: true, ...release }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      console.log("No release found, falling back to track resolution");
+    }
+
+
     
     // Store UPC for Apple Music lookup
     let upcForAppleMusic: string | null = null;
@@ -559,7 +790,7 @@ serve(async (req) => {
         console.log("iTunes fallback result:", { title, artist });
 
         return new Response(
-          JSON.stringify({ success: true, source: "itunes", ...result }),
+          JSON.stringify({ success: true, source: "itunes", content_type: "track", ...result }),
           { headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
@@ -617,7 +848,7 @@ serve(async (req) => {
     });
 
     return new Response(
-      JSON.stringify({ success: true, ...result }),
+      JSON.stringify({ success: true, content_type: "track", ...result }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
 

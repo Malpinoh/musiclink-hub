@@ -93,6 +93,8 @@ const App = () => {
                 <Route path="/callback/spotify" element={<SpotifyCallback />} />
                 <Route path="/artist/:username" element={<ArtistBioPage />} />
                 <Route path="/artist-bio/edit" element={<EditArtistBio />} />
+                <Route path="/release/:key" element={<FanlinkPage />} />
+                <Route path="/track/:key" element={<FanlinkPage />} />
                 <Route path="/:artist/:song" element={<FanlinkPage />} />
                 <Route path="/link/:id" element={<FanlinkPage />} />
                 <Route path="*" element={<NotFound />} />

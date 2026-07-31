@@ -69,6 +69,9 @@ interface Fanlink {
   artwork_url: string | null;
   release_date: string | null;
   release_type: string | null;
+  content_type: string | null;
+  tracklist: unknown;
+  total_tracks: number | null;
   isrc: string | null;
   upc: string | null;
   is_published: boolean | null;
@@ -97,7 +100,7 @@ interface LinkThemeData {
 }
 
 const FanlinkPage = () => {
-  const { artist, song, id } = useParams();
+  const { artist, song, id, key } = useParams();
   const [copied, setCopied] = useState(false);
   const [showQR, setShowQR] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -117,7 +120,7 @@ const FanlinkPage = () => {
 
   useEffect(() => {
     fetchFanlink();
-  }, [artist, song, id]);
+  }, [artist, song, id, key]);
 
   const fetchFanlink = async () => {
     try {
@@ -125,6 +128,9 @@ const FanlinkPage = () => {
       
       if (id) {
         query = query.eq("id", id);
+      } else if (key) {
+        // /release/:key and /track/:key — resolve by slug, UPC or ISRC
+        query = query.or(`slug.eq.${key},upc.eq.${key},isrc.eq.${key}`).limit(1);
       } else if (artist && song) {
         query = query.eq("artist_slug", artist).eq("slug", song);
       }
@@ -166,6 +172,11 @@ const FanlinkPage = () => {
 
       if (themeData) setTheme(themeData as LinkThemeData);
 
+      trackEvent(
+        fanlinkData.content_type === "release" ? "release_page_view" : "track_page_view",
+        { fanlink_id: fanlinkData.id, title: fanlinkData.title, artist: fanlinkData.artist }
+      );
+
       // Log page view click with geo tracking via edge function
       try {
         await supabase.functions.invoke("track-geo", {
@@ -173,6 +184,7 @@ const FanlinkPage = () => {
             type: "click",
             id: fanlinkData.id,
             platform_name: null, // Page view, not platform click
+            content_type: fanlinkData.content_type || "track",
             user_agent: navigator.userAgent,
             device_type: /mobile/i.test(navigator.userAgent) ? "mobile" : "desktop",
           },
@@ -182,6 +194,7 @@ const FanlinkPage = () => {
         // Fallback to direct insert without geo
         await supabase.from("clicks").insert({
           fanlink_id: fanlinkData.id,
+          content_type: fanlinkData.content_type || "track",
           user_agent: navigator.userAgent,
           device_type: /mobile/i.test(navigator.userAgent) ? "mobile" : "desktop",
         });
@@ -198,12 +211,18 @@ const FanlinkPage = () => {
   const handlePlatformClick = async (platformName: string) => {
     if (fanlink) {
       try {
-        trackEvent("link_clicked", { type: "fanlink", platform: platformName, fanlink_id: fanlink.id });
+        trackEvent("link_clicked", {
+          type: "fanlink",
+          content_type: fanlink.content_type || "track",
+          platform: platformName,
+          fanlink_id: fanlink.id,
+        });
         await supabase.functions.invoke("track-geo", {
           body: {
             type: "click",
             id: fanlink.id,
             platform_name: platformName,
+            content_type: fanlink.content_type || "track",
             user_agent: navigator.userAgent,
             device_type: /mobile/i.test(navigator.userAgent) ? "mobile" : "desktop",
           },
@@ -214,6 +233,7 @@ const FanlinkPage = () => {
         await supabase.from("clicks").insert({
           fanlink_id: fanlink.id,
           platform_name: platformName,
+          content_type: fanlink.content_type || "track",
           user_agent: navigator.userAgent,
           device_type: /mobile/i.test(navigator.userAgent) ? "mobile" : "desktop",
         });
@@ -285,6 +305,11 @@ const FanlinkPage = () => {
       </div>
     );
   }
+
+  const isRelease = fanlink.content_type === "release";
+  const tracklist = Array.isArray(fanlink.tracklist)
+    ? (fanlink.tracklist as Array<{ track_number?: number; title?: string; duration_ms?: number | null }>)
+    : [];
 
   return (
     <div
@@ -392,11 +417,18 @@ const FanlinkPage = () => {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.18 }}
               >
-                {fanlink.release_type && (
-                  <span className="inline-flex items-center rounded-full border border-primary/30 bg-primary/10 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.2em] text-primary mb-3">
-                    {fanlink.release_type}
-                  </span>
-                )}
+                <div className="flex flex-wrap items-center justify-center lg:justify-start gap-2 mb-3">
+                  {fanlink.release_type && (
+                    <span className="inline-flex items-center rounded-full border border-primary/30 bg-primary/10 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.2em] text-primary">
+                      {fanlink.release_type}
+                    </span>
+                  )}
+                  {isRelease && (fanlink.total_tracks || tracklist.length) > 0 && (
+                    <span className="inline-flex items-center rounded-full border border-border/50 bg-background/40 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.2em] text-muted-foreground">
+                      {fanlink.total_tracks || tracklist.length} tracks
+                    </span>
+                  )}
+                </div>
                 <h1 className="font-display text-3xl sm:text-4xl lg:text-5xl font-bold leading-[1.05] tracking-tight text-balance mb-2">
                   {fanlink.title}
                 </h1>
@@ -483,7 +515,9 @@ const FanlinkPage = () => {
                               <span className="block font-semibold text-sm sm:text-base truncate">
                                 {formatPlatformName(link.platform_name)}
                               </span>
-                              <span className="block text-[11px] text-muted-foreground">Play now</span>
+                              <span className="block text-[11px] text-muted-foreground">
+                                {isRelease ? "Open full release" : "Play now"}
+                              </span>
                             </span>
                             <span className="relative inline-flex items-center gap-1 text-xs font-semibold uppercase tracking-wider opacity-70 group-hover:opacity-100 transition-opacity">
                               <span className="hidden sm:inline">Listen</span>
@@ -509,6 +543,36 @@ const FanlinkPage = () => {
                       {copied ? "Copied" : "Copy link"}
                     </Button>
                   </div>
+                </motion.div>
+              )}
+
+              {/* Tracklist (release links only) */}
+              {isRelease && tracklist.length > 0 && (!showContactForm || contactSubmitted) && (
+                <motion.div
+                  className="mt-5 rounded-3xl border border-border/40 bg-card/40 backdrop-blur-xl p-4 sm:p-5 shadow-[var(--shadow-md)]"
+                  initial={{ opacity: 0, y: 16 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.34, ease: [0.16, 1, 0.3, 1] }}
+                >
+                  <p className="text-[10px] uppercase tracking-[0.25em] text-muted-foreground mb-3 px-1">
+                    Tracklist
+                  </p>
+                  <ol className="divide-y divide-border/30">
+                    {tracklist.map((t, i) => (
+                      <li key={`${t.track_number ?? i}-${t.title}`} className="flex items-center gap-3 py-2.5">
+                        <span className="w-6 text-xs tabular-nums text-muted-foreground text-right">
+                          {t.track_number ?? i + 1}
+                        </span>
+                        <span className="flex-1 min-w-0 truncate text-sm">{t.title}</span>
+                        {t.duration_ms ? (
+                          <span className="text-xs tabular-nums text-muted-foreground">
+                            {Math.floor(t.duration_ms / 60000)}:
+                            {String(Math.floor((t.duration_ms % 60000) / 1000)).padStart(2, "0")}
+                          </span>
+                        ) : null}
+                      </li>
+                    ))}
+                  </ol>
                 </motion.div>
               )}
             </div>

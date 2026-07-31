@@ -72,7 +72,7 @@ Deno.serve(async (req: Request) => {
 
   try {
     const body = await req.json();
-    const { type, id, platform_name, user_agent, device_type, action_type, email, spotify_user_id, spotify_access_token, spotify_refresh_token, token_expires_at } = body;
+    const { type, id, platform_name, content_type, user_agent, device_type, action_type, email, spotify_user_id, spotify_access_token, spotify_refresh_token, token_expires_at } = body;
 
     // Get client IP
     const clientIP = getClientIP(req);
@@ -94,6 +94,7 @@ Deno.serve(async (req: Request) => {
       const { data, error } = await supabase.from("clicks").insert({
         fanlink_id: id,
         platform_name: platform_name || null,
+        content_type: content_type === "release" ? "release" : "track",
         user_agent: user_agent || null,
         device_type: device_type || null,
         ip_address: geoData.ip,
