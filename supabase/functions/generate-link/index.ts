@@ -790,7 +790,7 @@ serve(async (req) => {
         console.log("iTunes fallback result:", { title, artist });
 
         return new Response(
-          JSON.stringify({ success: true, source: "itunes", ...result }),
+          JSON.stringify({ success: true, source: "itunes", content_type: "track", ...result }),
           { headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
@@ -848,7 +848,7 @@ serve(async (req) => {
     });
 
     return new Response(
-      JSON.stringify({ success: true, ...result }),
+      JSON.stringify({ success: true, content_type: "track", ...result }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
 
