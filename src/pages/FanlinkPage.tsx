@@ -69,6 +69,9 @@ interface Fanlink {
   artwork_url: string | null;
   release_date: string | null;
   release_type: string | null;
+  content_type: string | null;
+  tracklist: unknown;
+  total_tracks: number | null;
   isrc: string | null;
   upc: string | null;
   is_published: boolean | null;
@@ -97,7 +100,7 @@ interface LinkThemeData {
 }
 
 const FanlinkPage = () => {
-  const { artist, song, id } = useParams();
+  const { artist, song, id, key } = useParams();
   const [copied, setCopied] = useState(false);
   const [showQR, setShowQR] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -117,7 +120,7 @@ const FanlinkPage = () => {
 
   useEffect(() => {
     fetchFanlink();
-  }, [artist, song, id]);
+  }, [artist, song, id, key]);
 
   const fetchFanlink = async () => {
     try {
@@ -125,6 +128,9 @@ const FanlinkPage = () => {
       
       if (id) {
         query = query.eq("id", id);
+      } else if (key) {
+        // /release/:key and /track/:key — resolve by slug, UPC or ISRC
+        query = query.or(`slug.eq.${key},upc.eq.${key},isrc.eq.${key}`).limit(1);
       } else if (artist && song) {
         query = query.eq("artist_slug", artist).eq("slug", song);
       }
@@ -166,6 +172,11 @@ const FanlinkPage = () => {
 
       if (themeData) setTheme(themeData as LinkThemeData);
 
+      trackEvent(
+        fanlinkData.content_type === "release" ? "release_page_view" : "track_page_view",
+        { fanlink_id: fanlinkData.id, title: fanlinkData.title, artist: fanlinkData.artist }
+      );
+
       // Log page view click with geo tracking via edge function
       try {
         await supabase.functions.invoke("track-geo", {
@@ -173,6 +184,7 @@ const FanlinkPage = () => {
             type: "click",
             id: fanlinkData.id,
             platform_name: null, // Page view, not platform click
+            content_type: fanlinkData.content_type || "track",
             user_agent: navigator.userAgent,
             device_type: /mobile/i.test(navigator.userAgent) ? "mobile" : "desktop",
           },
@@ -182,6 +194,7 @@ const FanlinkPage = () => {
         // Fallback to direct insert without geo
         await supabase.from("clicks").insert({
           fanlink_id: fanlinkData.id,
+          content_type: fanlinkData.content_type || "track",
           user_agent: navigator.userAgent,
           device_type: /mobile/i.test(navigator.userAgent) ? "mobile" : "desktop",
         });
@@ -198,12 +211,18 @@ const FanlinkPage = () => {
   const handlePlatformClick = async (platformName: string) => {
     if (fanlink) {
       try {
-        trackEvent("link_clicked", { type: "fanlink", platform: platformName, fanlink_id: fanlink.id });
+        trackEvent("link_clicked", {
+          type: "fanlink",
+          content_type: fanlink.content_type || "track",
+          platform: platformName,
+          fanlink_id: fanlink.id,
+        });
         await supabase.functions.invoke("track-geo", {
           body: {
             type: "click",
             id: fanlink.id,
             platform_name: platformName,
+            content_type: fanlink.content_type || "track",
             user_agent: navigator.userAgent,
             device_type: /mobile/i.test(navigator.userAgent) ? "mobile" : "desktop",
           },
@@ -214,6 +233,7 @@ const FanlinkPage = () => {
         await supabase.from("clicks").insert({
           fanlink_id: fanlink.id,
           platform_name: platformName,
+          content_type: fanlink.content_type || "track",
           user_agent: navigator.userAgent,
           device_type: /mobile/i.test(navigator.userAgent) ? "mobile" : "desktop",
         });
@@ -285,6 +305,11 @@ const FanlinkPage = () => {
       </div>
     );
   }
+
+  const isRelease = fanlink.content_type === "release";
+  const tracklist = Array.isArray(fanlink.tracklist)
+    ? (fanlink.tracklist as Array<{ track_number?: number; title?: string; duration_ms?: number | null }>)
+    : [];
 
   return (
     <div
@@ -483,7 +508,9 @@ const FanlinkPage = () => {
                               <span className="block font-semibold text-sm sm:text-base truncate">
                                 {formatPlatformName(link.platform_name)}
                               </span>
-                              <span className="block text-[11px] text-muted-foreground">Play now</span>
+                              <span className="block text-[11px] text-muted-foreground">
+                                {isRelease ? "Open full release" : "Play now"}
+                              </span>
                             </span>
                             <span className="relative inline-flex items-center gap-1 text-xs font-semibold uppercase tracking-wider opacity-70 group-hover:opacity-100 transition-opacity">
                               <span className="hidden sm:inline">Listen</span>
