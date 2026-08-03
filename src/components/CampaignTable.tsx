@@ -37,21 +37,23 @@ const CampaignTable = ({ campaigns, onExport }: CampaignTableProps) => {
           <TableHeader>
             <TableRow>
               <TableHead>Campaign</TableHead>
-              <TableHead className="text-right">Clicks</TableHead>
-              <TableHead className="text-right">Fans</TableHead>
-              <TableHead className="text-right">Pre-saves</TableHead>
-              <TableHead className="text-right">Conv. Rate</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>Created</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {campaigns.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={7} className="text-center text-muted-foreground py-8">
-                  No campaign data yet
-                </TableCell>
-              </TableRow>
+               <TableHead className="text-right">Page Views</TableHead>
+               <TableHead className="text-right">Platform Clicks</TableHead>
+               <TableHead className="text-right">Fans</TableHead>
+               <TableHead className="text-right">Pre-saves</TableHead>
+               <TableHead className="text-right">Conv. Rate</TableHead>
+               <TableHead>Status</TableHead>
+               <TableHead>Created</TableHead>
+             </TableRow>
+           </TableHeader>
+           <TableBody>
+             {campaigns.length === 0 ? (
+               <TableRow>
+                 <TableCell colSpan={8} className="text-center text-muted-foreground py-8">
+                   No campaign data yet
+                 </TableCell>
+               </TableRow>
+
             ) : (
               campaigns.map((c) => (
                 <TableRow key={c.id}>
