@@ -39,6 +39,8 @@ const CampaignDashboard = () => {
   const [dateRange, setDateRange] = useState<DateRange>("30d");
 
   const [totalClicks, setTotalClicks] = useState(0);
+  const [totalViews, setTotalViews] = useState(0);
+  const [totalPlatformClicks, setTotalPlatformClicks] = useState(0);
   const [totalFans, setTotalFans] = useState(0);
   const [totalPresaves, setTotalPresaves] = useState(0);
 
