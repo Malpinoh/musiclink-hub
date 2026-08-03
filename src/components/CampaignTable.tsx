@@ -65,7 +65,8 @@ const CampaignTable = ({ campaigns, onExport }: CampaignTableProps) => {
                       </Badge>
                     </div>
                   </TableCell>
-                  <TableCell className="text-right">{c.clicks.toLocaleString()}</TableCell>
+                  <TableCell className="text-right">{c.views.toLocaleString()}</TableCell>
+                  <TableCell className="text-right">{c.platformClicks.toLocaleString()}</TableCell>
                   <TableCell className="text-right">{c.fans.toLocaleString()}</TableCell>
                   <TableCell className="text-right">{c.presaves.toLocaleString()}</TableCell>
                   <TableCell className="text-right">{c.conversionRate.toFixed(1)}%</TableCell>
