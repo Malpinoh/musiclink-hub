@@ -207,7 +207,7 @@ const CampaignDashboard = () => {
 
           <motion.section className="rounded-2xl border border-border/50 bg-card/50 backdrop-blur-sm p-6" custom={2} variants={sectionVariants} initial="hidden" animate="visible">
             <h2 className="font-display text-lg font-semibold mb-4 text-muted-foreground">Overview</h2>
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
               {stats.map((s) => (
                 <motion.div key={s.label} className="rounded-2xl border border-border/40 bg-background/60 p-4 cursor-default" whileHover={cardHover}>
                   <div className="flex flex-col items-center text-center gap-2">
