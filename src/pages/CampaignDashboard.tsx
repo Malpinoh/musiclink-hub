@@ -152,16 +152,17 @@ const CampaignDashboard = () => {
   useEffect(() => { if (!authLoading && !user) navigate("/login"); }, [authLoading, user, navigate]);
   useEffect(() => { if (user) { fetchData(); trackEvent("campaign_dashboard_viewed"); } }, [user, fetchData]);
 
-  const conversionRate = useMemo(
-    () => (totalClicks > 0 ? (totalFans / totalClicks) * 100 : 0),
-    [totalClicks, totalFans]
+  // Streaming CTR: how many page views turned into an actual platform click
+  const streamingCtr = useMemo(
+    () => (totalViews > 0 ? (totalPlatformClicks / totalViews) * 100 : 0),
+    [totalViews, totalPlatformClicks]
   );
   const topPlatform = platforms[0]?.name || "—";
   const topCountry = countries[0]?.name || "—";
 
   const handleExport = () => {
-    const header = "Campaign,Type,Clicks,Fans,Pre-saves,Conversion Rate,Status,Created\n";
-    const csv = campaigns.map((c) => `"${c.name}",${c.type},${c.clicks},${c.fans},${c.presaves},${c.conversionRate.toFixed(1)}%,${c.status},${c.createdAt}`).join("\n");
+    const header = "Campaign,Type,Page Views,Platform Clicks,Fans,Pre-saves,Streaming CTR,Status,Created\n";
+    const csv = campaigns.map((c) => `"${c.name}",${c.type},${c.views},${c.platformClicks},${c.fans},${c.presaves},${c.conversionRate.toFixed(1)}%,${c.status},${c.createdAt}`).join("\n");
     const blob = new Blob([header + csv], { type: "text/csv" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
@@ -175,10 +176,11 @@ const CampaignDashboard = () => {
   if (authLoading || loading) return <CampaignDashboardSkeleton />;
 
   const stats = [
-    { label: "Total Clicks", value: totalClicks.toLocaleString(), icon: BarChart3, color: "text-primary", bg: "bg-primary/15" },
+    { label: "Page Views", value: totalViews.toLocaleString(), icon: BarChart3, color: "text-primary", bg: "bg-primary/15" },
+    { label: "Platform Clicks", value: totalPlatformClicks.toLocaleString(), icon: Headphones, color: "text-primary", bg: "bg-primary/15" },
+    { label: "Streaming CTR", value: `${streamingCtr.toFixed(1)}%`, icon: TrendingUp, color: "text-yellow-500", bg: "bg-yellow-500/15" },
     { label: "Fans Collected", value: totalFans.toLocaleString(), icon: Users, color: "text-accent", bg: "bg-accent/15" },
     { label: "Pre-saves", value: totalPresaves.toLocaleString(), icon: Music2, color: "text-green-500", bg: "bg-green-500/15" },
-    { label: "Conversion Rate", value: `${conversionRate.toFixed(1)}%`, icon: TrendingUp, color: "text-yellow-500", bg: "bg-yellow-500/15" },
     { label: "Top Platform", value: topPlatform, icon: Headphones, color: "text-primary", bg: "bg-primary/15" },
     { label: "Top Country", value: topCountry, icon: Globe, color: "text-accent", bg: "bg-accent/15" },
   ];
