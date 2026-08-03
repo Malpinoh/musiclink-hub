@@ -352,7 +352,9 @@ const FanlinkAnalytics = () => {
                         fontSize: isMobile ? 12 : 14,
                       }}
                     />
-                    <Bar dataKey="count" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
+                    <Legend wrapperStyle={{ fontSize: isMobile ? 11 : 13 }} />
+                    <Bar dataKey="views" name="Page views" fill="hsl(var(--muted-foreground))" radius={[4, 4, 0, 0]} />
+                    <Bar dataKey="count" name="Platform clicks" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
                   </BarChart>
                 </ResponsiveContainer>
               </div>
