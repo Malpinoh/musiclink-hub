@@ -293,18 +293,24 @@ const FanlinkAnalytics = () => {
 
           {/* Stats Overview */}
           <motion.div
-            className="grid grid-cols-3 gap-2 sm:gap-4 mb-6 sm:mb-8"
+            className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4 mb-6 sm:mb-8"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
           >
             <div className="glass-card p-3 sm:p-6">
-              <p className="text-xs sm:text-sm text-muted-foreground mb-1">Total Clicks</p>
-              <p className="font-display text-xl sm:text-3xl font-bold">{totalClicks.toLocaleString()}</p>
+              <p className="text-xs sm:text-sm text-muted-foreground mb-1">Page Views</p>
+              <p className="font-display text-xl sm:text-3xl font-bold">{pageViews.toLocaleString()}</p>
             </div>
             <div className="glass-card p-3 sm:p-6">
-              <p className="text-xs sm:text-sm text-muted-foreground mb-1">Platforms</p>
-              <p className="font-display text-xl sm:text-3xl font-bold">{platformClicks.length}</p>
+              <p className="text-xs sm:text-sm text-muted-foreground mb-1">Platform Clicks</p>
+              <p className="font-display text-xl sm:text-3xl font-bold">{streamingClicks.toLocaleString()}</p>
+            </div>
+            <div className="glass-card p-3 sm:p-6">
+              <p className="text-xs sm:text-sm text-muted-foreground mb-1">Streaming CTR</p>
+              <p className="font-display text-xl sm:text-3xl font-bold">
+                {pageViews > 0 ? ((streamingClicks / pageViews) * 100).toFixed(1) : "0.0"}%
+              </p>
             </div>
             <div className="glass-card p-3 sm:p-6">
               <p className="text-xs sm:text-sm text-muted-foreground mb-1">Top Platform</p>
