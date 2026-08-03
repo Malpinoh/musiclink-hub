@@ -8,6 +8,8 @@ interface CampaignRow {
   name: string;
   type: "fanlink" | "presave";
   clicks: number;
+  views: number;
+  platformClicks: number;
   fans: number;
   presaves: number;
   conversionRate: number;
