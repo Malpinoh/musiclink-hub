@@ -329,7 +329,7 @@ const FanlinkAnalytics = () => {
             >
               <h3 className="font-display text-base sm:text-lg font-semibold mb-4 flex items-center gap-2">
                 <TrendingUp className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />
-                Clicks (Last 14 Days)
+                Views vs Platform Clicks (Last 14 Days)
               </h3>
               <div className="h-48 sm:h-64">
                 <ResponsiveContainer width="100%" height="100%">
