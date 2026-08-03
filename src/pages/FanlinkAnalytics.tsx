@@ -103,18 +103,29 @@ const FanlinkAnalytics = () => {
   const processClicks = useCallback((clicks: { platform_name: string | null; clicked_at: string; country: string | null; city: string | null }[]) => {
     const platformMap: Record<string, number> = {};
     const dailyMap: Record<string, number> = {};
+    const dailyViewMap: Record<string, number> = {};
     const countryMap: Record<string, number> = {};
     const cityMap: Record<string, number> = {};
+    let views = 0;
+    let streaming = 0;
 
     clicks.forEach((click) => {
-      const platform = click.platform_name ? formatPlatformName(click.platform_name) : "Fan Link";
-      platformMap[platform] = (platformMap[platform] || 0) + 1;
-
       const date = new Date(click.clicked_at).toLocaleDateString("en-US", {
         month: "short",
         day: "numeric",
       });
-      dailyMap[date] = (dailyMap[date] || 0) + 1;
+
+      if (click.platform_name) {
+        // A real streaming-platform click on the fan link page
+        streaming += 1;
+        const platform = formatPlatformName(click.platform_name);
+        platformMap[platform] = (platformMap[platform] || 0) + 1;
+        dailyMap[date] = (dailyMap[date] || 0) + 1;
+      } else {
+        // A fan link page view (no platform chosen)
+        views += 1;
+        dailyViewMap[date] = (dailyViewMap[date] || 0) + 1;
+      }
 
       if (click.country) {
         countryMap[click.country] = (countryMap[click.country] || 0) + 1;
@@ -136,7 +147,7 @@ const FanlinkAnalytics = () => {
         month: "short",
         day: "numeric",
       });
-      last14Days.push({ date: dateStr, count: dailyMap[dateStr] || 0 });
+      last14Days.push({ date: dateStr, count: dailyMap[dateStr] || 0, views: dailyViewMap[dateStr] || 0 });
     }
 
     const countries = Object.entries(countryMap)
@@ -154,7 +165,10 @@ const FanlinkAnalytics = () => {
     setCountryData(countries);
     setCityData(cities);
     setTotalClicks(clicks.length);
+    setPageViews(views);
+    setStreamingClicks(streaming);
   }, []);
+
 
   const fetchAnalytics = useCallback(async () => {
     if (!user || !id) return;
