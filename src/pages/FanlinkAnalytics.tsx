@@ -88,6 +88,8 @@ const FanlinkAnalytics = () => {
   const [countryData, setCountryData] = useState<GeoData[]>([]);
   const [cityData, setCityData] = useState<GeoData[]>([]);
   const [totalClicks, setTotalClicks] = useState(0);
+  const [pageViews, setPageViews] = useState(0);
+  const [streamingClicks, setStreamingClicks] = useState(0);
   const [loading, setLoading] = useState(true);
   const [isLive, setIsLive] = useState(true);
   const isMobile = useIsMobile();
