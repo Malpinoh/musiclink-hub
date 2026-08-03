@@ -3,6 +3,8 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 interface ChartDataPoint {
   date: string;
   clicks: number;
+  views?: number;
+  platformClicks?: number;
   fans: number;
   presaves: number;
 }
