@@ -30,6 +30,7 @@ interface PlatformClick {
 interface DailyClick {
   date: string;
   count: number;
+  views: number;
 }
 
 interface GeoData {
@@ -87,6 +88,8 @@ const FanlinkAnalytics = () => {
   const [countryData, setCountryData] = useState<GeoData[]>([]);
   const [cityData, setCityData] = useState<GeoData[]>([]);
   const [totalClicks, setTotalClicks] = useState(0);
+  const [pageViews, setPageViews] = useState(0);
+  const [streamingClicks, setStreamingClicks] = useState(0);
   const [loading, setLoading] = useState(true);
   const [isLive, setIsLive] = useState(true);
   const isMobile = useIsMobile();
@@ -100,18 +103,29 @@ const FanlinkAnalytics = () => {
   const processClicks = useCallback((clicks: { platform_name: string | null; clicked_at: string; country: string | null; city: string | null }[]) => {
     const platformMap: Record<string, number> = {};
     const dailyMap: Record<string, number> = {};
+    const dailyViewMap: Record<string, number> = {};
     const countryMap: Record<string, number> = {};
     const cityMap: Record<string, number> = {};
+    let views = 0;
+    let streaming = 0;
 
     clicks.forEach((click) => {
-      const platform = click.platform_name ? formatPlatformName(click.platform_name) : "Fan Link";
-      platformMap[platform] = (platformMap[platform] || 0) + 1;
-
       const date = new Date(click.clicked_at).toLocaleDateString("en-US", {
         month: "short",
         day: "numeric",
       });
-      dailyMap[date] = (dailyMap[date] || 0) + 1;
+
+      if (click.platform_name) {
+        // A real streaming-platform click on the fan link page
+        streaming += 1;
+        const platform = formatPlatformName(click.platform_name);
+        platformMap[platform] = (platformMap[platform] || 0) + 1;
+        dailyMap[date] = (dailyMap[date] || 0) + 1;
+      } else {
+        // A fan link page view (no platform chosen)
+        views += 1;
+        dailyViewMap[date] = (dailyViewMap[date] || 0) + 1;
+      }
 
       if (click.country) {
         countryMap[click.country] = (countryMap[click.country] || 0) + 1;
@@ -133,7 +147,7 @@ const FanlinkAnalytics = () => {
         month: "short",
         day: "numeric",
       });
-      last14Days.push({ date: dateStr, count: dailyMap[dateStr] || 0 });
+      last14Days.push({ date: dateStr, count: dailyMap[dateStr] || 0, views: dailyViewMap[dateStr] || 0 });
     }
 
     const countries = Object.entries(countryMap)
@@ -151,7 +165,10 @@ const FanlinkAnalytics = () => {
     setCountryData(countries);
     setCityData(cities);
     setTotalClicks(clicks.length);
+    setPageViews(views);
+    setStreamingClicks(streaming);
   }, []);
+
 
   const fetchAnalytics = useCallback(async () => {
     if (!user || !id) return;
@@ -276,18 +293,24 @@ const FanlinkAnalytics = () => {
 
           {/* Stats Overview */}
           <motion.div
-            className="grid grid-cols-3 gap-2 sm:gap-4 mb-6 sm:mb-8"
+            className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4 mb-6 sm:mb-8"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
           >
             <div className="glass-card p-3 sm:p-6">
-              <p className="text-xs sm:text-sm text-muted-foreground mb-1">Total Clicks</p>
-              <p className="font-display text-xl sm:text-3xl font-bold">{totalClicks.toLocaleString()}</p>
+              <p className="text-xs sm:text-sm text-muted-foreground mb-1">Page Views</p>
+              <p className="font-display text-xl sm:text-3xl font-bold">{pageViews.toLocaleString()}</p>
             </div>
             <div className="glass-card p-3 sm:p-6">
-              <p className="text-xs sm:text-sm text-muted-foreground mb-1">Platforms</p>
-              <p className="font-display text-xl sm:text-3xl font-bold">{platformClicks.length}</p>
+              <p className="text-xs sm:text-sm text-muted-foreground mb-1">Platform Clicks</p>
+              <p className="font-display text-xl sm:text-3xl font-bold">{streamingClicks.toLocaleString()}</p>
+            </div>
+            <div className="glass-card p-3 sm:p-6">
+              <p className="text-xs sm:text-sm text-muted-foreground mb-1">Streaming CTR</p>
+              <p className="font-display text-xl sm:text-3xl font-bold">
+                {pageViews > 0 ? ((streamingClicks / pageViews) * 100).toFixed(1) : "0.0"}%
+              </p>
             </div>
             <div className="glass-card p-3 sm:p-6">
               <p className="text-xs sm:text-sm text-muted-foreground mb-1">Top Platform</p>
@@ -306,7 +329,7 @@ const FanlinkAnalytics = () => {
             >
               <h3 className="font-display text-base sm:text-lg font-semibold mb-4 flex items-center gap-2">
                 <TrendingUp className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />
-                Clicks (Last 14 Days)
+                Views vs Platform Clicks (Last 14 Days)
               </h3>
               <div className="h-48 sm:h-64">
                 <ResponsiveContainer width="100%" height="100%">
@@ -329,7 +352,9 @@ const FanlinkAnalytics = () => {
                         fontSize: isMobile ? 12 : 14,
                       }}
                     />
-                    <Bar dataKey="count" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
+                    <Legend wrapperStyle={{ fontSize: isMobile ? 11 : 13 }} />
+                    <Bar dataKey="views" name="Page views" fill="hsl(var(--muted-foreground))" radius={[4, 4, 0, 0]} />
+                    <Bar dataKey="count" name="Platform clicks" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
                   </BarChart>
                 </ResponsiveContainer>
               </div>

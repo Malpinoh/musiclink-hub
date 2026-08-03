@@ -39,6 +39,8 @@ const CampaignDashboard = () => {
   const [dateRange, setDateRange] = useState<DateRange>("30d");
 
   const [totalClicks, setTotalClicks] = useState(0);
+  const [totalViews, setTotalViews] = useState(0);
+  const [totalPlatformClicks, setTotalPlatformClicks] = useState(0);
   const [totalFans, setTotalFans] = useState(0);
   const [totalPresaves, setTotalPresaves] = useState(0);
 
@@ -74,8 +76,10 @@ const CampaignDashboard = () => {
       supabase.from("pre_saves").select("id, title, artist, created_at, is_active").eq("user_id", user.id),
     ]);
 
-    const totals = (totalsRes.data?.[0] as any) || { total_clicks: 0, total_fans: 0, total_presaves: 0 };
+    const totals = (totalsRes.data?.[0] as any) || {};
     setTotalClicks(Number(totals.total_clicks) || 0);
+    setTotalViews(Number(totals.total_views) || 0);
+    setTotalPlatformClicks(Number(totals.total_platform_clicks) || 0);
     setTotalFans(Number(totals.total_fans) || 0);
     setTotalPresaves(Number(totals.total_presaves) || 0);
 
@@ -88,28 +92,40 @@ const CampaignDashboard = () => {
     const series = ((seriesRes.data as any[]) || []).map((r) => ({
       date: new Date(r.day).toLocaleDateString("en-US", { month: "short", day: "numeric" }),
       clicks: Number(r.clicks),
+      views: Number(r.views ?? 0),
+      platformClicks: Number(r.platform_clicks ?? 0),
       fans: Number(r.fans),
       presaves: Number(r.presaves),
     }));
     setChartData(series);
 
-    const fanlinkMap = new Map<string, { clicks: number; fans: number }>();
-    ((fanlinkBreakdownRes.data as any[]) || []).forEach((r) => fanlinkMap.set(r.fanlink_id, { clicks: Number(r.clicks), fans: Number(r.fans) }));
+    const fanlinkMap = new Map<string, { clicks: number; views: number; platformClicks: number; fans: number }>();
+    ((fanlinkBreakdownRes.data as any[]) || []).forEach((r) =>
+      fanlinkMap.set(r.fanlink_id, {
+        clicks: Number(r.clicks),
+        views: Number(r.views ?? 0),
+        platformClicks: Number(r.platform_clicks ?? 0),
+        fans: Number(r.fans),
+      })
+    );
     const presaveMap = new Map<string, number>();
     ((presaveBreakdownRes.data as any[]) || []).forEach((r) => presaveMap.set(r.pre_save_id, Number(r.actions)));
 
     const rows: CampaignRow[] = [];
     (fanlinksRes.data || []).forEach((f: any) => {
-      const b = fanlinkMap.get(f.id) || { clicks: 0, fans: 0 };
+      const b = fanlinkMap.get(f.id) || { clicks: 0, views: 0, platformClicks: 0, fans: 0 };
       const isExpired = f.expires_at && new Date(f.expires_at) < new Date();
       rows.push({
         id: f.id,
         name: `${f.title} — ${f.artist}`,
         type: "fanlink",
         clicks: b.clicks,
+        views: b.views,
+        platformClicks: b.platformClicks,
         fans: b.fans,
         presaves: 0,
-        conversionRate: b.clicks > 0 ? (b.fans / b.clicks) * 100 : 0,
+        // Conversion = platform clicks per page view (did the visitor go stream it?)
+        conversionRate: b.views > 0 ? (b.platformClicks / b.views) * 100 : 0,
         createdAt: f.created_at,
         status: isExpired ? "expired" : f.is_published ? "active" : "disabled",
       });
@@ -120,6 +136,8 @@ const CampaignDashboard = () => {
         name: `${p.title} — ${p.artist}`,
         type: "presave",
         clicks: 0,
+        views: 0,
+        platformClicks: 0,
         fans: 0,
         presaves: presaveMap.get(p.id) || 0,
         conversionRate: 0,
@@ -134,16 +152,17 @@ const CampaignDashboard = () => {
   useEffect(() => { if (!authLoading && !user) navigate("/login"); }, [authLoading, user, navigate]);
   useEffect(() => { if (user) { fetchData(); trackEvent("campaign_dashboard_viewed"); } }, [user, fetchData]);
 
-  const conversionRate = useMemo(
-    () => (totalClicks > 0 ? (totalFans / totalClicks) * 100 : 0),
-    [totalClicks, totalFans]
+  // Streaming CTR: how many page views turned into an actual platform click
+  const streamingCtr = useMemo(
+    () => (totalViews > 0 ? (totalPlatformClicks / totalViews) * 100 : 0),
+    [totalViews, totalPlatformClicks]
   );
   const topPlatform = platforms[0]?.name || "—";
   const topCountry = countries[0]?.name || "—";
 
   const handleExport = () => {
-    const header = "Campaign,Type,Clicks,Fans,Pre-saves,Conversion Rate,Status,Created\n";
-    const csv = campaigns.map((c) => `"${c.name}",${c.type},${c.clicks},${c.fans},${c.presaves},${c.conversionRate.toFixed(1)}%,${c.status},${c.createdAt}`).join("\n");
+    const header = "Campaign,Type,Page Views,Platform Clicks,Fans,Pre-saves,Streaming CTR,Status,Created\n";
+    const csv = campaigns.map((c) => `"${c.name}",${c.type},${c.views},${c.platformClicks},${c.fans},${c.presaves},${c.conversionRate.toFixed(1)}%,${c.status},${c.createdAt}`).join("\n");
     const blob = new Blob([header + csv], { type: "text/csv" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
@@ -157,10 +176,11 @@ const CampaignDashboard = () => {
   if (authLoading || loading) return <CampaignDashboardSkeleton />;
 
   const stats = [
-    { label: "Total Clicks", value: totalClicks.toLocaleString(), icon: BarChart3, color: "text-primary", bg: "bg-primary/15" },
+    { label: "Page Views", value: totalViews.toLocaleString(), icon: BarChart3, color: "text-primary", bg: "bg-primary/15" },
+    { label: "Platform Clicks", value: totalPlatformClicks.toLocaleString(), icon: Headphones, color: "text-primary", bg: "bg-primary/15" },
+    { label: "Streaming CTR", value: `${streamingCtr.toFixed(1)}%`, icon: TrendingUp, color: "text-yellow-500", bg: "bg-yellow-500/15" },
     { label: "Fans Collected", value: totalFans.toLocaleString(), icon: Users, color: "text-accent", bg: "bg-accent/15" },
     { label: "Pre-saves", value: totalPresaves.toLocaleString(), icon: Music2, color: "text-green-500", bg: "bg-green-500/15" },
-    { label: "Conversion Rate", value: `${conversionRate.toFixed(1)}%`, icon: TrendingUp, color: "text-yellow-500", bg: "bg-yellow-500/15" },
     { label: "Top Platform", value: topPlatform, icon: Headphones, color: "text-primary", bg: "bg-primary/15" },
     { label: "Top Country", value: topCountry, icon: Globe, color: "text-accent", bg: "bg-accent/15" },
   ];
@@ -187,7 +207,7 @@ const CampaignDashboard = () => {
 
           <motion.section className="rounded-2xl border border-border/50 bg-card/50 backdrop-blur-sm p-6" custom={2} variants={sectionVariants} initial="hidden" animate="visible">
             <h2 className="font-display text-lg font-semibold mb-4 text-muted-foreground">Overview</h2>
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
               {stats.map((s) => (
                 <motion.div key={s.label} className="rounded-2xl border border-border/40 bg-background/60 p-4 cursor-default" whileHover={cardHover}>
                   <div className="flex flex-col items-center text-center gap-2">

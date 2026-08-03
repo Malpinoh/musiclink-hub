@@ -1327,7 +1327,9 @@ export type Database = {
           clicks: number
           day: string
           fans: number
+          platform_clicks: number
           presaves: number
+          views: number
         }[]
       }
       get_campaign_totals: {
@@ -1335,7 +1337,9 @@ export type Database = {
         Returns: {
           total_clicks: number
           total_fans: number
+          total_platform_clicks: number
           total_presaves: number
+          total_views: number
         }[]
       }
       get_click_dimensions: {
@@ -1352,6 +1356,8 @@ export type Database = {
           clicks: number
           fanlink_id: string
           fans: number
+          platform_clicks: number
+          views: number
         }[]
       }
       get_presave_breakdown: {

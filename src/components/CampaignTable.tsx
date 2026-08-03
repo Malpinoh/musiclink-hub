@@ -8,6 +8,8 @@ interface CampaignRow {
   name: string;
   type: "fanlink" | "presave";
   clicks: number;
+  views: number;
+  platformClicks: number;
   fans: number;
   presaves: number;
   conversionRate: number;
@@ -35,21 +37,23 @@ const CampaignTable = ({ campaigns, onExport }: CampaignTableProps) => {
           <TableHeader>
             <TableRow>
               <TableHead>Campaign</TableHead>
-              <TableHead className="text-right">Clicks</TableHead>
-              <TableHead className="text-right">Fans</TableHead>
-              <TableHead className="text-right">Pre-saves</TableHead>
-              <TableHead className="text-right">Conv. Rate</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>Created</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {campaigns.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={7} className="text-center text-muted-foreground py-8">
-                  No campaign data yet
-                </TableCell>
-              </TableRow>
+               <TableHead className="text-right">Page Views</TableHead>
+               <TableHead className="text-right">Platform Clicks</TableHead>
+               <TableHead className="text-right">Fans</TableHead>
+               <TableHead className="text-right">Pre-saves</TableHead>
+               <TableHead className="text-right">Conv. Rate</TableHead>
+               <TableHead>Status</TableHead>
+               <TableHead>Created</TableHead>
+             </TableRow>
+           </TableHeader>
+           <TableBody>
+             {campaigns.length === 0 ? (
+               <TableRow>
+                 <TableCell colSpan={8} className="text-center text-muted-foreground py-8">
+                   No campaign data yet
+                 </TableCell>
+               </TableRow>
+
             ) : (
               campaigns.map((c) => (
                 <TableRow key={c.id}>
@@ -61,7 +65,8 @@ const CampaignTable = ({ campaigns, onExport }: CampaignTableProps) => {
                       </Badge>
                     </div>
                   </TableCell>
-                  <TableCell className="text-right">{c.clicks.toLocaleString()}</TableCell>
+                  <TableCell className="text-right">{c.views.toLocaleString()}</TableCell>
+                  <TableCell className="text-right">{c.platformClicks.toLocaleString()}</TableCell>
                   <TableCell className="text-right">{c.fans.toLocaleString()}</TableCell>
                   <TableCell className="text-right">{c.presaves.toLocaleString()}</TableCell>
                   <TableCell className="text-right">{c.conversionRate.toFixed(1)}%</TableCell>

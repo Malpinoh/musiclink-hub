@@ -3,6 +3,8 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 interface ChartDataPoint {
   date: string;
   clicks: number;
+  views?: number;
+  platformClicks?: number;
   fans: number;
   presaves: number;
 }
@@ -38,9 +40,10 @@ const PerformanceChart = ({ data }: PerformanceChartProps) => {
               }}
             />
             <Legend />
-            <Line type="monotone" dataKey="clicks" stroke="hsl(var(--primary))" strokeWidth={2} dot={false} />
-            <Line type="monotone" dataKey="fans" stroke="hsl(var(--accent))" strokeWidth={2} dot={false} />
-            <Line type="monotone" dataKey="presaves" stroke="#22c55e" strokeWidth={2} dot={false} />
+            <Line type="monotone" dataKey="views" name="Page views" stroke="hsl(var(--primary))" strokeWidth={2} dot={false} />
+            <Line type="monotone" dataKey="platformClicks" name="Platform clicks" stroke="hsl(var(--accent))" strokeWidth={2} dot={false} />
+            <Line type="monotone" dataKey="fans" name="Fans" stroke="#f59e0b" strokeWidth={2} dot={false} />
+            <Line type="monotone" dataKey="presaves" name="Pre-saves" stroke="#22c55e" strokeWidth={2} dot={false} />
           </LineChart>
         </ResponsiveContainer>
       </div>
