@@ -208,37 +208,47 @@ const FanlinkPage = () => {
     }
   };
 
-  const handlePlatformClick = async (platformName: string) => {
-    if (fanlink) {
-      try {
-        trackEvent("link_clicked", {
-          type: "fanlink",
-          content_type: fanlink.content_type || "track",
-          platform: platformName,
-          fanlink_id: fanlink.id,
-        });
-        await supabase.functions.invoke("track-geo", {
-          body: {
-            type: "click",
-            id: fanlink.id,
-            platform_name: platformName,
-            content_type: fanlink.content_type || "track",
-            user_agent: navigator.userAgent,
-            device_type: /mobile/i.test(navigator.userAgent) ? "mobile" : "desktop",
-          },
-        });
-      } catch (geoError) {
-        console.error("Geo tracking error:", geoError);
-        // Fallback to direct insert
-        await supabase.from("clicks").insert({
-          fanlink_id: fanlink.id,
-          platform_name: platformName,
-          content_type: fanlink.content_type || "track",
-          user_agent: navigator.userAgent,
-          device_type: /mobile/i.test(navigator.userAgent) ? "mobile" : "desktop",
-        });
-      }
-    }
+  const handlePlatformClick = (platformName: string) => {
+    if (!fanlink) return;
+
+    trackEvent("link_clicked", {
+      type: "fanlink",
+      content_type: fanlink.content_type || "track",
+      platform: platformName,
+      fanlink_id: fanlink.id,
+    });
+
+    const payload = {
+      type: "click",
+      id: fanlink.id,
+      platform_name: platformName,
+      content_type: fanlink.content_type || "track",
+      user_agent: navigator.userAgent,
+      device_type: /mobile/i.test(navigator.userAgent) ? "mobile" : "desktop",
+    };
+
+    // keepalive so the click still lands when the browser navigates away
+    // (in-app browsers often ignore target="_blank" and replace the page).
+    const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/track-geo`;
+    fetch(url, {
+      method: "POST",
+      keepalive: true,
+      headers: {
+        "Content-Type": "application/json",
+        apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+        Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+      },
+      body: JSON.stringify(payload),
+    }).catch(async () => {
+      // Fallback: direct insert (loses geo data but keeps the click)
+      await supabase.from("clicks").insert({
+        fanlink_id: fanlink.id,
+        platform_name: platformName,
+        content_type: fanlink.content_type || "track",
+        user_agent: navigator.userAgent,
+        device_type: payload.device_type,
+      });
+    });
   };
 
   const handleCopyLink = async () => {
