@@ -76,8 +76,10 @@ const CampaignDashboard = () => {
       supabase.from("pre_saves").select("id, title, artist, created_at, is_active").eq("user_id", user.id),
     ]);
 
-    const totals = (totalsRes.data?.[0] as any) || { total_clicks: 0, total_fans: 0, total_presaves: 0 };
+    const totals = (totalsRes.data?.[0] as any) || {};
     setTotalClicks(Number(totals.total_clicks) || 0);
+    setTotalViews(Number(totals.total_views) || 0);
+    setTotalPlatformClicks(Number(totals.total_platform_clicks) || 0);
     setTotalFans(Number(totals.total_fans) || 0);
     setTotalPresaves(Number(totals.total_presaves) || 0);
 
@@ -90,28 +92,40 @@ const CampaignDashboard = () => {
     const series = ((seriesRes.data as any[]) || []).map((r) => ({
       date: new Date(r.day).toLocaleDateString("en-US", { month: "short", day: "numeric" }),
       clicks: Number(r.clicks),
+      views: Number(r.views ?? 0),
+      platformClicks: Number(r.platform_clicks ?? 0),
       fans: Number(r.fans),
       presaves: Number(r.presaves),
     }));
     setChartData(series);
 
-    const fanlinkMap = new Map<string, { clicks: number; fans: number }>();
-    ((fanlinkBreakdownRes.data as any[]) || []).forEach((r) => fanlinkMap.set(r.fanlink_id, { clicks: Number(r.clicks), fans: Number(r.fans) }));
+    const fanlinkMap = new Map<string, { clicks: number; views: number; platformClicks: number; fans: number }>();
+    ((fanlinkBreakdownRes.data as any[]) || []).forEach((r) =>
+      fanlinkMap.set(r.fanlink_id, {
+        clicks: Number(r.clicks),
+        views: Number(r.views ?? 0),
+        platformClicks: Number(r.platform_clicks ?? 0),
+        fans: Number(r.fans),
+      })
+    );
     const presaveMap = new Map<string, number>();
     ((presaveBreakdownRes.data as any[]) || []).forEach((r) => presaveMap.set(r.pre_save_id, Number(r.actions)));
 
     const rows: CampaignRow[] = [];
     (fanlinksRes.data || []).forEach((f: any) => {
-      const b = fanlinkMap.get(f.id) || { clicks: 0, fans: 0 };
+      const b = fanlinkMap.get(f.id) || { clicks: 0, views: 0, platformClicks: 0, fans: 0 };
       const isExpired = f.expires_at && new Date(f.expires_at) < new Date();
       rows.push({
         id: f.id,
         name: `${f.title} — ${f.artist}`,
         type: "fanlink",
         clicks: b.clicks,
+        views: b.views,
+        platformClicks: b.platformClicks,
         fans: b.fans,
         presaves: 0,
-        conversionRate: b.clicks > 0 ? (b.fans / b.clicks) * 100 : 0,
+        // Conversion = platform clicks per page view (did the visitor go stream it?)
+        conversionRate: b.views > 0 ? (b.platformClicks / b.views) * 100 : 0,
         createdAt: f.created_at,
         status: isExpired ? "expired" : f.is_published ? "active" : "disabled",
       });
@@ -122,6 +136,8 @@ const CampaignDashboard = () => {
         name: `${p.title} — ${p.artist}`,
         type: "presave",
         clicks: 0,
+        views: 0,
+        platformClicks: 0,
         fans: 0,
         presaves: presaveMap.get(p.id) || 0,
         conversionRate: 0,
