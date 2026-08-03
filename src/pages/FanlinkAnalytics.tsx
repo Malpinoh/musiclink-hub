@@ -30,6 +30,7 @@ interface PlatformClick {
 interface DailyClick {
   date: string;
   count: number;
+  views: number;
 }
 
 interface GeoData {
