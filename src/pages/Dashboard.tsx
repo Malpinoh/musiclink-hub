@@ -331,6 +331,10 @@ const Dashboard = () => {
           {/* ── Suggestions ── */}
           <SuggestionsPanel suggestions={suggestions} />
 
+          {/* ── Release-level backfill for older UPC links ── */}
+          <ReleaseBackfillCard onDone={fetchData} />
+
+
           {/* ── Performance chart ── */}
           {chartData.length > 0 && (
             <motion.section
