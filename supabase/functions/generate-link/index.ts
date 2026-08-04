@@ -422,11 +422,24 @@ interface ReleaseTrack {
   apple_track_url: string | null;
 }
 
+/**
+ * Release type is decided primarily by track count, because Spotify labels
+ * any 1-3 track release as "single".
+ *  1 track      -> Single
+ *  2 tracks     -> 2-Track Single
+ *  3 tracks     -> 3-Track Single
+ *  4-6 tracks   -> EP
+ *  7+ tracks    -> Album
+ */
 function normalizeReleaseType(albumType: string | undefined, totalTracks: number): string {
   const t = (albumType || "").toLowerCase();
-  if (t === "single" || totalTracks === 1) return "Single";
+  const n = Number(totalTracks) || 0;
+
   if (t === "compilation") return "Compilation";
-  if (totalTracks <= 6) return "EP";
+  if (n <= 1) return "Single";
+  if (n === 2) return "2-Track Single";
+  if (n === 3) return "3-Track Single";
+  if (n <= 6) return t === "album" ? "Album" : "EP";
   return "Album";
 }
 
