@@ -17,6 +17,8 @@ import HeroMetric from "@/components/dashboard/HeroMetric";
 import HealthScore from "@/components/dashboard/HealthScore";
 import LiveActivityFeed from "@/components/dashboard/LiveActivityFeed";
 import SuggestionsPanel, { Suggestion } from "@/components/dashboard/SuggestionsPanel";
+import ReleaseBackfillCard from "@/components/dashboard/ReleaseBackfillCard";
+
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
