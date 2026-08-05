@@ -21,7 +21,7 @@ Deno.serve(async (req: Request) => {
     // Fetch all published fanlinks
     const { data: fanlinks, error: fanlinksError } = await supabase
       .from("fanlinks")
-      .select("artist_slug, slug, updated_at")
+      .select("artist_slug, slug, updated_at, content_type")
       .eq("is_published", true)
       .order("updated_at", { ascending: false });
 
@@ -76,7 +76,7 @@ Deno.serve(async (req: Request) => {
           : now;
         
         xml += `  <url>
-    <loc>${SITE_URL}/${link.artist_slug}/${link.slug}</loc>
+    <loc>${SITE_URL}${link.content_type === "release" ? `/release/${link.slug}` : `/${link.artist_slug}/${link.slug}`}</loc>
     <lastmod>${lastmod}</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
@@ -101,6 +101,34 @@ Deno.serve(async (req: Request) => {
     <lastmod>${lastmod}</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.9</priority>
+  </url>
+`;
+      }
+    }
+
+    // Fetch active artist bio pages
+    const { data: artists, error: artistsError } = await supabase
+      .from("artist_profiles")
+      .select("username, updated_at")
+      .eq("is_active", true);
+
+    if (artistsError) {
+      console.error("Error fetching artist profiles:", artistsError);
+    }
+
+    if (artists && artists.length > 0) {
+      xml += `
+  <!-- Artist Pages -->
+`;
+      for (const artist of artists) {
+        const lastmod = artist.updated_at
+          ? new Date(artist.updated_at).toISOString().split("T")[0]
+          : now;
+        xml += `  <url>
+    <loc>${SITE_URL}/artist/${artist.username}</loc>
+    <lastmod>${lastmod}</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
   </url>
 `;
       }
