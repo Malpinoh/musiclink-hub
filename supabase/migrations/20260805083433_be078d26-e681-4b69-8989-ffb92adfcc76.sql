@@ -1,0 +1,1 @@
+REVOKE EXECUTE ON FUNCTION public.invalidate_meta_cache() FROM anon, authenticated, PUBLIC;
