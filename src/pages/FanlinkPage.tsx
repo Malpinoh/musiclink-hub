@@ -333,14 +333,28 @@ const FanlinkPage = () => {
         fontFamily: theme?.font_family || undefined,
       }}
     >
-      {/* SEO Head */}
-      <SEOHead
-        title={fanlink.title}
-        artist={fanlink.artist}
-        imageUrl={fanlink.artwork_url || undefined}
-        pageUrl={currentUrl}
-        type="fanlink"
+      {/* Dynamic metadata: OG, Twitter, JSON-LD, canonical */}
+      <MetaTags
+        meta={buildFanlinkMeta({
+          title: fanlink.title,
+          artist: fanlink.artist,
+          artistSlug: fanlink.artist_slug,
+          slug: fanlink.slug,
+          artworkUrl: fanlink.artwork_url,
+          contentType: fanlink.content_type,
+          releaseType: fanlink.release_type,
+          releaseDate: fanlink.release_date,
+          isrc: fanlink.isrc,
+          upc: fanlink.upc,
+          totalTracks: fanlink.total_tracks,
+          tracklist: tracklist,
+          platforms: platformLinks.map((p) => ({
+            platform_name: formatPlatformName(p.platform_name),
+            platform_url: p.platform_url,
+          })),
+        })}
       />
+
 
       {/* Ambient background */}
       <div className="absolute inset-0 z-0" aria-hidden>
