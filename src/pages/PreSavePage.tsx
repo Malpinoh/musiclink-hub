@@ -11,7 +11,8 @@ import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import demoArtwork from "@/assets/demo-artwork.jpg";
-import SEOHead from "@/components/SEOHead";
+import MetaTags from "@/components/MetaTags";
+import { buildPresaveMeta } from "@/lib/seoMeta";
 import { getShareablePresaveUrl } from "@/lib/shareUrl";
 import logo from "@/assets/logo.png";
 import { buildSpotifyAuthorizeUrl, getPresaveRedirectUri } from "@/lib/spotifyAuth";
@@ -365,7 +366,20 @@ function PreSaveContent({ artistParam, slugParam }: { artistParam?: string; slug
         fontFamily: preSave.theme_font_family || undefined,
       }}
     >
-      <SEOHead title={preSave.title} artist={preSave.artist} imageUrl={preSave.artwork_url || undefined} pageUrl={currentUrl} albumTitle={preSave.album_title || undefined} type="presave" />
+      <MetaTags
+        meta={buildPresaveMeta({
+          title: preSave.title,
+          artist: preSave.artist,
+          artistSlug: preSave.artist_slug,
+          slug: preSave.slug,
+          artworkUrl: preSave.artwork_url,
+          heroImageUrl: preSave.theme_hero_image_url,
+          albumTitle: preSave.album_title,
+          releaseDate: preSave.release_date,
+          description: preSave.description,
+          isReleased: preSave.is_released,
+        })}
+      />
 
       <div className="absolute inset-0 z-0">
         <img
