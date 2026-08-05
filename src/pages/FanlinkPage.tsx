@@ -8,7 +8,9 @@ import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import demoArtwork from "@/assets/demo-artwork.jpg";
-import SEOHead from "@/components/SEOHead";
+import MetaTags from "@/components/MetaTags";
+import { buildFanlinkMeta } from "@/lib/seoMeta";
+
 import FanContactForm from "@/components/FanContactForm";
 import { getShareableFanlinkUrl } from "@/lib/shareUrl";
 import logo from "@/assets/logo.png";
