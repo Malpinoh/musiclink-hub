@@ -1,0 +1,1 @@
+UPDATE public.fanlinks SET title = title WHERE artist_slug = 'kiitan-szn' AND slug = 'him';
