@@ -5,6 +5,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { BadgeCheck, Music2, ExternalLink, Instagram, Youtube, Share2, Copy, Check, ChevronDown, ChevronUp } from "lucide-react";
 import { getPlatformIcon, getPlatformDisplayName } from "@/components/icons/PlatformIcons";
 import logo from "@/assets/logo.png";
+import MetaTags from "@/components/MetaTags";
+import { buildArtistMeta } from "@/lib/seoMeta";
 
 // Social icons
 const TikTokIcon = () => (
@@ -312,6 +314,23 @@ const ArtistBioPage = () => {
 
   return (
     <div className="min-h-screen bg-background mesh-bg relative overflow-x-hidden">
+      {/* Dynamic metadata: OG, Twitter, JSON-LD, canonical */}
+      <MetaTags
+        meta={buildArtistMeta({
+          username: profile.username,
+          displayName: profile.display_name,
+          bio: profile.bio,
+          profilePictureUrl: profile.profile_picture_url,
+          socials: [
+            profile.instagram_url,
+            profile.tiktok_url,
+            profile.twitter_url,
+            profile.facebook_url,
+            profile.youtube_url,
+          ],
+        })}
+      />
+
       {/* Blurred background from profile picture */}
       {profile.profile_picture_url && (
         <div className="fixed inset-0 z-0 pointer-events-none">
