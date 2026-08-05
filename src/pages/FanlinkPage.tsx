@@ -66,6 +66,8 @@ interface Fanlink {
   id: string;
   title: string;
   artist: string;
+  artist_slug: string;
+  slug: string;
   artwork_url: string | null;
   release_date: string | null;
   release_type: string | null;
@@ -80,6 +82,7 @@ interface Fanlink {
   collect_phone: boolean | null;
   require_contact: boolean | null;
 }
+
 
 interface PlatformLink {
   id: string;
