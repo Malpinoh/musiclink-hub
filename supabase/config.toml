@@ -71,3 +71,6 @@ verify_jwt = false
 
 [functions.backfill-release-links]
 verify_jwt = true
+
+[functions.meta]
+verify_jwt = false

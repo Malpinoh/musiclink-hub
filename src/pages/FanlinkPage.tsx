@@ -8,7 +8,9 @@ import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import demoArtwork from "@/assets/demo-artwork.jpg";
-import SEOHead from "@/components/SEOHead";
+import MetaTags from "@/components/MetaTags";
+import { buildFanlinkMeta } from "@/lib/seoMeta";
+
 import FanContactForm from "@/components/FanContactForm";
 import { getShareableFanlinkUrl } from "@/lib/shareUrl";
 import logo from "@/assets/logo.png";
@@ -66,6 +68,8 @@ interface Fanlink {
   id: string;
   title: string;
   artist: string;
+  artist_slug: string;
+  slug: string;
   artwork_url: string | null;
   release_date: string | null;
   release_type: string | null;
@@ -80,6 +84,7 @@ interface Fanlink {
   collect_phone: boolean | null;
   require_contact: boolean | null;
 }
+
 
 interface PlatformLink {
   id: string;
@@ -330,14 +335,28 @@ const FanlinkPage = () => {
         fontFamily: theme?.font_family || undefined,
       }}
     >
-      {/* SEO Head */}
-      <SEOHead
-        title={fanlink.title}
-        artist={fanlink.artist}
-        imageUrl={fanlink.artwork_url || undefined}
-        pageUrl={currentUrl}
-        type="fanlink"
+      {/* Dynamic metadata: OG, Twitter, JSON-LD, canonical */}
+      <MetaTags
+        meta={buildFanlinkMeta({
+          title: fanlink.title,
+          artist: fanlink.artist,
+          artistSlug: fanlink.artist_slug,
+          slug: fanlink.slug,
+          artworkUrl: fanlink.artwork_url,
+          contentType: fanlink.content_type,
+          releaseType: fanlink.release_type,
+          releaseDate: fanlink.release_date,
+          isrc: fanlink.isrc,
+          upc: fanlink.upc,
+          totalTracks: fanlink.total_tracks,
+          tracklist: tracklist,
+          platforms: platformLinks.map((p) => ({
+            platform_name: formatPlatformName(p.platform_name),
+            platform_url: p.platform_url,
+          })),
+        })}
       />
+
 
       {/* Ambient background */}
       <div className="absolute inset-0 z-0" aria-hidden>

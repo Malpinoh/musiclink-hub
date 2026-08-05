@@ -678,6 +678,33 @@ export type Database = {
           },
         ]
       }
+      meta_cache: {
+        Row: {
+          entity_id: string | null
+          entity_type: string | null
+          etag: string
+          html: string
+          path: string
+          refreshed_at: string
+        }
+        Insert: {
+          entity_id?: string | null
+          entity_type?: string | null
+          etag: string
+          html: string
+          path: string
+          refreshed_at?: string
+        }
+        Update: {
+          entity_id?: string | null
+          entity_type?: string | null
+          etag?: string
+          html?: string
+          path?: string
+          refreshed_at?: string
+        }
+        Relationships: []
+      }
       platform_links: {
         Row: {
           created_at: string

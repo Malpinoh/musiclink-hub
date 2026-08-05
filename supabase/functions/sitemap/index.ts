@@ -21,7 +21,7 @@ Deno.serve(async (req: Request) => {
     // Fetch all published fanlinks
     const { data: fanlinks, error: fanlinksError } = await supabase
       .from("fanlinks")
-      .select("artist_slug, slug, updated_at")
+      .select("artist_slug, slug, updated_at, content_type")
       .eq("is_published", true)
       .order("updated_at", { ascending: false });
 
@@ -40,8 +40,6 @@ Deno.serve(async (req: Request) => {
       console.error("Error fetching presaves:", presavesError);
     }
 
-    const now = new Date().toISOString().split("T")[0];
-
     // Build XML sitemap
     let xml = `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
@@ -53,14 +51,12 @@ Deno.serve(async (req: Request) => {
   <!-- Static Pages -->
   <url>
     <loc>${SITE_URL}</loc>
-    <lastmod>${now}</lastmod>
     <changefreq>weekly</changefreq>
     <priority>1.0</priority>
   </url>
   
   <url>
     <loc>${SITE_URL}/demo</loc>
-    <lastmod>${now}</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
@@ -73,12 +69,11 @@ Deno.serve(async (req: Request) => {
       for (const link of fanlinks) {
         const lastmod = link.updated_at 
           ? new Date(link.updated_at).toISOString().split("T")[0]
-          : now;
+          : null;
         
         xml += `  <url>
-    <loc>${SITE_URL}/${link.artist_slug}/${link.slug}</loc>
-    <lastmod>${lastmod}</lastmod>
-    <changefreq>weekly</changefreq>
+    <loc>${SITE_URL}${link.content_type === "release" ? `/release/${link.slug}` : `/${link.artist_slug}/${link.slug}`}</loc>
+${lastmod ? `    <lastmod>${lastmod}</lastmod>\n` : ""}    <changefreq>weekly</changefreq>
     <priority>0.9</priority>
   </url>
 `;
@@ -94,13 +89,39 @@ Deno.serve(async (req: Request) => {
       for (const presave of presaves) {
         const lastmod = presave.updated_at 
           ? new Date(presave.updated_at).toISOString().split("T")[0]
-          : now;
+          : null;
         
         xml += `  <url>
     <loc>${SITE_URL}/presave/${presave.artist_slug}/${presave.slug}</loc>
-    <lastmod>${lastmod}</lastmod>
-    <changefreq>daily</changefreq>
+${lastmod ? `    <lastmod>${lastmod}</lastmod>\n` : ""}    <changefreq>daily</changefreq>
     <priority>0.9</priority>
+  </url>
+`;
+      }
+    }
+
+    // Fetch active artist bio pages
+    const { data: artists, error: artistsError } = await supabase
+      .from("artist_profiles")
+      .select("username, updated_at")
+      .eq("is_active", true);
+
+    if (artistsError) {
+      console.error("Error fetching artist profiles:", artistsError);
+    }
+
+    if (artists && artists.length > 0) {
+      xml += `
+  <!-- Artist Pages -->
+`;
+      for (const artist of artists) {
+        const lastmod = artist.updated_at
+          ? new Date(artist.updated_at).toISOString().split("T")[0]
+          : null;
+        xml += `  <url>
+    <loc>${SITE_URL}/artist/${artist.username}</loc>
+${lastmod ? `    <lastmod>${lastmod}</lastmod>\n` : ""}    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
   </url>
 `;
       }
@@ -125,7 +146,6 @@ Deno.serve(async (req: Request) => {
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
     <loc>${SITE_URL}</loc>
-    <lastmod>${new Date().toISOString().split("T")[0]}</lastmod>
     <changefreq>weekly</changefreq>
     <priority>1.0</priority>
   </url>
