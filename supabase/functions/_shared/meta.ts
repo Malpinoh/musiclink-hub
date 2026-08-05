@@ -529,7 +529,7 @@ export function renderHtml(m: MetaModel): string {
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>${esc(m.title)} | ${SITE_NAME}</title>
+  <title>${esc(m.title.includes(SITE_NAME) ? m.title : `${m.title} | ${SITE_NAME}`)}</title>
   <meta name="title" content="${esc(m.title)}" />
   <meta name="description" content="${esc(m.description)}" />
   <meta name="keywords" content="${esc(m.keywords)}" />
