@@ -3,7 +3,9 @@
 // crawlers get server-rendered HTML with full OG/Twitter/JSON-LD metadata
 // produced by the existing Supabase `meta` Edge Function.
 //
-// No Next.js. No middleware. Plain Web-standard request/response handling.
+// No Next.js. No middleware. Node.js request/response handling.
+
+import type { VercelRequest, VercelResponse } from "@vercel/node";
 
 const SUPABASE_URL =
   process.env.VITE_SUPABASE_URL || "https://uwzhhzkvqqvaqvkuocrz.supabase.co";
@@ -18,39 +20,56 @@ export function isCrawler(userAgent: string | null | undefined): boolean {
   return CRAWLER_PATTERN.test(userAgent);
 }
 
-function appPath(req: Request): string {
-  const url = new URL(req.url, "http://localhost");
+function appPath(req: VercelRequest): string {
+  const url = new URL(req.url ?? "/", "http://localhost");
   const explicit = url.searchParams.get("path");
   const path = explicit || url.pathname;
   return path.startsWith("/") ? path : `/${path}`;
 }
 
-export default async function handler(req: Request): Promise<Response> {
-  const origin = new URL(req.url, `https://${process.env.VERCEL_URL ?? "localhost"}`).origin;
+function getHeader(req: VercelRequest, name: string): string | undefined {
+  const value = req.headers[name.toLowerCase()];
+  if (Array.isArray(value)) return value[0];
+  return value;
+}
+
+export default async function handler(
+  req: VercelRequest,
+  res: VercelResponse
+): Promise<void> {
+  const origin = new URL(
+    req.url ?? "/",
+    `https://${process.env.VERCEL_URL ?? "localhost"}`
+  ).origin;
   const path = appPath(req);
-  const ua = req.headers.get("user-agent");
+  const ua = getHeader(req, "user-agent");
 
   if (isCrawler(ua)) {
     try {
-      const res = await fetch(`${META_ENDPOINT}?path=${encodeURIComponent(path)}`, {
-        headers: {
-          // Forwarding the UA keeps the edge function on its HTML branch.
-          "user-agent": ua || "MDistroLinkPreviewBot/1.0",
-          accept: "text/html",
-        },
-        redirect: "manual",
-      });
-
-      if (res.ok) {
-        const html = await res.text();
-        return new Response(html, {
-          status: 200,
+      const metaRes = await fetch(
+        `${META_ENDPOINT}?path=${encodeURIComponent(path)}`,
+        {
           headers: {
-            "content-type": "text/html; charset=utf-8",
-            "cache-control": "public, max-age=0, s-maxage=300, stale-while-revalidate=86400",
-            "x-mdistro-render": "crawler",
+            // Forwarding the UA keeps the edge function on its HTML branch.
+            "user-agent": ua || "MDistroLinkPreviewBot/1.0",
+            accept: "text/html",
           },
-        });
+          redirect: "manual",
+        }
+      );
+
+      if (metaRes.ok) {
+        const html = await metaRes.text();
+        res
+          .status(200)
+          .setHeader("content-type", "text/html; charset=utf-8")
+          .setHeader(
+            "cache-control",
+            "public, max-age=0, s-maxage=300, stale-while-revalidate=86400"
+          )
+          .setHeader("x-mdistro-render", "crawler")
+          .send(html);
+        return;
       }
     } catch (e) {
       console.error("og: meta fetch failed", e);
@@ -64,12 +83,10 @@ export default async function handler(req: Request): Promise<Response> {
   });
   const html = await shell.text();
 
-  return new Response(html, {
-    status: 200,
-    headers: {
-      "content-type": "text/html; charset=utf-8",
-      "cache-control": "public, max-age=0, must-revalidate",
-      "x-mdistro-render": "spa",
-    },
-  });
+  res
+    .status(200)
+    .setHeader("content-type", "text/html; charset=utf-8")
+    .setHeader("cache-control", "public, max-age=0, must-revalidate")
+    .setHeader("x-mdistro-render", "spa")
+    .send(html);
 }
