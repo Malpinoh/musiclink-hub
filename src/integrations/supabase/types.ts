@@ -705,6 +705,407 @@ export type Database = {
         }
         Relationships: []
       }
+      monetization_applications: {
+        Row: {
+          applied_at: string
+          created_at: string
+          early_access: boolean
+          id: string
+          provider: Database["public"]["Enums"]["monetization_provider"]
+          review_note: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: Database["public"]["Enums"]["monetization_application_status"]
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          applied_at?: string
+          created_at?: string
+          early_access?: boolean
+          id?: string
+          provider?: Database["public"]["Enums"]["monetization_provider"]
+          review_note?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: Database["public"]["Enums"]["monetization_application_status"]
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          applied_at?: string
+          created_at?: string
+          early_access?: boolean
+          id?: string
+          provider?: Database["public"]["Enums"]["monetization_provider"]
+          review_note?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: Database["public"]["Enums"]["monetization_application_status"]
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      monetization_audit_log: {
+        Row: {
+          action: string
+          actor_id: string | null
+          after: Json | null
+          before: Json | null
+          created_at: string
+          entity_id: string | null
+          entity_type: string
+          id: string
+        }
+        Insert: {
+          action: string
+          actor_id?: string | null
+          after?: Json | null
+          before?: Json | null
+          created_at?: string
+          entity_id?: string | null
+          entity_type: string
+          id?: string
+        }
+        Update: {
+          action?: string
+          actor_id?: string | null
+          after?: Json | null
+          before?: Json | null
+          created_at?: string
+          entity_id?: string | null
+          entity_type?: string
+          id?: string
+        }
+        Relationships: []
+      }
+      monetization_balances: {
+        Row: {
+          available_cents: number
+          created_at: string
+          id: string
+          last_earning_at: string | null
+          lifetime_artist_cents: number
+          lifetime_gross_cents: number
+          paid_cents: number
+          pending_cents: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          available_cents?: number
+          created_at?: string
+          id?: string
+          last_earning_at?: string | null
+          lifetime_artist_cents?: number
+          lifetime_gross_cents?: number
+          paid_cents?: number
+          pending_cents?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          available_cents?: number
+          created_at?: string
+          id?: string
+          last_earning_at?: string | null
+          lifetime_artist_cents?: number
+          lifetime_gross_cents?: number
+          paid_cents?: number
+          pending_cents?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      monetization_earnings: {
+        Row: {
+          artist_cents: number
+          artist_share_percent: number
+          created_at: string
+          gross_cents: number
+          id: string
+          import_id: string | null
+          period_end: string
+          period_start: string
+          platform_cents: number
+          provider: Database["public"]["Enums"]["monetization_provider"]
+          reversal_of: string | null
+          source_note: string | null
+          status: Database["public"]["Enums"]["monetization_earning_status"]
+          updated_at: string
+          user_id: string
+          zone_id_snapshot: string | null
+          zone_uuid: string | null
+        }
+        Insert: {
+          artist_cents: number
+          artist_share_percent: number
+          created_at?: string
+          gross_cents: number
+          id?: string
+          import_id?: string | null
+          period_end: string
+          period_start: string
+          platform_cents: number
+          provider?: Database["public"]["Enums"]["monetization_provider"]
+          reversal_of?: string | null
+          source_note?: string | null
+          status?: Database["public"]["Enums"]["monetization_earning_status"]
+          updated_at?: string
+          user_id: string
+          zone_id_snapshot?: string | null
+          zone_uuid?: string | null
+        }
+        Update: {
+          artist_cents?: number
+          artist_share_percent?: number
+          created_at?: string
+          gross_cents?: number
+          id?: string
+          import_id?: string | null
+          period_end?: string
+          period_start?: string
+          platform_cents?: number
+          provider?: Database["public"]["Enums"]["monetization_provider"]
+          reversal_of?: string | null
+          source_note?: string | null
+          status?: Database["public"]["Enums"]["monetization_earning_status"]
+          updated_at?: string
+          user_id?: string
+          zone_id_snapshot?: string | null
+          zone_uuid?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "monetization_earnings_import_id_fkey"
+            columns: ["import_id"]
+            isOneToOne: false
+            referencedRelation: "monetization_revenue_imports"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "monetization_earnings_reversal_of_fkey"
+            columns: ["reversal_of"]
+            isOneToOne: false
+            referencedRelation: "monetization_earnings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "monetization_earnings_zone_uuid_fkey"
+            columns: ["zone_uuid"]
+            isOneToOne: false
+            referencedRelation: "monetization_zones"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      monetization_revenue_imports: {
+        Row: {
+          created_at: string
+          gross_cents_total: number
+          id: string
+          imported_by: string | null
+          matched_row_count: number
+          notes: string | null
+          period_end: string
+          period_start: string
+          processed_at: string | null
+          provider: Database["public"]["Enums"]["monetization_provider"]
+          reversal_of: string | null
+          reversed_at: string | null
+          row_count: number
+          source: string
+          status: Database["public"]["Enums"]["monetization_import_status"]
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          gross_cents_total?: number
+          id?: string
+          imported_by?: string | null
+          matched_row_count?: number
+          notes?: string | null
+          period_end: string
+          period_start: string
+          processed_at?: string | null
+          provider?: Database["public"]["Enums"]["monetization_provider"]
+          reversal_of?: string | null
+          reversed_at?: string | null
+          row_count?: number
+          source?: string
+          status?: Database["public"]["Enums"]["monetization_import_status"]
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          gross_cents_total?: number
+          id?: string
+          imported_by?: string | null
+          matched_row_count?: number
+          notes?: string | null
+          period_end?: string
+          period_start?: string
+          processed_at?: string | null
+          provider?: Database["public"]["Enums"]["monetization_provider"]
+          reversal_of?: string | null
+          reversed_at?: string | null
+          row_count?: number
+          source?: string
+          status?: Database["public"]["Enums"]["monetization_import_status"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "monetization_revenue_imports_reversal_of_fkey"
+            columns: ["reversal_of"]
+            isOneToOne: false
+            referencedRelation: "monetization_revenue_imports"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      monetization_settings: {
+        Row: {
+          artist_share_percent: number
+          created_at: string
+          early_access_limit: number
+          id: string
+          platform_share_percent: number
+          provider_default: Database["public"]["Enums"]["monetization_provider"]
+          singleton: boolean
+          updated_at: string
+        }
+        Insert: {
+          artist_share_percent?: number
+          created_at?: string
+          early_access_limit?: number
+          id?: string
+          platform_share_percent?: number
+          provider_default?: Database["public"]["Enums"]["monetization_provider"]
+          singleton?: boolean
+          updated_at?: string
+        }
+        Update: {
+          artist_share_percent?: number
+          created_at?: string
+          early_access_limit?: number
+          id?: string
+          platform_share_percent?: number
+          provider_default?: Database["public"]["Enums"]["monetization_provider"]
+          singleton?: boolean
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      monetization_zone_revenue: {
+        Row: {
+          created_at: string
+          gross_cents: number
+          id: string
+          import_id: string
+          match_status: string
+          matched_user_id: string | null
+          matched_zone_uuid: string | null
+          processed: boolean
+          provider: Database["public"]["Enums"]["monetization_provider"]
+          updated_at: string
+          zone_id: string
+        }
+        Insert: {
+          created_at?: string
+          gross_cents: number
+          id?: string
+          import_id: string
+          match_status?: string
+          matched_user_id?: string | null
+          matched_zone_uuid?: string | null
+          processed?: boolean
+          provider?: Database["public"]["Enums"]["monetization_provider"]
+          updated_at?: string
+          zone_id: string
+        }
+        Update: {
+          created_at?: string
+          gross_cents?: number
+          id?: string
+          import_id?: string
+          match_status?: string
+          matched_user_id?: string | null
+          matched_zone_uuid?: string | null
+          processed?: boolean
+          provider?: Database["public"]["Enums"]["monetization_provider"]
+          updated_at?: string
+          zone_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "monetization_zone_revenue_import_id_fkey"
+            columns: ["import_id"]
+            isOneToOne: false
+            referencedRelation: "monetization_revenue_imports"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "monetization_zone_revenue_matched_zone_uuid_fkey"
+            columns: ["matched_zone_uuid"]
+            isOneToOne: false
+            referencedRelation: "monetization_zones"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      monetization_zones: {
+        Row: {
+          assigned_at: string
+          assigned_by: string | null
+          created_at: string
+          id: string
+          note: string | null
+          provider: Database["public"]["Enums"]["monetization_provider"]
+          replaced_by_zone_uuid: string | null
+          status: Database["public"]["Enums"]["monetization_zone_status"]
+          updated_at: string
+          user_id: string
+          zone_id: string
+        }
+        Insert: {
+          assigned_at?: string
+          assigned_by?: string | null
+          created_at?: string
+          id?: string
+          note?: string | null
+          provider?: Database["public"]["Enums"]["monetization_provider"]
+          replaced_by_zone_uuid?: string | null
+          status?: Database["public"]["Enums"]["monetization_zone_status"]
+          updated_at?: string
+          user_id: string
+          zone_id: string
+        }
+        Update: {
+          assigned_at?: string
+          assigned_by?: string | null
+          created_at?: string
+          id?: string
+          note?: string | null
+          provider?: Database["public"]["Enums"]["monetization_provider"]
+          replaced_by_zone_uuid?: string | null
+          status?: Database["public"]["Enums"]["monetization_zone_status"]
+          updated_at?: string
+          user_id?: string
+          zone_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "monetization_zones_replaced_by_zone_uuid_fkey"
+            columns: ["replaced_by_zone_uuid"]
+            isOneToOne: false
+            referencedRelation: "monetization_zones"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       platform_links: {
         Row: {
           created_at: string
@@ -1348,6 +1749,72 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      apply_for_monetization: {
+        Args: {
+          _provider?: Database["public"]["Enums"]["monetization_provider"]
+        }
+        Returns: {
+          applied_at: string
+          created_at: string
+          early_access: boolean
+          id: string
+          provider: Database["public"]["Enums"]["monetization_provider"]
+          review_note: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: Database["public"]["Enums"]["monetization_application_status"]
+          updated_at: string
+          user_id: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "monetization_applications"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      assign_monetization_zone: {
+        Args: {
+          _note?: string
+          _provider?: Database["public"]["Enums"]["monetization_provider"]
+          _user_id: string
+          _zone_id: string
+        }
+        Returns: {
+          assigned_at: string
+          assigned_by: string | null
+          created_at: string
+          id: string
+          note: string | null
+          provider: Database["public"]["Enums"]["monetization_provider"]
+          replaced_by_zone_uuid: string | null
+          status: Database["public"]["Enums"]["monetization_zone_status"]
+          updated_at: string
+          user_id: string
+          zone_id: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "monetization_zones"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      create_monetization_import: {
+        Args: {
+          _notes?: string
+          _period_end: string
+          _period_start: string
+          _provider: Database["public"]["Enums"]["monetization_provider"]
+          _rows: Json
+          _source?: string
+        }
+        Returns: string
+      }
+      delete_monetization_import: {
+        Args: { _import_id: string }
+        Returns: undefined
+      }
       get_campaign_timeseries: {
         Args: { _start: string; _user_id: string }
         Returns: {
@@ -1387,6 +1854,45 @@ export type Database = {
           views: number
         }[]
       }
+      get_monetization_overview: {
+        Args: never
+        Returns: {
+          active_zones: number
+          approved_artists: number
+          artist_share_percent: number
+          early_access_limit: number
+          pending_applications: number
+          total_artist_cents: number
+          total_gross_cents: number
+          total_platform_cents: number
+          unmatched_rows: number
+        }[]
+      }
+      get_monetization_tag: {
+        Args: { _user_id: string }
+        Returns: {
+          provider: string
+          zone_id: string
+        }[]
+      }
+      get_my_monetization_summary: {
+        Args: never
+        Returns: {
+          applied_at: string
+          artist_share_percent: number
+          available_cents: number
+          early_access: boolean
+          early_access_slots_left: number
+          has_zone: boolean
+          lifetime_artist_cents: number
+          lifetime_gross_cents: number
+          paid_cents: number
+          pending_cents: number
+          provider: string
+          reviewed_at: string
+          status: string
+        }[]
+      }
       get_presave_breakdown: {
         Args: { _start: string; _user_id: string }
         Returns: {
@@ -1401,9 +1907,125 @@ export type Database = {
         }
         Returns: boolean
       }
+      is_monetization_enabled_for_user: {
+        Args: { _user_id: string }
+        Returns: boolean
+      }
+      list_monetization_artists: {
+        Args: never
+        Returns: {
+          application_status: string
+          applied_at: string
+          available_cents: number
+          display_name: string
+          early_access: boolean
+          full_name: string
+          lifetime_artist_cents: number
+          user_id: string
+          username: string
+          zone_id: string
+          zone_uuid: string
+        }[]
+      }
+      monetization_log: {
+        Args: {
+          _action: string
+          _after: Json
+          _before: Json
+          _entity_id: string
+          _entity_type: string
+        }
+        Returns: undefined
+      }
+      process_monetization_import: {
+        Args: { _import_id: string }
+        Returns: Json
+      }
+      recompute_monetization_balance: {
+        Args: { _user_id: string }
+        Returns: undefined
+      }
+      rematch_monetization_import: {
+        Args: { _import_id: string }
+        Returns: undefined
+      }
+      reverse_monetization_import: {
+        Args: { _import_id: string }
+        Returns: Json
+      }
+      revoke_monetization_zone: {
+        Args: { _zone_uuid: string }
+        Returns: undefined
+      }
+      set_monetization_application_status: {
+        Args: {
+          _application_id: string
+          _note?: string
+          _status: Database["public"]["Enums"]["monetization_application_status"]
+        }
+        Returns: {
+          applied_at: string
+          created_at: string
+          early_access: boolean
+          id: string
+          provider: Database["public"]["Enums"]["monetization_provider"]
+          review_note: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: Database["public"]["Enums"]["monetization_application_status"]
+          updated_at: string
+          user_id: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "monetization_applications"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      update_monetization_settings: {
+        Args: { _artist_share_percent: number; _early_access_limit: number }
+        Returns: {
+          artist_share_percent: number
+          created_at: string
+          early_access_limit: number
+          id: string
+          platform_share_percent: number
+          provider_default: Database["public"]["Enums"]["monetization_provider"]
+          singleton: boolean
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "monetization_settings"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      withdraw_monetization_application: {
+        Args: {
+          _provider?: Database["public"]["Enums"]["monetization_provider"]
+        }
+        Returns: undefined
+      }
     }
     Enums: {
       app_role: "admin" | "user"
+      monetization_application_status:
+        | "pending"
+        | "approved"
+        | "rejected"
+        | "suspended"
+        | "withdrawn"
+      monetization_earning_status: "pending" | "available" | "paid" | "reversed"
+      monetization_import_status:
+        | "draft"
+        | "processing"
+        | "processed"
+        | "failed"
+        | "reversed"
+      monetization_provider: "monetag" | "house_ads"
+      monetization_zone_status: "active" | "replaced" | "revoked"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1532,6 +2154,23 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "user"],
+      monetization_application_status: [
+        "pending",
+        "approved",
+        "rejected",
+        "suspended",
+        "withdrawn",
+      ],
+      monetization_earning_status: ["pending", "available", "paid", "reversed"],
+      monetization_import_status: [
+        "draft",
+        "processing",
+        "processed",
+        "failed",
+        "reversed",
+      ],
+      monetization_provider: ["monetag", "house_ads"],
+      monetization_zone_status: ["active", "replaced", "revoked"],
     },
   },
 } as const
