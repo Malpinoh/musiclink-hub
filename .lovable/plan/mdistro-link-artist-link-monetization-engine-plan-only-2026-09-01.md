@@ -13,6 +13,7 @@ Scope: MDISTRO LINK only. No implementation in this step.
 **Artist identity**: two layers — `profiles` (account) and `artist_profiles` (public bio page, `username`, one per user). Monetization must attach to the **user_id**, not the bio profile, because links/pre-saves belong to `user_id`.
 
 **Link systems**:
+
 - `fanlinks` + `platform_links` + `link_themes` + `clicks` + `fan_contacts` (+ `releases`/`tracks`).
 - `pre_saves` + `presave_streaming_links` + `pre_save_actions` + `presave_fans`.
 - `campaigns` + `campaign_templates`.
@@ -30,27 +31,30 @@ Scope: MDISTRO LINK only. No implementation in this step.
 
 ## 2. Reuse vs New
 
-| Existing component | Decision |
-|---|---|
-| `user_roles` + `has_role()` | **Reuse** unchanged for admin gating |
-| `profiles` / `auth.users` (user_id) | **Reuse** as artist identity key |
-| `artist_profiles` | **Reuse** read-only (display name/username in admin lists) |
-| `ad_revenue_shares` | **Reuse as-is for house ads**; do NOT overload for Monetag. New ledger is separate (see Risks Q3 for the alternative you may prefer) |
-| `RevenueDashboard.tsx` (`/artist/revenue`) | **Modify** — becomes the single artist earnings hub with tabs: House Ads (existing) + Link Monetization (new) |
-| `AdminApiLogs.tsx` | **Reuse** as-is; extract its role check into a shared guard |
-| Client role check pattern | **Modify** → new `useIsAdmin` hook + `<AdminRoute>` guard, server-enforced by RLS |
-| `Header.tsx` nav | **Modify** — add "Earnings" (artist) and "Admin" (admin only) entries |
-| `App.tsx` routes | **Modify** — add lazy admin + monetization routes |
-| Security-definer RPC pattern | **Reuse** for earnings aggregation |
-| Provider zone mapping, applications, weekly imports, earnings ledger, balances, audit | **New** |
-| Monetag script injection into public link pages | **New** |
-| Admin shell/layout | **New** (minimal, does not redesign anything) |
+
+| Existing component                                                                    | Decision                                                                                                                             |
+| ------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
+| `user_roles` + `has_role()`                                                           | **Reuse** unchanged for admin gating                                                                                                 |
+| `profiles` / `auth.users` (user_id)                                                   | **Reuse** as artist identity key                                                                                                     |
+| `artist_profiles`                                                                     | **Reuse** read-only (display name/username in admin lists)                                                                           |
+| `ad_revenue_shares`                                                                   | **Reuse as-is for house ads**; do NOT overload for Monetag. New ledger is separate (see Risks Q3 for the alternative you may prefer) |
+| `RevenueDashboard.tsx` (`/artist/revenue`)                                            | **Modify** — becomes the single artist earnings hub with tabs: House Ads (existing) + Link Monetization (new)                        |
+| `AdminApiLogs.tsx`                                                                    | **Reuse** as-is; extract its role check into a shared guard                                                                          |
+| Client role check pattern                                                             | **Modify** → new `useIsAdmin` hook + `<AdminRoute>` guard, server-enforced by RLS                                                    |
+| `Header.tsx` nav                                                                      | **Modify** — add "Earnings" (artist) and "Admin" (admin only) entries                                                                |
+| `App.tsx` routes                                                                      | **Modify** — add lazy admin + monetization routes                                                                                    |
+| Security-definer RPC pattern                                                          | **Reuse** for earnings aggregation                                                                                                   |
+| Provider zone mapping, applications, weekly imports, earnings ledger, balances, audit | **New**                                                                                                                              |
+| Monetag script injection into public link pages                                       | **New**                                                                                                                              |
+| Admin shell/layout                                                                    | **New** (minimal, does not redesign anything)                                                                                        |
+
 
 ---
 
 ## 3. Proposed Database Changes (not created yet)
 
 Enums:
+
 - `monetization_provider`: `monetag` (extensible).
 - `monetization_application_status`: `pending`, `approved`, `rejected`, `suspended`, `withdrawn`.
 - `zone_status`: `active`, `replaced`, `revoked`.
@@ -119,7 +123,7 @@ Corrections: reversal batch inserts negated earnings rows referencing `reversal_
 
 ## 7. Artist UI Plan
 
-- **Modify `src/pages/RevenueDashboard.tsx`** (`/artist/revenue`) into "Earnings" with two tabs: *House Ads* (existing `ad_revenue_shares` content, untouched logic) and *Link Monetization* (new).
+- **Modify `src/pages/RevenueDashboard.tsx**` (`/artist/revenue`) into "Earnings" with two tabs: *House Ads* (existing `ad_revenue_shares` content, untouched logic) and *Link Monetization* (new).
 - Link Monetization tab shows: monetization status (not applied / pending review / approved-early-access / approved / suspended), zone assigned (masked or shown, your call), lifetime earnings, pending, available, and a weekly earnings history table.
 - **New** `src/components/monetization/MonetizationOptInCard.tsx` — the opt-in/apply action, also surfaced on the main `/dashboard` as a single card (no new dashboard).
 - **New** `src/hooks/useMonetization.ts` — status + balance + earnings queries.
@@ -145,6 +149,7 @@ Corrections: reversal batch inserts negated earnings rows referencing `reversal_
 ## 10. File Change Plan
 
 New:
+
 - `src/hooks/useMonetization.ts`, `src/hooks/useIsAdmin.ts`
 - `src/components/monetization/MonetizationOptInCard.tsx`, `EarningsTable.tsx`, `MonetizationStatusBadge.tsx`
 - `src/components/monetization/MonetagScript.tsx` (provider tag injection on public link pages)
@@ -153,6 +158,7 @@ New:
 - `src/lib/money.ts` (cents formatting/parsing)
 
 Modify:
+
 - `src/App.tsx` (routes), `src/components/Header.tsx` (nav), `src/pages/RevenueDashboard.tsx` (tabs), `src/pages/Dashboard.tsx` (opt-in card), `src/pages/FanlinkPage.tsx` + `PreSavePage.tsx` + `ArtistBioPage.tsx` (conditional provider tag when that artist is monetization-enabled)
 
 Migrations (one per phase, not written yet): enums + tables + GRANTs + RLS; then RPCs (`apply_for_monetization`, `approve_monetization_application`, `assign_monetization_zone`, `process_monetization_import`, `reverse_monetization_import`, `get_artist_monetization_summary`).
@@ -171,15 +177,15 @@ Edge functions: none required for Phase 1 (all logic in RPCs). A `monetization-i
 
 ## 12. Risks & Questions
 
-1. **Domain**: `md.malpinohdistro.com.ng` DNS lives at Truehost/cPanel and points to Vercel. Your message says "fix this" — what exactly is broken right now (WhatsApp previews still wrong? SSL? www vs apex?), and which host should be authoritative? I did not change anything.
-2. **Which pages carry the Monetag tag** — fanlinks, pre-saves, artist bio pages, or all three? Any pages that must stay ad-free?
-3. **Two revenue systems**: keep house-ad `ad_revenue_shares` separate from the new ledger (my proposal), or migrate house ads onto the new ledger later?
-4. **CSV import**: paste-in-browser parsing (simplest) or file upload with server-side parsing?
-5. **Week boundary** for periods: Mon–Sun, or Sat–Fri to match a Friday-night import?
-6. **Currency**: assume USD cents throughout — confirm.
-7. **pending vs available**: what moves an earning from `pending` to `available` (a holding period? admin action?) — undefined in your spec, so Phase 1 will leave it admin-driven unless you specify.
-8. **Zone visibility**: should artists see their raw Zone ID?
-9. **Payouts** are explicitly out of scope here (balances only) — confirm.
+1. **Domain**: `md.malpinohdistro.com.ng` DNS lives at Truehost/cPanel and points to Vercel. Your message says "fix this" — what exactly is broken right now (WhatsApp previews still wrong? yes fix this 
+2. **Which pages carry the Monetag tag** — fanlinks, pre-saves, artist bio pages, or all three? Any pages that must stay ad-free? all the three 
+3. **Two revenue systems**: keep house-ad `ad_revenue_shares` separate from the new ledger (my proposal), or migrate house ads onto the new ledger later? yes migrate onto the new ledger now
+4. **CSV import**: paste-in-browser parsing (simplest) or file upload with server-side parsing? yes file upload
+5. **Week boundary** for periods: Mon–Sun, or Sat–Fri to match a Friday-night import? yes sat - fri
+6. **Currency**: assume USD cents throughout — confirm. yes usd but should but should be able to click button to check in their local currency base on ip address and should use google currency converter
+7. **pending vs available**: what moves an earning from `pending` to `available` (a holding period? admin action?) — undefined in your spec, so Phase 1 will leave it admin-driven unless you specify.  Pending when we've not uploaded the earning, available when earning has been uploaded
+8. **Zone visibility**: should artists see their raw Zone ID? no the shouldnt see the zone
+9. **Payouts** are explicitly out of scope here (balances only) — confirm. payout should be coming soon next month
 
 ## 13. Suggested Improvements — NOT Part of Current Scope
 
