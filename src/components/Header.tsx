@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Menu, X, LogOut, BarChart3, User } from "lucide-react";
+import { Menu, X, LogOut, BarChart3, User, Wallet } from "lucide-react";
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "@/contexts/AuthContext";
@@ -44,6 +44,11 @@ const Header = () => {
                 <User className="w-4 h-4" />
                 Artist Bio
               </Link>
+              <Link to="/artist/revenue" className="text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1">
+                <Wallet className="w-4 h-4" />
+                Earnings
+              </Link>
+
 
             </>
           )}
