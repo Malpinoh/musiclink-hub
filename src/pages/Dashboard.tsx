@@ -18,6 +18,7 @@ import HealthScore from "@/components/dashboard/HealthScore";
 import LiveActivityFeed from "@/components/dashboard/LiveActivityFeed";
 import SuggestionsPanel, { Suggestion } from "@/components/dashboard/SuggestionsPanel";
 import ReleaseBackfillCard from "@/components/dashboard/ReleaseBackfillCard";
+import MonetizationOptInCard from "@/components/monetization/MonetizationOptInCard";
 
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -335,6 +336,11 @@ const Dashboard = () => {
 
           {/* ── Release-level backfill for older UPC links ── */}
           <ReleaseBackfillCard onDone={fetchData} />
+
+          {/* ── Link monetization opt-in ── */}
+          <MonetizationOptInCard compact />
+
+
 
 
           {/* ── Performance chart ── */}
