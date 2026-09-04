@@ -11,6 +11,7 @@ import Index from "./pages/Index";
 import Login from "./pages/Login";
 import NotFound from "./pages/NotFound";
 import OfflineBanner from "./components/OfflineBanner";
+import AdminRoute from "@/components/admin/AdminRoute";
 
 // Lazy-loaded routes for code splitting
 const Dashboard = lazy(() => import("./pages/Dashboard"));
@@ -34,6 +35,11 @@ const CampaignList = lazy(() => import("./pages/CampaignList"));
 const CampaignPage = lazy(() => import("./pages/CampaignPage"));
 const RevenueDashboard = lazy(() => import("./pages/RevenueDashboard"));
 const AdminApiLogs = lazy(() => import("./pages/AdminApiLogs"));
+const AdminMonetizationOverview = lazy(() => import("./pages/admin/AdminMonetizationOverview"));
+const AdminApplications = lazy(() => import("./pages/admin/AdminApplications"));
+const AdminZones = lazy(() => import("./pages/admin/AdminZones"));
+const AdminImports = lazy(() => import("./pages/admin/AdminImports"));
+const AdminImportDetail = lazy(() => import("./pages/admin/AdminImportDetail"));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -89,7 +95,12 @@ const App = () => {
                 <Route path="/artist/campaigns/list" element={<CampaignList />} />
                 <Route path="/artist/campaigns/view/:id" element={<CampaignPage />} />
                 <Route path="/artist/revenue" element={<RevenueDashboard />} />
-                <Route path="/admin/api-logs" element={<AdminApiLogs />} />
+                <Route path="/admin/api-logs" element={<AdminRoute><AdminApiLogs /></AdminRoute>} />
+                <Route path="/admin/monetization" element={<AdminRoute><AdminMonetizationOverview /></AdminRoute>} />
+                <Route path="/admin/monetization/applications" element={<AdminRoute><AdminApplications /></AdminRoute>} />
+                <Route path="/admin/monetization/zones" element={<AdminRoute><AdminZones /></AdminRoute>} />
+                <Route path="/admin/monetization/imports" element={<AdminRoute><AdminImports /></AdminRoute>} />
+                <Route path="/admin/monetization/imports/:id" element={<AdminRoute><AdminImportDetail /></AdminRoute>} />
                 <Route path="/callback/spotify" element={<SpotifyCallback />} />
                 <Route path="/artist/:username" element={<ArtistBioPage />} />
                 <Route path="/artist-bio/edit" element={<EditArtistBio />} />
