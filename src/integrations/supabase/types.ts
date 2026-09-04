@@ -1106,6 +1106,101 @@ export type Database = {
           },
         ]
       }
+      notification_deliveries: {
+        Row: {
+          channel: string
+          created_at: string
+          error_message: string | null
+          id: string
+          notification_id: string
+          status: string
+        }
+        Insert: {
+          channel?: string
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          notification_id: string
+          status: string
+        }
+        Update: {
+          channel?: string
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          notification_id?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notification_deliveries_notification_id_fkey"
+            columns: ["notification_id"]
+            isOneToOne: false
+            referencedRelation: "notifications"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      notification_preferences: {
+        Row: {
+          created_at: string
+          email_earnings_updates: boolean
+          email_monetization_status: boolean
+          id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          email_earnings_updates?: boolean
+          email_monetization_status?: boolean
+          id?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          email_earnings_updates?: boolean
+          email_monetization_status?: boolean
+          id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      notifications: {
+        Row: {
+          created_at: string
+          id: string
+          link: string | null
+          message: string
+          read_at: string | null
+          title: string
+          type: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          link?: string | null
+          message: string
+          read_at?: string | null
+          title: string
+          type: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          link?: string | null
+          message?: string
+          read_at?: string | null
+          title?: string
+          type?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       platform_links: {
         Row: {
           created_at: string
@@ -1927,6 +2022,22 @@ export type Database = {
           zone_uuid: string
         }[]
       }
+      list_notification_activity: {
+        Args: { _limit?: number }
+        Returns: {
+          created_at: string
+          email_error: string
+          email_status: string
+          full_name: string
+          id: string
+          message: string
+          read_at: string
+          title: string
+          type: string
+          user_id: string
+        }[]
+      }
+      mark_notifications_read: { Args: { _ids?: string[] }; Returns: number }
       monetization_log: {
         Args: {
           _action: string
@@ -1936,6 +2047,16 @@ export type Database = {
           _entity_type: string
         }
         Returns: undefined
+      }
+      notify_user: {
+        Args: {
+          _link?: string
+          _message: string
+          _title: string
+          _type: string
+          _user_id: string
+        }
+        Returns: string
       }
       process_monetization_import: {
         Args: { _import_id: string }
