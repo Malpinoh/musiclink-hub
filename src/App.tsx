@@ -11,6 +11,7 @@ import Index from "./pages/Index";
 import Login from "./pages/Login";
 import NotFound from "./pages/NotFound";
 import OfflineBanner from "./components/OfflineBanner";
+import AdminRoute from "@/components/admin/AdminRoute";
 
 // Lazy-loaded routes for code splitting
 const Dashboard = lazy(() => import("./pages/Dashboard"));
