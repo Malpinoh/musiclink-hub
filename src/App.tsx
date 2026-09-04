@@ -34,6 +34,11 @@ const CampaignList = lazy(() => import("./pages/CampaignList"));
 const CampaignPage = lazy(() => import("./pages/CampaignPage"));
 const RevenueDashboard = lazy(() => import("./pages/RevenueDashboard"));
 const AdminApiLogs = lazy(() => import("./pages/AdminApiLogs"));
+const AdminMonetizationOverview = lazy(() => import("./pages/admin/AdminMonetizationOverview"));
+const AdminApplications = lazy(() => import("./pages/admin/AdminApplications"));
+const AdminZones = lazy(() => import("./pages/admin/AdminZones"));
+const AdminImports = lazy(() => import("./pages/admin/AdminImports"));
+const AdminImportDetail = lazy(() => import("./pages/admin/AdminImportDetail"));
 
 const queryClient = new QueryClient({
   defaultOptions: {
