@@ -1,15 +1,17 @@
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Menu, X, LogOut, BarChart3, User, Wallet } from "lucide-react";
+import { Menu, X, LogOut, BarChart3, User, Wallet, Shield } from "lucide-react";
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "@/contexts/AuthContext";
+import { useIsAdmin } from "@/hooks/useIsAdmin";
 import { toast } from "sonner";
 import logo from "@/assets/logo.png";
 
 const Header = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { user, signOut } = useAuth();
+  const { isAdmin } = useIsAdmin();
 
   const handleSignOut = async () => {
     await signOut();
@@ -48,6 +50,12 @@ const Header = () => {
                 <Wallet className="w-4 h-4" />
                 Earnings
               </Link>
+              {isAdmin && (
+                <Link to="/admin/monetization" className="text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1">
+                  <Shield className="w-4 h-4" />
+                  Admin
+                </Link>
+              )}
 
 
             </>
@@ -135,6 +143,16 @@ const Header = () => {
                     <Wallet className="w-4 h-4" />
                     Earnings
                   </Link>
+                  {isAdmin && (
+                    <Link
+                      to="/admin/monetization"
+                      className="py-2 text-muted-foreground hover:text-foreground transition-colors flex items-center gap-2"
+                      onClick={() => setMobileMenuOpen(false)}
+                    >
+                      <Shield className="w-4 h-4" />
+                      Admin
+                    </Link>
+                  )}
                 </>
               )}
               <div className="flex flex-col gap-2 pt-4 border-t border-border">
