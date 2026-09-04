@@ -94,7 +94,12 @@ const App = () => {
                 <Route path="/artist/campaigns/list" element={<CampaignList />} />
                 <Route path="/artist/campaigns/view/:id" element={<CampaignPage />} />
                 <Route path="/artist/revenue" element={<RevenueDashboard />} />
-                <Route path="/admin/api-logs" element={<AdminApiLogs />} />
+                <Route path="/admin/api-logs" element={<AdminRoute><AdminApiLogs /></AdminRoute>} />
+                <Route path="/admin/monetization" element={<AdminRoute><AdminMonetizationOverview /></AdminRoute>} />
+                <Route path="/admin/monetization/applications" element={<AdminRoute><AdminApplications /></AdminRoute>} />
+                <Route path="/admin/monetization/zones" element={<AdminRoute><AdminZones /></AdminRoute>} />
+                <Route path="/admin/monetization/imports" element={<AdminRoute><AdminImports /></AdminRoute>} />
+                <Route path="/admin/monetization/imports/:id" element={<AdminRoute><AdminImportDetail /></AdminRoute>} />
                 <Route path="/callback/spotify" element={<SpotifyCallback />} />
                 <Route path="/artist/:username" element={<ArtistBioPage />} />
                 <Route path="/artist-bio/edit" element={<EditArtistBio />} />
