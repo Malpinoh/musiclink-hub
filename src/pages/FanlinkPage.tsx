@@ -83,6 +83,7 @@ interface Fanlink {
   collect_email: boolean | null;
   collect_phone: boolean | null;
   require_contact: boolean | null;
+  user_id: string;
 }
 
 
