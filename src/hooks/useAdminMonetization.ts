@@ -259,6 +259,7 @@ export const useAdminMonetizationActions = () => {
     setApplicationStatus,
     assignZone,
     revokeZone,
+    setZoneTag,
     createImport,
     processImport,
     rematchImport,
