@@ -148,16 +148,29 @@ export const useAdminMonetizationActions = () => {
   });
 
   const assignZone = useMutation({
-    mutationFn: async (vars: { userId: string; zoneId: string; note?: string }) => {
+    mutationFn: async (vars: { userId: string; zoneId: string; note?: string; tagCode?: string }) => {
       const { error } = await supabase.rpc("assign_monetization_zone", {
         _user_id: vars.userId,
         _zone_id: vars.zoneId,
         _provider: "monetag",
         _note: vars.note ?? null,
+        _tag_code: vars.tagCode?.trim() ? vars.tagCode : null,
       });
       if (error) throw error;
     },
     onSuccess: () => ok("Zone assigned"),
+    onError: fail,
+  });
+
+  const setZoneTag = useMutation({
+    mutationFn: async (vars: { zoneUuid: string; tagCode: string }) => {
+      const { error } = await supabase.rpc("set_monetization_zone_tag", {
+        _zone_uuid: vars.zoneUuid,
+        _tag_code: vars.tagCode.trim() ? vars.tagCode : null,
+      });
+      if (error) throw error;
+    },
+    onSuccess: () => ok("Monetag tag saved"),
     onError: fail,
   });
 
@@ -169,6 +182,7 @@ export const useAdminMonetizationActions = () => {
     onSuccess: () => ok("Zone revoked"),
     onError: fail,
   });
+
 
   const createImport = useMutation({
     mutationFn: async (vars: {
