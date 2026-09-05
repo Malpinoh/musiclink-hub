@@ -1066,6 +1066,7 @@ export type Database = {
           provider: Database["public"]["Enums"]["monetization_provider"]
           replaced_by_zone_uuid: string | null
           status: Database["public"]["Enums"]["monetization_zone_status"]
+          tag_code: string | null
           updated_at: string
           user_id: string
           zone_id: string
@@ -1079,6 +1080,7 @@ export type Database = {
           provider?: Database["public"]["Enums"]["monetization_provider"]
           replaced_by_zone_uuid?: string | null
           status?: Database["public"]["Enums"]["monetization_zone_status"]
+          tag_code?: string | null
           updated_at?: string
           user_id: string
           zone_id: string
@@ -1092,6 +1094,7 @@ export type Database = {
           provider?: Database["public"]["Enums"]["monetization_provider"]
           replaced_by_zone_uuid?: string | null
           status?: Database["public"]["Enums"]["monetization_zone_status"]
+          tag_code?: string | null
           updated_at?: string
           user_id?: string
           zone_id?: string
@@ -1868,33 +1871,64 @@ export type Database = {
           isSetofReturn: false
         }
       }
-      assign_monetization_zone: {
-        Args: {
-          _note?: string
-          _provider?: Database["public"]["Enums"]["monetization_provider"]
-          _user_id: string
-          _zone_id: string
-        }
-        Returns: {
-          assigned_at: string
-          assigned_by: string | null
-          created_at: string
-          id: string
-          note: string | null
-          provider: Database["public"]["Enums"]["monetization_provider"]
-          replaced_by_zone_uuid: string | null
-          status: Database["public"]["Enums"]["monetization_zone_status"]
-          updated_at: string
-          user_id: string
-          zone_id: string
-        }
-        SetofOptions: {
-          from: "*"
-          to: "monetization_zones"
-          isOneToOne: true
-          isSetofReturn: false
-        }
-      }
+      assign_monetization_zone:
+        | {
+            Args: {
+              _note?: string
+              _provider?: Database["public"]["Enums"]["monetization_provider"]
+              _user_id: string
+              _zone_id: string
+            }
+            Returns: {
+              assigned_at: string
+              assigned_by: string | null
+              created_at: string
+              id: string
+              note: string | null
+              provider: Database["public"]["Enums"]["monetization_provider"]
+              replaced_by_zone_uuid: string | null
+              status: Database["public"]["Enums"]["monetization_zone_status"]
+              tag_code: string | null
+              updated_at: string
+              user_id: string
+              zone_id: string
+            }
+            SetofOptions: {
+              from: "*"
+              to: "monetization_zones"
+              isOneToOne: true
+              isSetofReturn: false
+            }
+          }
+        | {
+            Args: {
+              _note?: string
+              _provider?: Database["public"]["Enums"]["monetization_provider"]
+              _tag_code?: string
+              _user_id: string
+              _zone_id: string
+            }
+            Returns: {
+              assigned_at: string
+              assigned_by: string | null
+              created_at: string
+              id: string
+              note: string | null
+              provider: Database["public"]["Enums"]["monetization_provider"]
+              replaced_by_zone_uuid: string | null
+              status: Database["public"]["Enums"]["monetization_zone_status"]
+              tag_code: string | null
+              updated_at: string
+              user_id: string
+              zone_id: string
+            }
+            SetofOptions: {
+              from: "*"
+              to: "monetization_zones"
+              isOneToOne: true
+              isSetofReturn: false
+            }
+          }
       create_monetization_import: {
         Args: {
           _notes?: string
@@ -1967,6 +2001,7 @@ export type Database = {
         Args: { _user_id: string }
         Returns: {
           provider: string
+          tag_code: string
           zone_id: string
         }[]
       }
@@ -2016,6 +2051,7 @@ export type Database = {
           early_access: boolean
           full_name: string
           lifetime_artist_cents: number
+          tag_code: string
           user_id: string
           username: string
           zone_id: string
@@ -2100,6 +2136,29 @@ export type Database = {
         SetofOptions: {
           from: "*"
           to: "monetization_applications"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      set_monetization_zone_tag: {
+        Args: { _tag_code: string; _zone_uuid: string }
+        Returns: {
+          assigned_at: string
+          assigned_by: string | null
+          created_at: string
+          id: string
+          note: string | null
+          provider: Database["public"]["Enums"]["monetization_provider"]
+          replaced_by_zone_uuid: string | null
+          status: Database["public"]["Enums"]["monetization_zone_status"]
+          tag_code: string | null
+          updated_at: string
+          user_id: string
+          zone_id: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "monetization_zones"
           isOneToOne: true
           isSetofReturn: false
         }

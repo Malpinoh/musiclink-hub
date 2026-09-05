@@ -9,6 +9,7 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import demoArtwork from "@/assets/demo-artwork.jpg";
 import MetaTags from "@/components/MetaTags";
+import MonetagTag from "@/components/monetization/MonetagTag";
 import { buildFanlinkMeta } from "@/lib/seoMeta";
 
 import FanContactForm from "@/components/FanContactForm";
@@ -83,6 +84,7 @@ interface Fanlink {
   collect_email: boolean | null;
   collect_phone: boolean | null;
   require_contact: boolean | null;
+  user_id: string;
 }
 
 
@@ -356,6 +358,10 @@ const FanlinkPage = () => {
           })),
         })}
       />
+
+      {/* Monetag tag — only for artists with an active monetization zone */}
+      <MonetagTag userId={fanlink.user_id} />
+
 
 
       {/* Ambient background */}
