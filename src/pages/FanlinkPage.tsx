@@ -359,6 +359,10 @@ const FanlinkPage = () => {
         })}
       />
 
+      {/* Monetag tag — only for artists with an active monetization zone */}
+      <MonetagTag userId={fanlink.user_id} />
+
+
 
       {/* Ambient background */}
       <div className="absolute inset-0 z-0" aria-hidden>
