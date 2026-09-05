@@ -24,6 +24,7 @@ export interface AdminArtistRow {
   applied_at: string | null;
   zone_uuid: string | null;
   zone_id: string | null;
+  tag_code: string | null;
   lifetime_artist_cents: number;
   available_cents: number;
 }
