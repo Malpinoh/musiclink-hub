@@ -1,13 +1,14 @@
 import { ReactNode } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
-import { BarChart3, FileCheck2, Radio, Upload, ScrollText, ArrowLeft } from "lucide-react";
+import { BarChart3, FileCheck2, Radio, Upload, ScrollText, ArrowLeft, Bell } from "lucide-react";
 
 const NAV = [
   { to: "/admin/monetization", label: "Overview", icon: BarChart3 },
   { to: "/admin/monetization/applications", label: "Applications", icon: FileCheck2 },
   { to: "/admin/monetization/zones", label: "Artists & Zones", icon: Radio },
   { to: "/admin/monetization/imports", label: "Weekly Imports", icon: Upload },
+  { to: "/admin/monetization/notifications", label: "Notifications", icon: Bell },
   { to: "/admin/api-logs", label: "API Logs", icon: ScrollText },
 ];
 

@@ -1,12 +1,13 @@
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Menu, X, LogOut, BarChart3, User, Wallet, Shield } from "lucide-react";
+import { Menu, X, LogOut, BarChart3, User, Wallet, Shield, Bell } from "lucide-react";
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "@/contexts/AuthContext";
 import { useIsAdmin } from "@/hooks/useIsAdmin";
 import { toast } from "sonner";
 import logo from "@/assets/logo.png";
+import NotificationBell from "@/components/notifications/NotificationBell";
 
 const Header = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -65,6 +66,7 @@ const Header = () => {
         <div className="hidden md:flex items-center gap-3">
           {user ? (
             <>
+              <NotificationBell />
               <Button variant="hero" asChild>
                 <Link to="/create">Create Fanlink</Link>
               </Button>
@@ -134,6 +136,14 @@ const Header = () => {
                   >
                     <User className="w-4 h-4" />
                     Artist Bio
+                  </Link>
+                  <Link
+                    to="/settings/notifications"
+                    className="py-2 text-muted-foreground hover:text-foreground transition-colors flex items-center gap-2"
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
+                    <Bell className="w-4 h-4" />
+                    Notifications
                   </Link>
                   <Link
                     to="/artist/revenue"

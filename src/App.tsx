@@ -40,6 +40,8 @@ const AdminApplications = lazy(() => import("./pages/admin/AdminApplications"));
 const AdminZones = lazy(() => import("./pages/admin/AdminZones"));
 const AdminImports = lazy(() => import("./pages/admin/AdminImports"));
 const AdminImportDetail = lazy(() => import("./pages/admin/AdminImportDetail"));
+const AdminNotifications = lazy(() => import("./pages/admin/AdminNotifications"));
+const NotificationSettings = lazy(() => import("./pages/NotificationSettings"));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -95,11 +97,13 @@ const App = () => {
                 <Route path="/artist/campaigns/list" element={<CampaignList />} />
                 <Route path="/artist/campaigns/view/:id" element={<CampaignPage />} />
                 <Route path="/artist/revenue" element={<RevenueDashboard />} />
+                <Route path="/settings/notifications" element={<NotificationSettings />} />
                 <Route path="/admin/api-logs" element={<AdminRoute><AdminApiLogs /></AdminRoute>} />
                 <Route path="/admin/monetization" element={<AdminRoute><AdminMonetizationOverview /></AdminRoute>} />
                 <Route path="/admin/monetization/applications" element={<AdminRoute><AdminApplications /></AdminRoute>} />
                 <Route path="/admin/monetization/zones" element={<AdminRoute><AdminZones /></AdminRoute>} />
                 <Route path="/admin/monetization/imports" element={<AdminRoute><AdminImports /></AdminRoute>} />
+                <Route path="/admin/monetization/notifications" element={<AdminRoute><AdminNotifications /></AdminRoute>} />
                 <Route path="/admin/monetization/imports/:id" element={<AdminRoute><AdminImportDetail /></AdminRoute>} />
                 <Route path="/callback/spotify" element={<SpotifyCallback />} />
                 <Route path="/artist/:username" element={<ArtistBioPage />} />
