@@ -20,6 +20,7 @@ import HouseAdSlot from "@/components/HouseAdSlot";
 
 interface PreSaveData {
   id: string;
+  user_id: string;
   title: string;
   artist: string;
   artwork_url: string | null;
@@ -344,7 +345,12 @@ function PreSaveContent({ artistParam, slugParam }: { artistParam?: string; slug
 
   const countdown = preSave ? getCountdown() : null;
 
-  if (loading) return <div className="min-h-screen bg-background flex items-center justify-center"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>;
+  if (loading) return (
+    <div className="min-h-screen bg-background px-3 pt-3">
+      <div className="mx-auto w-full max-w-md"><HouseAdSlot reserveSpace /></div>
+      <div className="min-h-[70vh] flex items-center justify-center"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>
+    </div>
+  );
 
   if (notFound || !preSave) {
     return (
@@ -403,7 +409,7 @@ function PreSaveContent({ artistParam, slugParam }: { artistParam?: string; slug
           </div>
         </header>
 
-        <main className="flex-1 flex flex-col items-center justify-center px-4 py-8">
+        <main className="flex-1 flex flex-col items-center justify-center px-3 sm:px-4 py-6 sm:py-8">
           <motion.div className="w-full max-w-md mx-auto text-center" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ ease: [0.16, 1, 0.3, 1], duration: 0.6 }}>
             {/* Artwork */}
             <motion.div className="relative mb-8" initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ delay: 0.1 }}>
@@ -560,7 +566,7 @@ function PreSaveContent({ artistParam, slugParam }: { artistParam?: string; slug
             </motion.div>
 
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.4 }} className="mt-6">
-              <HouseAdSlot preSaveId={preSave.id} />
+               <HouseAdSlot artistUserId={preSave.user_id} preSaveId={preSave.id} reserveSpace />
             </motion.div>
           </motion.div>
         </main>

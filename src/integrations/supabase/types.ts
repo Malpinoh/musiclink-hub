@@ -72,6 +72,7 @@ export type Database = {
         Row: {
           ad_campaign_id: string
           artist_user_id: string | null
+          campaign_id: string | null
           country: string | null
           created_at: string
           event_type: string
@@ -82,6 +83,7 @@ export type Database = {
         Insert: {
           ad_campaign_id: string
           artist_user_id?: string | null
+          campaign_id?: string | null
           country?: string | null
           created_at?: string
           event_type: string
@@ -92,6 +94,7 @@ export type Database = {
         Update: {
           ad_campaign_id?: string
           artist_user_id?: string | null
+          campaign_id?: string | null
           country?: string | null
           created_at?: string
           event_type?: string
@@ -105,6 +108,13 @@ export type Database = {
             columns: ["ad_campaign_id"]
             isOneToOne: false
             referencedRelation: "ad_campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ad_impressions_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
             referencedColumns: ["id"]
           },
         ]

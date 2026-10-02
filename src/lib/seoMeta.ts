@@ -207,6 +207,52 @@ export function buildPresaveMeta(input: PresaveMetaInput): MetaDescriptor {
   };
 }
 
+export interface CampaignMetaInput {
+  id: string;
+  name: string;
+  artist?: string | null;
+  description?: string | null;
+  artworkUrl?: string | null;
+  releaseDate?: string | null;
+  templateType?: string | null;
+}
+
+export function buildCampaignMeta(input: CampaignMetaInput): MetaDescriptor {
+  const canonical = absoluteUrl(`/artist/campaigns/view/${input.id}`);
+  const artist = clean(input.artist || "Independent artist", 120);
+  const name = clean(input.name, 160);
+  const image = input.artworkUrl || DEFAULT_IMAGE;
+  const isEvent = input.templateType === "event_promotion";
+  const description = clean(
+    input.description ||
+      `${name} by ${artist}. Discover the release, watch, listen, and follow the campaign on ${SITE_NAME}.`,
+  );
+
+  return {
+    title: `${name} — ${artist}`,
+    description,
+    canonical,
+    image,
+    ogType: isEvent ? "website" : "music.album",
+    keywords: `${name}, ${artist}, music campaign, ${(input.templateType || "music").replace(/_/g, " ")}`,
+    music: isEvent ? undefined : { musician: artist, releaseDate: input.releaseDate || undefined },
+    jsonLd: [
+      {
+        "@context": "https://schema.org",
+        "@type": isEvent ? "MusicEvent" : "MusicAlbum",
+        name,
+        description,
+        image,
+        url: canonical,
+        ...(isEvent
+          ? { performer: { "@type": "MusicGroup", name: artist }, ...(input.releaseDate ? { startDate: input.releaseDate } : {}) }
+          : { byArtist: { "@type": "MusicGroup", name: artist }, ...(input.releaseDate ? { datePublished: input.releaseDate } : {}) }),
+      },
+      breadcrumb([["Home", SITE_URL], [name, canonical]]),
+    ],
+  };
+}
+
 export interface ArtistMetaInput {
   username: string;
   displayName: string;

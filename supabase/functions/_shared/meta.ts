@@ -30,7 +30,7 @@ export function isCrawler(userAgent: string | null): boolean {
 /* Types                                                               */
 /* ------------------------------------------------------------------ */
 
-export type PageKind = "fanlink" | "presave" | "artist" | "site";
+export type PageKind = "fanlink" | "presave" | "artist" | "campaign" | "site";
 
 export interface MetaModel {
   kind: PageKind;
@@ -88,6 +88,8 @@ const RESERVED = new Set([
   "robots.txt",
   "sitemap.xml",
   "og-image.png",
+  "campaigns",
+  "revenue",
 ]);
 
 export function resolveRoute(rawPath: string): RouteMatch | null {
@@ -110,6 +112,15 @@ export function resolveRoute(rawPath: string): RouteMatch | null {
   // /release/{key} and /track/{key}
   if ((parts[0] === "release" || parts[0] === "track") && parts.length === 2) {
     return { kind: "fanlink", path, params: { key: parts[1], contentType: parts[0] } };
+  }
+  // /artist/campaigns/view/{id}
+  if (
+    parts[0] === "artist" &&
+    parts[1] === "campaigns" &&
+    parts[2] === "view" &&
+    parts.length === 4
+  ) {
+    return { kind: "campaign", path, params: { id: parts[3] } };
   }
   // /link/{id}
   if (parts[0] === "link" && parts.length === 2) {
@@ -486,6 +497,78 @@ async function artistModel(
   };
 }
 
+async function campaignModel(
+  supabase: SupabaseClient,
+  route: RouteMatch,
+): Promise<MetaModel | null> {
+  const { data } = await supabase
+    .from("campaigns")
+    .select("*, campaign_templates(template_type)")
+    .eq("id", route.params.id)
+    .eq("status", "active")
+    .limit(1);
+  const campaign = data?.[0];
+  if (!campaign) return null;
+
+  const template = campaign.campaign_templates?.template_type || "song_release";
+  const artist = clean(campaign.artist_name || "Independent artist", 120);
+  const campaignName = clean(campaign.campaign_name, 160);
+  const canonical = `${SITE_URL}/artist/campaigns/view/${campaign.id}`;
+  const description = clean(
+    campaign.description ||
+      `${campaignName} by ${artist}. Discover the release, watch, listen, and follow the campaign on ${SITE_NAME}.`,
+  );
+  const image = campaign.artwork_url || DEFAULT_IMAGE;
+  const isEvent = template === "event_promotion";
+
+  return {
+    kind: "campaign",
+    entityType: "campaign",
+    entityId: campaign.id,
+    title: `${campaignName} — ${artist}`,
+    description,
+    image,
+    canonical,
+    ogType: isEvent ? "website" : "music.album",
+    keywords: `${campaignName}, ${artist}, music campaign, ${template.replace(/_/g, " ")}`,
+    updatedAt: campaign.created_at ?? null,
+    robots: "index, follow, max-image-preview:large, max-snippet:-1",
+    jsonLd: [
+      {
+        "@context": "https://schema.org",
+        "@type": isEvent ? "MusicEvent" : "MusicAlbum",
+        name: campaignName,
+        description,
+        image,
+        url: canonical,
+        ...(isEvent
+          ? {
+              performer: { "@type": "MusicGroup", name: artist },
+              ...(campaign.release_date ? { startDate: campaign.release_date } : {}),
+            }
+          : {
+              byArtist: { "@type": "MusicGroup", name: artist },
+              ...(campaign.release_date ? { datePublished: campaign.release_date } : {}),
+            }),
+      },
+      {
+        "@context": "https://schema.org",
+        "@type": "BreadcrumbList",
+        itemListElement: [
+          { "@type": "ListItem", position: 1, name: "Home", item: SITE_URL },
+          { "@type": "ListItem", position: 2, name: campaignName, item: canonical },
+        ],
+      },
+    ],
+    music: isEvent ? undefined : { musician: artist, releaseDate: campaign.release_date || undefined },
+    body: {
+      heading: campaignName,
+      lines: [artist, description],
+      links: [{ href: canonical, label: `View ${campaignName}` }],
+    },
+  };
+}
+
 export async function buildModel(
   supabase: SupabaseClient,
   route: RouteMatch,
@@ -499,6 +582,8 @@ export async function buildModel(
       return await presaveModel(supabase, route);
     case "artist":
       return await artistModel(supabase, route);
+    case "campaign":
+      return await campaignModel(supabase, route);
   }
 }
 
