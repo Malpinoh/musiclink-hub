@@ -1,0 +1,13 @@
+{
+  "version": "7",
+  "dialect": "postgresql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "7",
+      "when": 1790903148011,
+      "tag": "0000_public_campaign_previews_and_ad_attribution",
+      "breakpoints": true
+    }
+  ]
+}

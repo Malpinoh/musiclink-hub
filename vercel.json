@@ -21,6 +21,22 @@
       "destination": "/api/og?path=/track/$1"
     },
     {
+      "source": "/pre/([^/]+)",
+      "destination": "/api/og?path=/pre/$1"
+    },
+    {
+      "source": "/listen/([^/]+)",
+      "destination": "/api/og?path=/listen/$1"
+    },
+    {
+      "source": "/link/([^/]+)",
+      "destination": "/api/og?path=/link/$1"
+    },
+    {
+      "source": "/artist/campaigns/view/([^/]+)",
+      "destination": "/api/og?path=/artist/campaigns/view/$1"
+    },
+    {
       "source": "/artist/([^/]+)",
       "destination": "/api/og?path=/artist/$1"
     },

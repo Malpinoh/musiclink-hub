@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { ExternalLink } from "lucide-react";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface AdCampaign {
   id: string;
@@ -16,15 +17,18 @@ interface Props {
   artistUserId?: string | null;
   preSaveId?: string | null;
   fanlinkId?: string | null;
+  campaignId?: string | null;
   className?: string;
+  reserveSpace?: boolean;
 }
 
 /**
  * House ad slot. Fetches a random active ad campaign, renders it inline,
  * and tracks impressions and clicks to ad_impressions for revenue sharing.
  */
-const HouseAdSlot = ({ artistUserId, preSaveId, fanlinkId, className }: Props) => {
+const HouseAdSlot = ({ artistUserId, preSaveId, fanlinkId, campaignId, className, reserveSpace = false }: Props) => {
   const [ad, setAd] = useState<AdCampaign | null>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     (async () => {
@@ -33,19 +37,21 @@ const HouseAdSlot = ({ artistUserId, preSaveId, fanlinkId, className }: Props) =
         .select("id, advertiser, title, description, image_url, target_url, cta_text")
         .eq("is_active", true)
         .limit(20);
-      if (!data || data.length === 0) return;
+      if (!data || data.length === 0) { setLoading(false); return; }
       const picked = data[Math.floor(Math.random() * data.length)];
       setAd(picked);
+      setLoading(false);
       // Log impression (fire-and-forget)
       supabase.from("ad_impressions").insert({
         ad_campaign_id: picked.id,
         artist_user_id: artistUserId ?? null,
         pre_save_id: preSaveId ?? null,
         fanlink_id: fanlinkId ?? null,
+        campaign_id: campaignId ?? null,
         event_type: "impression",
-      }).then(() => {});
+      } as never).then(() => {});
     })();
-  }, [artistUserId, preSaveId, fanlinkId]);
+  }, [artistUserId, preSaveId, fanlinkId, campaignId]);
 
   const handleClick = () => {
     if (!ad) return;
@@ -54,11 +60,15 @@ const HouseAdSlot = ({ artistUserId, preSaveId, fanlinkId, className }: Props) =
       artist_user_id: artistUserId ?? null,
       pre_save_id: preSaveId ?? null,
       fanlink_id: fanlinkId ?? null,
+      campaign_id: campaignId ?? null,
       event_type: "click",
-    }).then(() => {});
+    } as never).then(() => {});
   };
 
-  if (!ad) return null;
+  if (!ad) {
+    if (!reserveSpace || !loading) return null;
+    return <Skeleton className={`h-28 w-full rounded-lg ${className ?? ""}`} aria-label="Loading sponsored content" />;
+  }
 
   return (
     <a
