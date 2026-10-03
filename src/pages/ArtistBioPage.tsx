@@ -1,3 +1,4 @@
+import { getCurrentShareUrl, PUBLIC_SITE_URL } from "@/lib/shareUrl";
 import { useState, useEffect, useRef } from "react";
 import { useParams, Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
@@ -279,7 +280,7 @@ const ArtistBioPage = () => {
   };
 
   const handleShare = async () => {
-    const url = window.location.href;
+    const url = getCurrentShareUrl();
     if (navigator.share && profile) {
       try {
         await navigator.share({ title: profile.display_name, url });

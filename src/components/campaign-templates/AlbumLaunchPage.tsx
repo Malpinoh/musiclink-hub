@@ -1,3 +1,4 @@
+import { getCurrentShareUrl, PUBLIC_SITE_URL } from "@/lib/shareUrl";
 import { useState } from "react";
 import { motion } from "framer-motion";
 import { Disc3, Copy, Check, Share2, Music, Play, Users, Award } from "lucide-react";
@@ -41,7 +42,7 @@ const AlbumLaunchPage = ({ campaign }: AlbumLaunchPageProps) => {
   const [copied, setCopied] = useState(false);
 
   const handleCopy = async () => {
-    await navigator.clipboard.writeText(window.location.href);
+    await navigator.clipboard.writeText(getCurrentShareUrl());
     setCopied(true);
     toast.success("Link copied!");
     setTimeout(() => setCopied(false), 2000);
@@ -63,7 +64,7 @@ const AlbumLaunchPage = ({ campaign }: AlbumLaunchPageProps) => {
           <Button variant="ghost" size="icon" onClick={handleCopy} className="text-amber-50 hover:bg-amber-50/10 rounded-full">
             {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
           </Button>
-          <Button variant="ghost" size="icon" className="text-amber-50 hover:bg-amber-50/10 rounded-full" onClick={() => navigator.share?.({ url: window.location.href })}>
+          <Button variant="ghost" size="icon" className="text-amber-50 hover:bg-amber-50/10 rounded-full" onClick={() => navigator.share?.({ url: getCurrentShareUrl() })}>
             <Share2 className="w-4 h-4" />
           </Button>
         </div>

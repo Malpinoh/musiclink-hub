@@ -1,3 +1,4 @@
+import { getCurrentShareUrl, PUBLIC_SITE_URL } from "@/lib/shareUrl";
 import { useState, useEffect, useMemo } from "react";
 import { motion } from "framer-motion";
 import { Calendar, MapPin, Clock, Ticket, Copy, Check, Share2, Users, Mail } from "lucide-react";
@@ -67,7 +68,7 @@ const EventPromotionPage = ({ campaign }: EventPromotionPageProps) => {
   }, [campaign.release_date]);
 
   const handleCopy = async () => {
-    await navigator.clipboard.writeText(window.location.href);
+    await navigator.clipboard.writeText(getCurrentShareUrl());
     setCopied(true);
     toast.success("Link copied!");
     setTimeout(() => setCopied(false), 2000);
@@ -85,7 +86,7 @@ const EventPromotionPage = ({ campaign }: EventPromotionPageProps) => {
           <Button variant="ghost" size="icon" onClick={handleCopy} className="rounded-full text-white hover:bg-white/10">
             {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
           </Button>
-          <Button variant="ghost" size="icon" className="rounded-full text-white hover:bg-white/10" onClick={() => navigator.share?.({ url: window.location.href })}>
+          <Button variant="ghost" size="icon" className="rounded-full text-white hover:bg-white/10" onClick={() => navigator.share?.({ url: getCurrentShareUrl() })}>
             <Share2 className="w-4 h-4" />
           </Button>
         </div>

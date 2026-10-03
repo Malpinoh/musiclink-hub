@@ -5,11 +5,19 @@
 const SUPABASE_URL =
   import.meta.env.VITE_SUPABASE_URL || "https://uwzhhzkvqqvaqvkuocrz.supabase.co";
 
-const META_ENDPOINT = `${SUPABASE_URL}/functions/v1/meta`;
+export const PUBLIC_SITE_URL = "https://md.malpinohdistro.com.ng";
+
+/** Current page as a public, previewable URL on the custom domain */
+export function getCurrentShareUrl(): string {
+  if (typeof window === "undefined") return PUBLIC_SITE_URL;
+  return `${PUBLIC_SITE_URL}${window.location.pathname}`;
+}
+
+export const META_ENDPOINT = `${SUPABASE_URL}/functions/v1/meta`;
 
 /** Shareable URL for any public app path, e.g. "/artist/name" */
 export function getShareableUrl(path: string): string {
-  return `${META_ENDPOINT}?path=${encodeURIComponent(path.startsWith("/") ? path : `/${path}`)}`;
+  return `${PUBLIC_SITE_URL}${path.startsWith("/") ? path : `/${path}`}`;
 }
 
 /** Shareable fanlink URL that renders correct social previews */

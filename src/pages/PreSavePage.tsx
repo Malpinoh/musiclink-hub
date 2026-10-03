@@ -1,3 +1,4 @@
+import { getCurrentShareUrl, PUBLIC_SITE_URL } from "@/lib/shareUrl";
 import { useState, useEffect } from "react";
 import { trackEvent } from "@/lib/analytics";
 import { useParams, Link, useNavigate } from "react-router-dom";
@@ -141,7 +142,7 @@ function PreSaveContent({ artistParam, slugParam }: { artistParam?: string; slug
     (new URLSearchParams(window.location.search).has("debug") ||
       window.location.hostname.includes("lovable.app"));
 
-  const currentUrl = typeof window !== "undefined" ? window.location.href : "";
+  const currentUrl = getCurrentShareUrl();
   const shareableUrl = artist && slug ? getShareablePresaveUrl(artist, slug) : currentUrl;
 
   useEffect(() => {

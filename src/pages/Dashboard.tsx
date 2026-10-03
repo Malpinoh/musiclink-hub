@@ -1,3 +1,4 @@
+import { getCurrentShareUrl, PUBLIC_SITE_URL } from "@/lib/shareUrl";
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -201,8 +202,8 @@ const Dashboard = () => {
     } catch { toast.error("Failed to delete pre-save"); }
   };
 
-  const getFanlinkUrl = (artistSlug: string, slug: string) => `${window.location.origin}/${artistSlug}/${slug}`;
-  const getPreSaveUrl = (artistSlug: string, slug: string) => `${window.location.origin}/pre/${artistSlug}-${slug}`;
+  const getFanlinkUrl = (artistSlug: string, slug: string) => `${PUBLIC_SITE_URL}/${artistSlug}/${slug}`;
+  const getPreSaveUrl = (artistSlug: string, slug: string) => `${PUBLIC_SITE_URL}/pre/${artistSlug}-${slug}`;
   const isExpired = (link: Fanlink) => link.expires_at && new Date(link.expires_at) < new Date();
   const isActive = (link: Fanlink) => link.is_published !== false && !isExpired(link);
 

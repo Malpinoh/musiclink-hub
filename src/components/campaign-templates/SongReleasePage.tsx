@@ -1,3 +1,4 @@
+import { getCurrentShareUrl, PUBLIC_SITE_URL } from "@/lib/shareUrl";
 import { useState, useEffect, useMemo } from "react";
 import { motion } from "framer-motion";
 import { Bell, Share2, Copy, Check, Music2, TrendingUp } from "lucide-react";
@@ -69,7 +70,7 @@ const SongReleasePage = ({ campaign }: SongReleasePageProps) => {
   }, [campaign.release_date, campaign.created_at]);
 
   const handleCopy = async () => {
-    await navigator.clipboard.writeText(window.location.href);
+    await navigator.clipboard.writeText(getCurrentShareUrl());
     setCopied(true);
     toast.success("Link copied!");
     setTimeout(() => setCopied(false), 2000);
@@ -95,7 +96,7 @@ const SongReleasePage = ({ campaign }: SongReleasePageProps) => {
             <Button variant="ghost" size="icon" onClick={handleCopy} className="rounded-2xl">
               {copied ? <Check className="w-5 h-5 text-primary" /> : <Copy className="w-5 h-5" />}
             </Button>
-            <Button variant="ghost" size="icon" className="rounded-2xl" onClick={() => navigator.share?.({ url: window.location.href })}>
+            <Button variant="ghost" size="icon" className="rounded-2xl" onClick={() => navigator.share?.({ url: getCurrentShareUrl() })}>
               <Share2 className="w-5 h-5" />
             </Button>
           </div>

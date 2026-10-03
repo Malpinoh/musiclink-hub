@@ -1,3 +1,4 @@
+import { getCurrentShareUrl, PUBLIC_SITE_URL } from "@/lib/shareUrl";
 import { useState, useEffect, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Share2, Copy, Check, Film, Eye, Heart, Flame, Sparkles } from "lucide-react";
@@ -70,7 +71,7 @@ const VideoLaunchPage = ({ campaign }: VideoLaunchPageProps) => {
   }, [campaign.release_date]);
 
   const handleCopy = async () => {
-    await navigator.clipboard.writeText(window.location.href);
+    await navigator.clipboard.writeText(getCurrentShareUrl());
     setCopied(true);
     toast.success("Link copied!");
     setTimeout(() => setCopied(false), 2000);
@@ -98,7 +99,7 @@ const VideoLaunchPage = ({ campaign }: VideoLaunchPageProps) => {
           <Button variant="ghost" size="icon" onClick={handleCopy} className="rounded-full text-white hover:bg-white/10">
             {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
           </Button>
-          <Button variant="ghost" size="icon" className="rounded-full text-white hover:bg-white/10" onClick={() => navigator.share?.({ url: window.location.href })}>
+          <Button variant="ghost" size="icon" className="rounded-full text-white hover:bg-white/10" onClick={() => navigator.share?.({ url: getCurrentShareUrl() })}>
             <Share2 className="w-4 h-4" />
           </Button>
         </div>
@@ -251,7 +252,7 @@ const VideoLaunchPage = ({ campaign }: VideoLaunchPageProps) => {
         <div className="bg-white/5 border border-white/10 rounded-2xl p-4 flex items-center gap-3">
           <input
             readOnly
-            value={typeof window !== "undefined" ? window.location.href : ""}
+            value={getCurrentShareUrl()}
             className="flex-1 bg-transparent text-xs text-white/60 truncate outline-none"
           />
           <Button onClick={handleCopy} size="sm" className="bg-red-600 hover:bg-red-700 text-white rounded-lg">

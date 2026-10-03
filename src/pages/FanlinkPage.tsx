@@ -1,3 +1,4 @@
+import { getCurrentShareUrl } from "@/lib/shareUrl";
 import { useParams, Link } from "react-router-dom";
 import { trackEvent } from "@/lib/analytics";
 import { motion } from "framer-motion";
@@ -118,7 +119,7 @@ const FanlinkPage = () => {
   const [showContactForm, setShowContactForm] = useState(false);
   const [contactSubmitted, setContactSubmitted] = useState(false);
 
-  const currentUrl = window.location.href;
+  const currentUrl = getCurrentShareUrl();
   
   // Generate shareable URL that works with social media crawlers
   const shareableUrl = artist && song 

@@ -1,3 +1,4 @@
+import { getCurrentShareUrl, PUBLIC_SITE_URL } from "@/lib/shareUrl";
 import { useState, useEffect } from "react";
 import { trackEvent } from "@/lib/analytics";
 import { useParams, Link } from "react-router-dom";
@@ -61,7 +62,7 @@ const ListenPage = () => {
   }, [slug]);
 
   const handleCopy = async () => {
-    await navigator.clipboard.writeText(window.location.href);
+    await navigator.clipboard.writeText(getCurrentShareUrl());
     setCopied(true);
     toast.success("Link copied!");
     setTimeout(() => setCopied(false), 2000);
