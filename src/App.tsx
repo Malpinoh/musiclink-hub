@@ -6,6 +6,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AnimatePresence } from "framer-motion";
 import { AuthProvider } from "@/contexts/AuthContext";
+import { Analytics } from "@vercel/analytics/react";
 import LoadingScreen from "@/components/LoadingScreen";
 import Index from "./pages/Index";
 import Login from "./pages/Login";
@@ -116,6 +117,7 @@ const App = () => {
               </Routes>
             </Suspense>
           </BrowserRouter>
+          <Analytics />
         </TooltipProvider>
       </AuthProvider>
     </QueryClientProvider>
