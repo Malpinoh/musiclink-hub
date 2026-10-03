@@ -1,3 +1,4 @@
+import { getCurrentShareUrl, PUBLIC_SITE_URL } from "@/lib/shareUrl";
 import { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { motion } from "framer-motion";
@@ -303,7 +304,7 @@ const EditArtistBio = () => {
   }
 
   const bioUrl = form.username
-    ? `${window.location.origin}/artist/${form.username}`
+    ? `${PUBLIC_SITE_URL}/artist/${form.username}`
     : null;
 
   const handleCopyBioLink = async () => {

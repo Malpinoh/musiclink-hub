@@ -1,3 +1,4 @@
+import { getCurrentShareUrl, PUBLIC_SITE_URL } from "@/lib/shareUrl";
 import { useState, useEffect } from "react";
 import ThemeCustomizer, { type LinkTheme } from "@/components/ThemeCustomizer";
 import ThemePreview from "@/components/ThemePreview";
@@ -363,7 +364,7 @@ const EditFanlink = () => {
               </p>
             </div>
             <ShareButtons
-              url={`${window.location.origin}/${fanlink.artist_slug}/${fanlink.slug}`}
+              url={`${PUBLIC_SITE_URL}/${fanlink.artist_slug}/${fanlink.slug}`}
               title={fanlink.title}
               artist={fanlink.artist}
               compact

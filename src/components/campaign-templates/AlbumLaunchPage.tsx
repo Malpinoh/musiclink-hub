@@ -1,3 +1,4 @@
+import { getCurrentShareUrl, PUBLIC_SITE_URL } from "@/lib/shareUrl";
 import { useState } from "react";
 import { motion } from "framer-motion";
 import { Disc3, Copy, Check, Share2, Music, Play, Users, Award } from "lucide-react";
@@ -41,7 +42,7 @@ const AlbumLaunchPage = ({ campaign }: AlbumLaunchPageProps) => {
   const [copied, setCopied] = useState(false);
 
   const handleCopy = async () => {
-    await navigator.clipboard.writeText(window.location.href);
+    await navigator.clipboard.writeText(getCurrentShareUrl());
     setCopied(true);
     toast.success("Link copied!");
     setTimeout(() => setCopied(false), 2000);

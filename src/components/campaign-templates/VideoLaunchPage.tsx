@@ -1,3 +1,4 @@
+import { getCurrentShareUrl, PUBLIC_SITE_URL } from "@/lib/shareUrl";
 import { useState, useEffect, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Share2, Copy, Check, Film, Eye, Heart, Flame, Sparkles } from "lucide-react";
@@ -70,7 +71,7 @@ const VideoLaunchPage = ({ campaign }: VideoLaunchPageProps) => {
   }, [campaign.release_date]);
 
   const handleCopy = async () => {
-    await navigator.clipboard.writeText(window.location.href);
+    await navigator.clipboard.writeText(getCurrentShareUrl());
     setCopied(true);
     toast.success("Link copied!");
     setTimeout(() => setCopied(false), 2000);

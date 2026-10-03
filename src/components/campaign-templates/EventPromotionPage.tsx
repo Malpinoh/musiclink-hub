@@ -1,3 +1,4 @@
+import { getCurrentShareUrl, PUBLIC_SITE_URL } from "@/lib/shareUrl";
 import { useState, useEffect, useMemo } from "react";
 import { motion } from "framer-motion";
 import { Calendar, MapPin, Clock, Ticket, Copy, Check, Share2, Users, Mail } from "lucide-react";
@@ -67,7 +68,7 @@ const EventPromotionPage = ({ campaign }: EventPromotionPageProps) => {
   }, [campaign.release_date]);
 
   const handleCopy = async () => {
-    await navigator.clipboard.writeText(window.location.href);
+    await navigator.clipboard.writeText(getCurrentShareUrl());
     setCopied(true);
     toast.success("Link copied!");
     setTimeout(() => setCopied(false), 2000);
