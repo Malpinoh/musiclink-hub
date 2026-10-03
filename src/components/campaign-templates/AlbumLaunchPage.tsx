@@ -64,7 +64,7 @@ const AlbumLaunchPage = ({ campaign }: AlbumLaunchPageProps) => {
           <Button variant="ghost" size="icon" onClick={handleCopy} className="text-amber-50 hover:bg-amber-50/10 rounded-full">
             {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
           </Button>
-          <Button variant="ghost" size="icon" className="text-amber-50 hover:bg-amber-50/10 rounded-full" onClick={() => navigator.share?.({ url: window.location.href })}>
+          <Button variant="ghost" size="icon" className="text-amber-50 hover:bg-amber-50/10 rounded-full" onClick={() => navigator.share?.({ url: getCurrentShareUrl() })}>
             <Share2 className="w-4 h-4" />
           </Button>
         </div>

@@ -96,7 +96,7 @@ const SongReleasePage = ({ campaign }: SongReleasePageProps) => {
             <Button variant="ghost" size="icon" onClick={handleCopy} className="rounded-2xl">
               {copied ? <Check className="w-5 h-5 text-primary" /> : <Copy className="w-5 h-5" />}
             </Button>
-            <Button variant="ghost" size="icon" className="rounded-2xl" onClick={() => navigator.share?.({ url: window.location.href })}>
+            <Button variant="ghost" size="icon" className="rounded-2xl" onClick={() => navigator.share?.({ url: getCurrentShareUrl() })}>
               <Share2 className="w-5 h-5" />
             </Button>
           </div>
