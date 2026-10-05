@@ -344,7 +344,19 @@ async function presaveModel(
   else query = query.eq("slug", route.params.slug);
 
   const { data } = await query;
-  const presave = data?.[0];
+  let presave = data?.[0];
+  // /pre/{artist_slug}-{slug} combined format: find the artist prefix that matches.
+  if (!presave && !route.params.artist && route.params.slug?.includes("-")) {
+    const key = route.params.slug;
+    const parts = key.split("-");
+    for (let i = 1; i < parts.length && !presave; i++) {
+      const a = parts.slice(0, i).join("-");
+      const sl = parts.slice(i).join("-");
+      const { data: d2 } = await supabase.from("pre_saves").select("*")
+        .eq("is_active", true).eq("artist_slug", a).eq("slug", sl).limit(1);
+      presave = d2?.[0];
+    }
+  }
   if (!presave) return null;
 
   const canonical = `${SITE_URL}/presave/${presave.artist_slug}/${presave.slug}`;
