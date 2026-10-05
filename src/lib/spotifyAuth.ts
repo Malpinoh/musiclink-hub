@@ -14,7 +14,7 @@ export const SPOTIFY_PRESAVE_SCOPES = [
 
 export interface PresaveOAuthState {
   preSaveId: string;
-  fanId: string;
+  fanId?: string | null;
   action: "presave" | "save_and_follow";
   redirectUri: string;
   returnUrl: string;

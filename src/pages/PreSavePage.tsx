@@ -176,10 +176,16 @@ function PreSaveContent({ artistParam, slugParam }: { artistParam?: string; slug
     })();
   }, [artist, slug]);
 
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   const validateForm = (): boolean => {
     if (!fanName.trim()) { toast.error("Please enter your name"); return false; }
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(fanEmail.trim())) { toast.error("Please enter a valid email"); return false; }
+    return true;
+  };
+  // Email is optional for Spotify pre-save; only validate if the fan typed one.
+  const validateOptional = (): boolean => {
+    const e = fanEmail.trim();
+    if (e && !emailRegex.test(e)) { toast.error("Please enter a valid email or leave it empty"); return false; }
     return true;
   };
 
@@ -198,9 +204,9 @@ function PreSaveContent({ artistParam, slugParam }: { artistParam?: string; slug
 
   // Insert fan signup, return fan id. Routes through the edge function so we
   // get a uniform error surface (including server-side api_logs entries).
-  const upsertFan = async (preSaveId: string): Promise<string | null> => {
+  const upsertFan = (preSaveId: string) => upsertFanWith(preSaveId, fanName.trim());
+  const upsertFanWith = async (preSaveId: string, name: string): Promise<string | null> => {
     const email = fanEmail.trim().toLowerCase();
-    const name = fanName.trim();
     const { data, error } = await supabase.functions.invoke("create-presave-fan", {
       body: { preSaveId, name, email },
     });
@@ -256,13 +262,16 @@ function PreSaveContent({ artistParam, slugParam }: { artistParam?: string; slug
   };
 
   const handleSpotifyPresave = async () => {
-    if (!preSave || !validateForm()) return;
+    if (!preSave || !validateOptional()) return;
     setSubmitting(true);
     clearFailure();
     try {
-      const fanId = await upsertFan(preSave.id);
-      if (!fanId) throw new Error("Could not create signup");
-      trackEvent("fan_collected", { pre_save_id: preSave.id });
+      let fanId: string | null = null;
+      if (fanEmail.trim()) {
+        if (!fanName.trim()) setFanName(fanEmail.split("@")[0]);
+        fanId = await upsertFanWith(preSave.id, fanName.trim() || fanEmail.split("@")[0]).catch(() => null);
+        if (fanId) trackEvent("fan_collected", { pre_save_id: preSave.id });
+      }
       trackEvent("spotify_presave_started", { pre_save_id: preSave.id });
 
       const redirectUri = getPresaveRedirectUri();
@@ -536,11 +545,11 @@ function PreSaveContent({ artistParam, slugParam }: { artistParam?: string; slug
                   )}
                   <div>
                     <Label htmlFor="fan-name" className="flex items-center gap-1.5 mb-1"><User className="w-3.5 h-3.5" /> Name</Label>
-                    <Input id="fan-name" placeholder="Your name" value={fanName} onChange={(e) => setFanName(e.target.value)} required maxLength={100} />
+                    <Input id="fan-name" placeholder="Your name (optional)" value={fanName} onChange={(e) => setFanName(e.target.value)} maxLength={100} />
                   </div>
                   <div>
-                    <Label htmlFor="fan-email" className="flex items-center gap-1.5 mb-1"><Mail className="w-3.5 h-3.5" /> Email</Label>
-                    <Input id="fan-email" type="email" placeholder="you@email.com" value={fanEmail} onChange={(e) => setFanEmail(e.target.value)} required maxLength={255} />
+                    <Label htmlFor="fan-email" className="flex items-center gap-1.5 mb-1"><Mail className="w-3.5 h-3.5" /> Email <span className="text-muted-foreground font-normal">(optional — get a release-day alert)</span></Label>
+                    <Input id="fan-email" type="email" placeholder="you@email.com (optional)" value={fanEmail} onChange={(e) => setFanEmail(e.target.value)} maxLength={255} />
                   </div>
                   <Button
                     type="button"
