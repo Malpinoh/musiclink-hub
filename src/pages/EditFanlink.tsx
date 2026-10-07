@@ -66,6 +66,11 @@ interface Fanlink {
   collect_email: boolean | null;
   collect_phone: boolean | null;
   require_contact: boolean | null;
+  lyrics?: string | null;
+  credits?: string | null;
+  meta_pixel_id?: string | null;
+  tiktok_pixel_id?: string | null;
+  google_analytics_id?: string | null;
 }
 
 interface FanContact {
@@ -235,6 +240,11 @@ const EditFanlink = () => {
           collect_email: fanlink.collect_email,
           collect_phone: fanlink.collect_phone,
           require_contact: fanlink.require_contact,
+          lyrics: fanlink.lyrics ?? null,
+          credits: fanlink.credits ?? null,
+          meta_pixel_id: fanlink.meta_pixel_id ?? null,
+          tiktok_pixel_id: fanlink.tiktok_pixel_id ?? null,
+          google_analytics_id: fanlink.google_analytics_id ?? null,
         })
         .eq("id", id);
 
@@ -444,6 +454,42 @@ const EditFanlink = () => {
                     value={fanlink.artwork_url || ""}
                     onChange={(e) => setFanlink({ ...fanlink, artwork_url: e.target.value || null })}
                     placeholder="https://..."
+                  />
+                </div>
+                <div>
+                  <Label>Song Credits (helps Google search)</Label>
+                  <Textarea
+                    rows={3}
+                    value={fanlink.credits || ""}
+                    onChange={(e) => setFanlink({ ...fanlink, credits: e.target.value || null })}
+                    placeholder={"Producer: ...\nWriter: ...\nMix & Master: ..."}
+                  />
+                </div>
+                <div>
+                  <Label>Lyrics (helps fans find this song on Google)</Label>
+                  <Textarea
+                    rows={6}
+                    value={fanlink.lyrics || ""}
+                    onChange={(e) => setFanlink({ ...fanlink, lyrics: e.target.value || null })}
+                    placeholder="Paste the song lyrics..."
+                  />
+                </div>
+                <div className="pt-2 border-t border-border space-y-3">
+                  <p className="text-sm font-medium">Ad Tracking Pixels</p>
+                  <Input
+                    value={fanlink.meta_pixel_id || ""}
+                    onChange={(e) => setFanlink({ ...fanlink, meta_pixel_id: e.target.value.trim() || null })}
+                    placeholder="Meta (Facebook/Instagram) Pixel ID"
+                  />
+                  <Input
+                    value={fanlink.tiktok_pixel_id || ""}
+                    onChange={(e) => setFanlink({ ...fanlink, tiktok_pixel_id: e.target.value.trim() || null })}
+                    placeholder="TikTok Pixel ID"
+                  />
+                  <Input
+                    value={fanlink.google_analytics_id || ""}
+                    onChange={(e) => setFanlink({ ...fanlink, google_analytics_id: e.target.value.trim() || null })}
+                    placeholder="Google Analytics ID (G-XXXXXXX)"
                   />
                 </div>
               </div>
