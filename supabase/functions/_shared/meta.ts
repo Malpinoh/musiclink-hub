@@ -231,6 +231,11 @@ async function fanlinkModel(
     }${platformNames.length > 5 ? " and more" : ""}. One link, every streaming platform.`,
   );
   const image = link.artwork_url || DEFAULT_IMAGE;
+  const { data: relatedData } = await supabase
+    .from("fanlinks").select("title, slug, artist_slug")
+    .eq("artist_slug", link.artist_slug).eq("is_published", true).neq("id", link.id)
+    .order("created_at", { ascending: false }).limit(8);
+  const related = relatedData || [];
 
   const jsonLd: unknown[] = [
     isRelease
@@ -281,6 +286,7 @@ async function fanlinkModel(
           url: canonical,
           description,
           ...(link.isrc ? { isrcCode: link.isrc } : {}),
+          ...(link.lyrics ? { recordingOf: { "@type": "MusicComposition", name: link.title, lyrics: { "@type": "CreativeWork", text: String(link.lyrics).slice(0, 5000) } } } : {}),
           ...(link.release_date ? { datePublished: link.release_date } : {}),
           ...(active.length ? { sameAs: active.map((p) => p.platform_url) } : {}),
           potentialAction: {
@@ -326,10 +332,13 @@ async function fanlinkModel(
         ...(tracks.length
           ? [`Tracklist: ${tracks.map((t, i) => `${t.track_number || i + 1}. ${t.title || ""}`).join(" · ")}`]
           : []),
+        ...(link.credits ? [`Credits: ${String(link.credits).slice(0, 1000)}`] : []),
+        ...(link.lyrics ? [`${link.title} lyrics: ${String(link.lyrics).slice(0, 5000)}`] : []),
       ],
       links: [
         { href: canonical, label: `Listen to ${link.title}` },
         ...active.map((p) => ({ href: p.platform_url, label: p.platform_name })),
+        ...related.map((r: any) => ({ href: `${SITE_URL}/${r.artist_slug}/${r.slug}`, label: `${r.title} — ${link.artist}` })),
       ],
     },
   };
