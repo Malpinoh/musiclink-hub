@@ -572,14 +572,19 @@ export type Database = {
           collect_phone: boolean | null
           content_type: string
           created_at: string
+          credits: string | null
           expires_at: string | null
+          google_analytics_id: string | null
           id: string
           is_published: boolean | null
           isrc: string | null
+          lyrics: string | null
+          meta_pixel_id: string | null
           release_date: string | null
           release_type: string | null
           require_contact: boolean | null
           slug: string
+          tiktok_pixel_id: string | null
           title: string
           total_tracks: number | null
           tracklist: Json
@@ -595,14 +600,19 @@ export type Database = {
           collect_phone?: boolean | null
           content_type?: string
           created_at?: string
+          credits?: string | null
           expires_at?: string | null
+          google_analytics_id?: string | null
           id?: string
           is_published?: boolean | null
           isrc?: string | null
+          lyrics?: string | null
+          meta_pixel_id?: string | null
           release_date?: string | null
           release_type?: string | null
           require_contact?: boolean | null
           slug: string
+          tiktok_pixel_id?: string | null
           title: string
           total_tracks?: number | null
           tracklist?: Json
@@ -618,14 +628,19 @@ export type Database = {
           collect_phone?: boolean | null
           content_type?: string
           created_at?: string
+          credits?: string | null
           expires_at?: string | null
+          google_analytics_id?: string | null
           id?: string
           is_published?: boolean | null
           isrc?: string | null
+          lyrics?: string | null
+          meta_pixel_id?: string | null
           release_date?: string | null
           release_type?: string | null
           require_contact?: boolean | null
           slug?: string
+          tiktok_pixel_id?: string | null
           title?: string
           total_tracks?: number | null
           tracklist?: Json
@@ -1421,11 +1436,13 @@ export type Database = {
           auto_follow_artist: boolean
           created_at: string
           description: string | null
+          google_analytics_id: string | null
           id: string
           is_active: boolean | null
           is_released: boolean | null
           isrc: string | null
           links_resolved: boolean | null
+          meta_pixel_id: string | null
           playlist_id: string | null
           preview_audio_url: string | null
           preview_end: number | null
@@ -1436,6 +1453,7 @@ export type Database = {
           spotify_album_id: string | null
           spotify_artist_id: string | null
           spotify_uri: string | null
+          target_fanlink_id: string | null
           theme_accent_color: string | null
           theme_bg_color: string | null
           theme_bg_image_url: string | null
@@ -1447,6 +1465,7 @@ export type Database = {
           theme_hero_image_url: string | null
           theme_layout: string
           theme_text_color: string | null
+          tiktok_pixel_id: string | null
           title: string
           upc: string | null
           updated_at: string
@@ -1464,11 +1483,13 @@ export type Database = {
           auto_follow_artist?: boolean
           created_at?: string
           description?: string | null
+          google_analytics_id?: string | null
           id?: string
           is_active?: boolean | null
           is_released?: boolean | null
           isrc?: string | null
           links_resolved?: boolean | null
+          meta_pixel_id?: string | null
           playlist_id?: string | null
           preview_audio_url?: string | null
           preview_end?: number | null
@@ -1479,6 +1500,7 @@ export type Database = {
           spotify_album_id?: string | null
           spotify_artist_id?: string | null
           spotify_uri?: string | null
+          target_fanlink_id?: string | null
           theme_accent_color?: string | null
           theme_bg_color?: string | null
           theme_bg_image_url?: string | null
@@ -1490,6 +1512,7 @@ export type Database = {
           theme_hero_image_url?: string | null
           theme_layout?: string
           theme_text_color?: string | null
+          tiktok_pixel_id?: string | null
           title: string
           upc?: string | null
           updated_at?: string
@@ -1507,11 +1530,13 @@ export type Database = {
           auto_follow_artist?: boolean
           created_at?: string
           description?: string | null
+          google_analytics_id?: string | null
           id?: string
           is_active?: boolean | null
           is_released?: boolean | null
           isrc?: string | null
           links_resolved?: boolean | null
+          meta_pixel_id?: string | null
           playlist_id?: string | null
           preview_audio_url?: string | null
           preview_end?: number | null
@@ -1522,6 +1547,7 @@ export type Database = {
           spotify_album_id?: string | null
           spotify_artist_id?: string | null
           spotify_uri?: string | null
+          target_fanlink_id?: string | null
           theme_accent_color?: string | null
           theme_bg_color?: string | null
           theme_bg_image_url?: string | null
@@ -1533,6 +1559,7 @@ export type Database = {
           theme_hero_image_url?: string | null
           theme_layout?: string
           theme_text_color?: string | null
+          tiktok_pixel_id?: string | null
           title?: string
           upc?: string | null
           updated_at?: string
