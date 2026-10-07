@@ -159,10 +159,19 @@ function PreSaveContent({ artistParam, slugParam }: { artistParam?: string; slug
 
         if (error) throw error;
         if (!data) { setNotFound(true); return; }
-        // If released, redirect to listen page
-        if (data.is_released) {
-          navigate(`/listen/${data.artist_slug}-${data.slug}`, { replace: true });
-          return;
+        // Released (flag set or release date passed) → hand fans off to the live page
+        const dropped = data.release_date && new Date(data.release_date).getTime() <= Date.now();
+        if (data.is_released || (dropped && data.target_fanlink_id)) {
+          if (data.target_fanlink_id) {
+            const { data: fl } = await supabase
+              .from("fanlinks").select("artist_slug, slug")
+              .eq("id", data.target_fanlink_id).eq("is_published", true).maybeSingle();
+            if (fl) { navigate(`/${fl.artist_slug}/${fl.slug}`, { replace: true }); return; }
+          }
+          if (data.is_released) {
+            navigate(`/listen/${data.artist_slug}-${data.slug}`, { replace: true });
+            return;
+          }
         }
         setPreSave({
           ...data,
