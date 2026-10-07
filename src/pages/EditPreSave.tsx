@@ -60,6 +60,52 @@ interface PreSave {
   theme_cta_text: string | null;
   theme_countdown_enabled: boolean | null;
   theme_layout: string | null;
+  target_fanlink_id?: string | null;
+  meta_pixel_id?: string | null;
+  tiktok_pixel_id?: string | null;
+  google_analytics_id?: string | null;
+}
+
+function PresaveProExtras({
+  preSave,
+  setPreSave,
+}: {
+  preSave: PreSave;
+  setPreSave: (p: PreSave) => void;
+}) {
+  const [links, setLinks] = useState<{ id: string; title: string; artist: string }[]>([]);
+  useEffect(() => {
+    supabase
+      .from("fanlinks")
+      .select("id, title, artist")
+      .order("created_at", { ascending: false })
+      .limit(100)
+      .then(({ data }) => setLinks(data || []));
+  }, []);
+  return (
+    <div className="mt-4 pt-4 border-t border-border space-y-3">
+      <div>
+        <Label>On release day, send fans to this fanlink</Label>
+        <select
+          className="mt-1 w-full h-10 rounded-md border border-input bg-background px-3 text-sm"
+          value={preSave.target_fanlink_id || ""}
+          onChange={(e) => setPreSave({ ...preSave, target_fanlink_id: e.target.value || null })}
+        >
+          <option value="">Automatic (listen page)</option>
+          {links.map((l) => (
+            <option key={l.id} value={l.id}>{l.title} — {l.artist}</option>
+          ))}
+        </select>
+      </div>
+      <p className="text-sm font-medium">Ad Tracking Pixels</p>
+      <Input value={preSave.meta_pixel_id || ""} placeholder="Meta (Facebook/Instagram) Pixel ID"
+        onChange={(e) => setPreSave({ ...preSave, meta_pixel_id: e.target.value.trim() || null })} />
+      <Input value={preSave.tiktok_pixel_id || ""} placeholder="TikTok Pixel ID"
+        onChange={(e) => setPreSave({ ...preSave, tiktok_pixel_id: e.target.value.trim() || null })} />
+      <Input value={preSave.google_analytics_id || ""} placeholder="Google Analytics ID (G-XXXXXXX)"
+        onChange={(e) => setPreSave({ ...preSave, google_analytics_id: e.target.value.trim() || null })} />
+    </div>
+  );
 }
 
 interface StreamingLink {
@@ -204,6 +250,10 @@ const EditPreSave = () => {
           preview_start: preSave.preview_start,
           preview_end: preSave.preview_end,
           waveform_data: preSave.waveform_data,
+          target_fanlink_id: preSave.target_fanlink_id ?? null,
+          meta_pixel_id: preSave.meta_pixel_id ?? null,
+          tiktok_pixel_id: preSave.tiktok_pixel_id ?? null,
+          google_analytics_id: preSave.google_analytics_id ?? null,
           auto_follow_artist: preSave.auto_follow_artist ?? false,
           auto_add_to_playlist: preSave.auto_add_to_playlist ?? false,
           playlist_id: preSave.playlist_id || null,
@@ -391,6 +441,7 @@ const EditPreSave = () => {
                 />
               </div>
             </div>
+            <PresaveProExtras preSave={preSave} setPreSave={setPreSave} />
           </motion.div>
 
           {/* Spotify Details */}
