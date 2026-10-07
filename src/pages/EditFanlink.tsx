@@ -1,3 +1,4 @@
+import { Textarea } from "@/components/ui/textarea";
 import { getCurrentShareUrl, PUBLIC_SITE_URL } from "@/lib/shareUrl";
 import { useState, useEffect } from "react";
 import ThemeCustomizer, { type LinkTheme } from "@/components/ThemeCustomizer";
