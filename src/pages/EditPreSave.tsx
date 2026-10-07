@@ -75,12 +75,17 @@ function PresaveProExtras({
 }) {
   const [links, setLinks] = useState<{ id: string; title: string; artist: string }[]>([]);
   useEffect(() => {
+    (async () => {
+    const { data: u } = await supabase.auth.getUser();
+    if (!u.user) return;
     supabase
       .from("fanlinks")
       .select("id, title, artist")
+      .eq("user_id", u.user.id)
       .order("created_at", { ascending: false })
       .limit(100)
       .then(({ data }) => setLinks(data || []));
+    })();
   }, []);
   return (
     <div className="mt-4 pt-4 border-t border-border space-y-3">
