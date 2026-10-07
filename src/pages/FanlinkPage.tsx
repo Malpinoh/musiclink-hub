@@ -12,6 +12,7 @@ import demoArtwork from "@/assets/demo-artwork.jpg";
 import MetaTags from "@/components/MetaTags";
 import MonetagTag from "@/components/monetization/MonetagTag";
 import { buildFanlinkMeta } from "@/lib/seoMeta";
+import { RetargetingPixels, trackPixelConversion } from "@/components/RetargetingPixels";
 
 import FanContactForm from "@/components/FanContactForm";
 import { getShareableFanlinkUrl } from "@/lib/shareUrl";
@@ -86,6 +87,11 @@ interface Fanlink {
   collect_phone: boolean | null;
   require_contact: boolean | null;
   user_id: string;
+  lyrics?: string | null;
+  credits?: string | null;
+  meta_pixel_id?: string | null;
+  tiktok_pixel_id?: string | null;
+  google_analytics_id?: string | null;
 }
 
 
@@ -117,6 +123,9 @@ const FanlinkPage = () => {
   const [notFound, setNotFound] = useState(false);
   const [theme, setTheme] = useState<LinkThemeData | null>(null);
   const [showContactForm, setShowContactForm] = useState(false);
+  const [moreFromArtist, setMoreFromArtist] = useState<
+    { id: string; title: string; slug: string; artist_slug: string; artwork_url: string | null }[]
+  >([]);
   const [contactSubmitted, setContactSubmitted] = useState(false);
 
   const currentUrl = getCurrentShareUrl();
@@ -179,6 +188,17 @@ const FanlinkPage = () => {
         .maybeSingle();
 
       if (themeData) setTheme(themeData as LinkThemeData);
+
+      // Discography mesh: other published links by the same artist
+      supabase
+        .from("fanlinks")
+        .select("id, title, slug, artist_slug, artwork_url")
+        .eq("artist_slug", fanlinkData.artist_slug)
+        .eq("is_published", true)
+        .neq("id", fanlinkData.id)
+        .order("created_at", { ascending: false })
+        .limit(6)
+        .then(({ data }) => setMoreFromArtist(data || []));
 
       trackEvent(
         fanlinkData.content_type === "release" ? "release_page_view" : "track_page_view",
@@ -338,6 +358,11 @@ const FanlinkPage = () => {
         fontFamily: theme?.font_family || undefined,
       }}
     >
+      <RetargetingPixels
+        metaPixelId={fanlink.meta_pixel_id}
+        tiktokPixelId={fanlink.tiktok_pixel_id}
+        googleAnalyticsId={fanlink.google_analytics_id}
+      />
       {/* Dynamic metadata: OG, Twitter, JSON-LD, canonical */}
       <MetaTags
         meta={buildFanlinkMeta({
@@ -523,7 +548,10 @@ const FanlinkPage = () => {
                             href={link.platform_url}
                             target="_blank"
                             rel="noopener noreferrer"
-                            onClick={() => handlePlatformClick(link.platform_name)}
+                            onClick={() => {
+                              handlePlatformClick(link.platform_name);
+                              trackPixelConversion("Lead", { platform: link.platform_name, content_name: fanlink.title });
+                            }}
                             className="group relative flex items-center gap-3 sm:gap-4 rounded-2xl border border-border/40 bg-background/50 p-3 sm:p-4 overflow-hidden transition-all duration-300 hover:border-border hover:shadow-[var(--shadow-md)]"
                             initial={{ opacity: 0, y: 10 }}
                             animate={{ opacity: 1, y: 0 }}
@@ -610,6 +638,47 @@ const FanlinkPage = () => {
                     ))}
                   </ol>
                 </motion.div>
+              )}
+
+              {/* Lyrics & credits (indexed by search engines) */}
+              {(fanlink.lyrics || fanlink.credits) && (!showContactForm || contactSubmitted) && (
+                <details className="mt-5 rounded-3xl border border-border/40 bg-card/40 backdrop-blur-xl p-4 sm:p-5 group">
+                  <summary className="cursor-pointer text-[10px] uppercase tracking-[0.25em] text-muted-foreground list-none flex justify-between">
+                    <span>{fanlink.lyrics ? "Lyrics & Credits" : "Credits"}</span>
+                    <span className="group-open:rotate-180 transition-transform">⌄</span>
+                  </summary>
+                  {fanlink.credits && (
+                    <p className="mt-4 text-xs text-muted-foreground whitespace-pre-line">{fanlink.credits}</p>
+                  )}
+                  {fanlink.lyrics && (
+                    <p className="mt-4 text-sm leading-relaxed whitespace-pre-line">{fanlink.lyrics}</p>
+                  )}
+                </details>
+              )}
+
+              {/* More from this artist */}
+              {moreFromArtist.length > 0 && (
+                <div className="mt-5 rounded-3xl border border-border/40 bg-card/40 backdrop-blur-xl p-4 sm:p-5">
+                  <p className="text-[10px] uppercase tracking-[0.25em] text-muted-foreground mb-3 px-1">
+                    More from {fanlink.artist}
+                  </p>
+                  <div className="grid grid-cols-3 gap-3">
+                    {moreFromArtist.map((m) => (
+                      <Link key={m.id} to={`/${m.artist_slug}/${m.slug}`} className="min-w-0">
+                        <img
+                          src={m.artwork_url || demoArtwork}
+                          alt={`${m.title} by ${fanlink.artist}`}
+                          loading="lazy"
+                          className="w-full aspect-square rounded-xl object-cover"
+                        />
+                        <span className="block mt-1.5 text-xs truncate">{m.title}</span>
+                      </Link>
+                    ))}
+                  </div>
+                  <Link to={`/${fanlink.artist_slug}`} className="block mt-3 text-xs text-muted-foreground hover:text-foreground">
+                    View artist page →
+                  </Link>
+                </div>
               )}
             </div>
           </div>
