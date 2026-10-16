@@ -351,7 +351,7 @@ const FanlinkPage = () => {
 
   return (
     <div
-      className="min-h-screen relative overflow-hidden bg-background"
+      className="mdistro-fanlink-page min-h-screen relative overflow-hidden bg-background"
       style={{
         backgroundColor: theme?.background_color || undefined,
         color: theme?.text_color || undefined,
@@ -450,7 +450,7 @@ const FanlinkPage = () => {
 
         {/* Main Content */}
         <main className="flex-1 px-4 py-8 sm:py-12">
-          <div className="mx-auto w-full max-w-5xl grid gap-8 lg:gap-12 lg:grid-cols-[minmax(0,400px)_minmax(0,1fr)] lg:items-start">
+          <div className="mdistro-fanlink-layout mx-auto w-full max-w-5xl grid gap-8 lg:gap-12 lg:grid-cols-[minmax(0,400px)_minmax(0,1fr)] lg:items-start">
             {/* ── Left: release identity ── */}
             <motion.div
               className="text-center lg:text-left lg:sticky lg:top-24"
@@ -469,7 +469,7 @@ const FanlinkPage = () => {
                   src={fanlink.artwork_url || demoArtwork}
                   alt={`${fanlink.title} artwork`}
 
-                  className="relative w-56 h-56 sm:w-64 sm:h-64 lg:w-[340px] lg:h-[340px] mx-auto rounded-[1.5rem] object-cover shadow-2xl ring-1 ring-white/15"
+                  className="mdistro-fanlink-artwork relative w-56 h-56 sm:w-64 sm:h-64 lg:w-[340px] lg:h-[340px] mx-auto rounded-[1.5rem] object-cover shadow-2xl ring-1 ring-white/15"
                 />
               </motion.div>
 
@@ -490,7 +490,7 @@ const FanlinkPage = () => {
                     </span>
                   )}
                 </div>
-                <h1 className="font-display text-3xl sm:text-4xl lg:text-5xl font-bold leading-[1.05] tracking-tight text-balance mb-2">
+                <h1 className="mdistro-release-title font-display text-3xl sm:text-4xl lg:text-5xl font-bold leading-[1.05] tracking-tight text-balance mb-2">
                   {fanlink.title}
                 </h1>
                 <p className="text-lg text-muted-foreground">{fanlink.artist}</p>
@@ -525,7 +525,7 @@ const FanlinkPage = () => {
               {/* Platform Links */}
               {(!showContactForm || contactSubmitted) && (
                 <motion.div
-                  className="rounded-[1.75rem] border border-white/10 bg-card/35 backdrop-blur-2xl p-4 sm:p-6 shadow-2xl"
+                  className="mdistro-platform-panel rounded-[1.75rem] border border-white/10 bg-card/35 backdrop-blur-2xl p-4 sm:p-6 shadow-2xl"
                   initial={{ opacity: 0, y: 16 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.22, ease: [0.16, 1, 0.3, 1] }}
@@ -552,7 +552,7 @@ const FanlinkPage = () => {
                               handlePlatformClick(link.platform_name);
                               trackPixelConversion("Lead", { platform: link.platform_name, content_name: fanlink.title });
                             }}
-                            className="group relative flex items-center gap-3 sm:gap-4 rounded-2xl border border-white/10 bg-background/45 p-3 sm:p-4 overflow-hidden transition-all duration-300 hover:border-white/25 hover:bg-background/65 hover:shadow-xl"
+                            className="mdistro-platform-link group relative flex items-center gap-3 sm:gap-4 rounded-2xl border border-white/10 bg-background/45 p-3 sm:p-4 overflow-hidden transition-all duration-300 hover:border-white/25 hover:bg-background/65 hover:shadow-xl"
                             initial={{ opacity: 0, y: 10 }}
                             animate={{ opacity: 1, y: 0 }}
                             transition={{ delay: 0.28 + index * 0.045, ease: [0.16, 1, 0.3, 1] }}
