@@ -573,17 +573,23 @@ function PreSaveContent({ artistParam, slugParam }: { artistParam?: string; slug
                     type="button"
                     variant="hero"
                     size="lg"
-                    className="w-full h-12 rounded-xl font-semibold bg-[#1DB954] hover:bg-[#1ed760] text-black"
-                    style={
-                      preSave.theme_button_color
-                        ? { backgroundColor: preSave.theme_button_color, color: preSave.theme_button_text_color || undefined }
-                        : undefined
-                    }
+                    aria-label={preSave.theme_cta_text || "Pre-Save on Spotify"}
+                    className="w-full min-h-14 rounded-xl border border-white/15 font-semibold text-base shadow-lg transition-all duration-200 hover:-translate-y-0.5 hover:shadow-xl focus-visible:ring-2 focus-visible:ring-[#1DB954] focus-visible:ring-offset-2"
+                    style={{
+                      backgroundColor: preSave.theme_button_color || "#1DB954",
+                      color: preSave.theme_button_text_color || "#000000",
+                    }}
                     disabled={submitting}
                     onClick={handleSpotifyPresave}
                   >
-                    {submitting ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
-                    {preSave.theme_cta_text || "Pre-Save on Spotify"}
+                    {submitting ? (
+                      <Loader2 aria-hidden="true" className="w-5 h-5 animate-spin mr-2" />
+                    ) : (
+                      <svg aria-hidden="true" viewBox="0 0 24 24" className="w-6 h-6 mr-2 shrink-0" fill="currentColor">
+                        <path d="M12 0C5.372 0 0 5.372 0 12s5.372 12 12 12 12-5.372 12-12S18.628 0 12 0Zm5.49 17.31a.75.75 0 0 1-1.032.248c-2.83-1.73-6.39-2.12-10.588-1.16a.75.75 0 1 1-.335-1.462c4.59-1.05 8.52-.6 11.708 1.342a.75.75 0 0 1 .247 1.032Zm1.472-3.276a.94.94 0 0 1-1.293.31c-3.24-1.99-8.18-2.566-12.013-1.404a.94.94 0 1 1-.546-1.798c4.38-1.328 9.82-.685 13.542 1.6a.94.94 0 0 1 .31 1.292Zm.126-3.411C15.202 8.26 8.76 8.05 5.03 9.182a1.125 1.125 0 1 1-.653-2.153c4.28-1.3 11.394-1.05 15.896 1.62a1.125 1.125 0 0 1-1.183 1.974Z" />
+                      </svg>
+                    )}
+                    <span>{preSave.theme_cta_text || "Pre-Save on Spotify"}</span>
                   </Button>
                   <Button type="submit" variant="outline" size="sm" className="w-full" disabled={submitting}>
                     <Bell className="w-3.5 h-3.5 mr-2" />
