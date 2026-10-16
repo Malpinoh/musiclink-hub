@@ -29,8 +29,8 @@ import {
 const homeJsonLd = {
   "@context": "https://schema.org",
   "@type": "WebPage",
-  "name": "MDistro Link - One Link. All Platforms. Infinite Reach.",
-  "description": "Create stunning fanlinks that connect your audience to your music on every streaming platform.",
+  "name": "Smart Music Links & Pre-Save Campaigns | MDistro Link",
+  "description": "Create a professional music smart link in minutes. Bring Spotify, Apple Music, YouTube, Audiomack, Boomplay and more together, launch pre-save campaigns, and measure fan engagement with MDistro Link.",
   "url": "https://md.malpinohdistro.com.ng",
   "mainEntity": {
     "@type": "SoftwareApplication",
@@ -103,10 +103,10 @@ const Index = () => {
   return (
     <div className="min-h-screen bg-background">
       <PageSEO
-        title="MDistro Link - One Link. All Platforms. Infinite Reach."
-        description="Create stunning fanlinks that connect your audience to your music on Spotify, Apple Music, YouTube, Audiomack, Boomplay, and more. Auto-fetch metadata, track analytics, and grow your fanbase."
+        title="Smart Music Links & Pre-Save Campaigns | MDistro Link"
+        description="Create a professional music smart link in minutes. Bring Spotify, Apple Music, YouTube, Audiomack, Boomplay and more together, launch pre-save campaigns, and measure fan engagement with MDistro Link."
         canonicalPath=""
-        keywords={["fanlink", "smart link", "music link", "spotify", "apple music", "audiomack", "boomplay", "music promotion"]}
+        keywords={["music smart links", "fan links for artists", "Spotify pre-save", "music pre-save campaign", "music promotion tools", "artist links", "streaming platform links", "music link analytics"]}
         jsonLd={homeJsonLd}
       />
       <Header />
