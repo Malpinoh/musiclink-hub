@@ -426,7 +426,7 @@ function PreSaveContent({ artistParam, slugParam }: { artistParam?: string; slug
       </div>
 
       <div className="relative z-10 min-h-screen flex flex-col">
-        <header className="sticky top-0 z-30 px-3 sm:px-5 py-3 flex justify-between items-center backdrop-blur-xl bg-background/40 border-b border-border/30">
+        <header className="sticky top-0 z-30 px-4 sm:px-6 py-3.5 flex justify-between items-center backdrop-blur-2xl bg-background/35 border-b border-white/10">
           <Link to="/" className="flex items-center gap-2 opacity-70 hover:opacity-100 transition-opacity">
             <img src={logo} alt="MDistro Link" className="w-8 h-8 rounded-lg" />
             <span className="font-display font-semibold text-sm">MDistro Link</span>
@@ -437,12 +437,12 @@ function PreSaveContent({ artistParam, slugParam }: { artistParam?: string; slug
           </div>
         </header>
 
-        <main className="flex-1 flex flex-col items-center justify-center px-3 sm:px-4 py-6 sm:py-8">
-          <motion.div className="w-full max-w-md mx-auto text-center" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ ease: [0.16, 1, 0.3, 1], duration: 0.6 }}>
+        <main className="flex-1 flex flex-col items-center justify-center px-4 sm:px-6 py-8 sm:py-12">
+          <motion.div className="w-full max-w-md mx-auto text-center rounded-[2rem] border border-white/10 bg-card/25 backdrop-blur-xl px-4 py-6 sm:px-7 sm:py-8 shadow-2xl" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ ease: [0.16, 1, 0.3, 1], duration: 0.6 }}>
             {/* Artwork */}
-            <motion.div className="relative mb-8" initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ delay: 0.1 }}>
+            <motion.div className="relative mb-8 sm:mb-9" initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ delay: 0.1 }}>
               <div className="absolute -inset-4 bg-gradient-to-r from-primary/30 to-accent/30 blur-2xl rounded-full opacity-50 animate-pulse-glow" />
-              <img src={preSave.theme_hero_image_url || preSave.artwork_url || demoArtwork} alt={`${preSave.title} artwork`} className="relative w-56 h-56 sm:w-64 sm:h-64 mx-auto rounded-[1.75rem] object-cover shadow-[var(--shadow-xl)] ring-1 ring-border/40" />
+              <img src={preSave.theme_hero_image_url || preSave.artwork_url || demoArtwork} alt={`${preSave.title} artwork`} className="relative w-56 h-56 sm:w-64 sm:h-64 mx-auto rounded-[1.5rem] object-cover shadow-2xl ring-1 ring-white/20" />
               {!preSave.is_released && (
                 <div className="absolute -bottom-3 left-1/2 -translate-x-1/2 bg-gradient-to-r from-primary to-accent px-4 py-1 rounded-full">
                   <span className="text-xs font-semibold text-primary-foreground">PRE-SAVE</span>
@@ -465,7 +465,7 @@ function PreSaveContent({ artistParam, slugParam }: { artistParam?: string; slug
 
 
             <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="mb-6">
-              <h1 className="font-display text-3xl sm:text-4xl font-bold tracking-tight leading-[1.05] text-balance mb-2">{preSave.title}</h1>
+              <h1 className="font-display text-3xl sm:text-[2.6rem] font-bold tracking-tight leading-[1.02] text-balance mb-2">{preSave.title}</h1>
               <p className="text-lg text-muted-foreground">{preSave.artist}</p>
               {preSave.description && <p className="text-sm text-muted-foreground mt-3 max-w-sm mx-auto">{preSave.description}</p>}
               {preSave.release_date && !preSave.is_released && (
@@ -496,7 +496,7 @@ function PreSaveContent({ artistParam, slugParam }: { artistParam?: string; slug
             {/* Fan Notification Form */}
             <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}>
               {submitted ? (
-                <div className="rounded-3xl border border-border/40 bg-card/60 backdrop-blur-xl p-6 text-center shadow-[var(--shadow-lg)]">
+                <div className="rounded-2xl border border-white/10 bg-background/45 backdrop-blur-xl p-6 text-center shadow-xl">
                   <div className="w-16 h-16 mx-auto rounded-full bg-primary/20 flex items-center justify-center mb-4">
                     <Bell className="w-8 h-8 text-primary" />
                   </div>
@@ -504,7 +504,7 @@ function PreSaveContent({ artistParam, slugParam }: { artistParam?: string; slug
                   <p className="text-sm text-muted-foreground">We'll send you a notification as soon as <strong>{preSave.title}</strong> drops.</p>
                 </div>
               ) : (
-                <form onSubmit={handleNotifyMe} className="rounded-3xl border border-border/40 bg-card/60 backdrop-blur-xl p-5 sm:p-6 text-left space-y-4 shadow-[var(--shadow-lg)]">
+                <form onSubmit={handleNotifyMe} className="rounded-2xl border border-white/10 bg-background/45 backdrop-blur-xl p-5 sm:p-6 text-left space-y-4 shadow-xl">
                   <div className="text-center mb-2">
                     <h3 className="font-display font-semibold text-lg">Pre-save on Spotify</h3>
                     <p className="text-xs text-muted-foreground mt-1">
@@ -574,7 +574,7 @@ function PreSaveContent({ artistParam, slugParam }: { artistParam?: string; slug
                     variant="hero"
                     size="lg"
                     aria-label={preSave.theme_cta_text || "Pre-Save on Spotify"}
-                    className="w-full min-h-14 rounded-xl border border-white/15 font-semibold text-base shadow-lg transition-all duration-200 hover:-translate-y-0.5 hover:shadow-xl focus-visible:ring-2 focus-visible:ring-[#1DB954] focus-visible:ring-offset-2"
+                    className="w-full min-h-14 rounded-full border border-white/15 font-semibold text-base shadow-lg transition-all duration-200 hover:-translate-y-0.5 hover:shadow-xl focus-visible:ring-2 focus-visible:ring-[#1DB954] focus-visible:ring-offset-2"
                     style={{
                       backgroundColor: preSave.theme_button_color || "#1DB954",
                       color: preSave.theme_button_text_color || "#000000",
