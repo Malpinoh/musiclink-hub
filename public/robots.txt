@@ -69,7 +69,7 @@ Allow: /demo
 Allow: /link/
 
 # Sitemap location
-Sitemap: https://uwzhhzkvqqvaqvkuocrz.supabase.co/functions/v1/sitemap
+Sitemap: https://md.malpinohdistro.com.ng/sitemap.xml
 
 # Crawl-delay for polite crawling
 Crawl-delay: 1
