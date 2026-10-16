@@ -69,6 +69,13 @@ const SpotifyCallback = () => {
       }
 
       sessionStorage.removeItem(`presave_fan_${preSaveId}`);
+      // Keep a browser-local completion marker so reloading the campaign does not
+      // show the visitor the same Spotify pre-save CTA again.
+      try {
+        if (preSaveId) localStorage.setItem(`mdistro_presaved_${preSaveId}`, "true");
+      } catch {
+        // Storage may be disabled; successful Spotify authorization still stands.
+      }
       setStatus("success");
       setMessage("Pre-save confirmed! We'll save this to your library on release day.");
 
