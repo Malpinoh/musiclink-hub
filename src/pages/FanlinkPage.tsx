@@ -411,7 +411,7 @@ const FanlinkPage = () => {
 
       <div className="relative z-10 min-h-screen flex flex-col">
         {/* Header */}
-        <header className="sticky top-0 z-30 px-3 sm:px-5 py-3 flex justify-between items-center backdrop-blur-xl bg-background/40 border-b border-border/30">
+        <header className="sticky top-0 z-30 px-4 sm:px-6 py-3.5 flex justify-between items-center backdrop-blur-2xl bg-background/35 border-b border-white/10">
           <Link to="/" className="flex items-center gap-2 opacity-80 hover:opacity-100 transition-opacity">
             {theme?.logo_url ? (
               <img src={theme.logo_url} alt="Logo" className="w-8 h-8 rounded-lg object-cover" />
@@ -450,7 +450,7 @@ const FanlinkPage = () => {
 
         {/* Main Content */}
         <main className="flex-1 px-4 py-8 sm:py-12">
-          <div className="mx-auto w-full max-w-5xl grid gap-8 lg:gap-14 lg:grid-cols-[minmax(0,380px)_minmax(0,1fr)] lg:items-start">
+          <div className="mx-auto w-full max-w-5xl grid gap-8 lg:gap-12 lg:grid-cols-[minmax(0,400px)_minmax(0,1fr)] lg:items-start">
             {/* ── Left: release identity ── */}
             <motion.div
               className="text-center lg:text-left lg:sticky lg:top-24"
@@ -469,7 +469,7 @@ const FanlinkPage = () => {
                   src={fanlink.artwork_url || demoArtwork}
                   alt={`${fanlink.title} artwork`}
 
-                  className="relative w-56 h-56 sm:w-64 sm:h-64 lg:w-[340px] lg:h-[340px] mx-auto rounded-[1.75rem] object-cover shadow-[var(--shadow-xl)] ring-1 ring-border/40"
+                  className="relative w-56 h-56 sm:w-64 sm:h-64 lg:w-[340px] lg:h-[340px] mx-auto rounded-[1.5rem] object-cover shadow-2xl ring-1 ring-white/15"
                 />
               </motion.div>
 
@@ -525,7 +525,7 @@ const FanlinkPage = () => {
               {/* Platform Links */}
               {(!showContactForm || contactSubmitted) && (
                 <motion.div
-                  className="rounded-3xl border border-border/40 bg-card/50 backdrop-blur-xl p-4 sm:p-5 shadow-[var(--shadow-lg)]"
+                  className="rounded-[1.75rem] border border-white/10 bg-card/35 backdrop-blur-2xl p-4 sm:p-6 shadow-2xl"
                   initial={{ opacity: 0, y: 16 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.22, ease: [0.16, 1, 0.3, 1] }}
@@ -552,7 +552,7 @@ const FanlinkPage = () => {
                               handlePlatformClick(link.platform_name);
                               trackPixelConversion("Lead", { platform: link.platform_name, content_name: fanlink.title });
                             }}
-                            className="group relative flex items-center gap-3 sm:gap-4 rounded-2xl border border-border/40 bg-background/50 p-3 sm:p-4 overflow-hidden transition-all duration-300 hover:border-border hover:shadow-[var(--shadow-md)]"
+                            className="group relative flex items-center gap-3 sm:gap-4 rounded-2xl border border-white/10 bg-background/45 p-3 sm:p-4 overflow-hidden transition-all duration-300 hover:border-white/25 hover:bg-background/65 hover:shadow-xl"
                             initial={{ opacity: 0, y: 10 }}
                             animate={{ opacity: 1, y: 0 }}
                             transition={{ delay: 0.28 + index * 0.045, ease: [0.16, 1, 0.3, 1] }}
@@ -570,7 +570,7 @@ const FanlinkPage = () => {
                               aria-hidden
                             />
                             <span
-                              className="relative w-10 h-10 sm:w-11 sm:h-11 rounded-xl flex items-center justify-center flex-shrink-0 transition-transform duration-300 group-hover:scale-105"
+                              className="relative w-11 h-11 sm:w-12 sm:h-12 rounded-2xl flex items-center justify-center flex-shrink-0 transition-transform duration-300 group-hover:scale-105"
                               style={{ color: config.color, backgroundColor: `${config.color}1F` }}
                             >
                               {config.icon}
@@ -613,7 +613,7 @@ const FanlinkPage = () => {
               {/* Tracklist (release links only) */}
               {isRelease && tracklist.length > 0 && (!showContactForm || contactSubmitted) && (
                 <motion.div
-                  className="mt-5 rounded-3xl border border-border/40 bg-card/40 backdrop-blur-xl p-4 sm:p-5 shadow-[var(--shadow-md)]"
+                  className="mt-5 rounded-[1.75rem] border border-white/10 bg-card/30 backdrop-blur-xl p-4 sm:p-6 shadow-xl"
                   initial={{ opacity: 0, y: 16 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.34, ease: [0.16, 1, 0.3, 1] }}
@@ -658,7 +658,7 @@ const FanlinkPage = () => {
 
               {/* More from this artist */}
               {moreFromArtist.length > 0 && (
-                <div className="mt-5 rounded-3xl border border-border/40 bg-card/40 backdrop-blur-xl p-4 sm:p-5">
+                <div className="mt-5 rounded-[1.75rem] border border-white/10 bg-card/30 backdrop-blur-xl p-4 sm:p-6">
                   <p className="text-[10px] uppercase tracking-[0.25em] text-muted-foreground mb-3 px-1">
                     More from {fanlink.artist}
                   </p>
