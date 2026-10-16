@@ -136,6 +136,8 @@ function PreSaveContent({ artistParam, slugParam }: { artistParam?: string; slug
   const [fanEmail, setFanEmail] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  // Persist the completed Spotify pre-save state on this browser across reloads.
+  const [spotifyPresaved, setSpotifyPresaved] = useState(false);
   // Debug / error surfacing for the Spotify pre-save flow.
   const [failureStep, setFailureStep] = useState<string | null>(null);
   const [failureMessage, setFailureMessage] = useState<string | null>(null);
@@ -176,6 +178,11 @@ function PreSaveContent({ artistParam, slugParam }: { artistParam?: string; slug
             navigate(`/listen/${data.artist_slug}-${data.slug}`, { replace: true });
             return;
           }
+        }
+        try {
+          setSpotifyPresaved(localStorage.getItem(`mdistro_presaved_${data.id}`) === "true");
+        } catch {
+          // Storage can be unavailable in private browsing; the page still works.
         }
         setPreSave({
           ...data,
@@ -500,7 +507,15 @@ function PreSaveContent({ artistParam, slugParam }: { artistParam?: string; slug
 
             {/* Fan Notification Form */}
             <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}>
-              {submitted ? (
+              {spotifyPresaved ? (
+                <div className="rounded-2xl border border-[#1DB954]/35 bg-[#1DB954]/10 backdrop-blur-xl p-6 text-center shadow-xl">
+                  <div className="w-16 h-16 mx-auto rounded-full bg-[#1DB954]/15 flex items-center justify-center mb-4">
+                    <Check className="w-8 h-8 text-[#1DB954]" />
+                  </div>
+                  <h3 className="font-display text-lg font-semibold mb-2">Already pre-saved! 🎉</h3>
+                  <p className="text-sm text-muted-foreground"><strong>{preSave.title}</strong> by {preSave.artist} has been confirmed on this browser. You don’t need to pre-save it again.</p>
+                </div>
+              ) : submitted ? (
                 <div className="rounded-2xl border border-white/10 bg-background/45 backdrop-blur-xl p-6 text-center shadow-xl">
                   <div className="w-16 h-16 mx-auto rounded-full bg-primary/20 flex items-center justify-center mb-4">
                     <Bell className="w-8 h-8 text-primary" />
