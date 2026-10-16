@@ -388,7 +388,7 @@ function PreSaveContent({ artistParam, slugParam }: { artistParam?: string; slug
 
   return (
     <div
-      className="min-h-screen bg-background relative overflow-hidden"
+      className="mdistro-presave-page min-h-screen bg-background relative overflow-hidden"
       style={{
         backgroundColor: preSave.theme_bg_color || undefined,
         color: preSave.theme_text_color || undefined,
@@ -438,11 +438,11 @@ function PreSaveContent({ artistParam, slugParam }: { artistParam?: string; slug
         </header>
 
         <main className="flex-1 flex flex-col items-center justify-center px-4 sm:px-6 py-8 sm:py-12">
-          <motion.div className="w-full max-w-md mx-auto text-center rounded-[2rem] border border-white/10 bg-card/25 backdrop-blur-xl px-4 py-6 sm:px-7 sm:py-8 shadow-2xl" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ ease: [0.16, 1, 0.3, 1], duration: 0.6 }}>
+          <motion.div className="mdistro-presave-card w-full max-w-md mx-auto text-center rounded-[2rem] border border-white/10 bg-card/25 backdrop-blur-xl px-4 py-6 sm:px-7 sm:py-8 shadow-2xl" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ ease: [0.16, 1, 0.3, 1], duration: 0.6 }}>
             {/* Artwork */}
             <motion.div className="relative mb-8 sm:mb-9" initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ delay: 0.1 }}>
               <div className="absolute -inset-4 bg-gradient-to-r from-primary/30 to-accent/30 blur-2xl rounded-full opacity-50 animate-pulse-glow" />
-              <img src={preSave.theme_hero_image_url || preSave.artwork_url || demoArtwork} alt={`${preSave.title} artwork`} className="relative w-56 h-56 sm:w-64 sm:h-64 mx-auto rounded-[1.5rem] object-cover shadow-2xl ring-1 ring-white/20" />
+              <img src={preSave.theme_hero_image_url || preSave.artwork_url || demoArtwork} alt={`${preSave.title} artwork`} className="mdistro-presave-artwork relative w-56 h-56 sm:w-64 sm:h-64 mx-auto rounded-[1.5rem] object-cover shadow-2xl ring-1 ring-white/20" />
               {!preSave.is_released && (
                 <div className="absolute -bottom-3 left-1/2 -translate-x-1/2 bg-gradient-to-r from-primary to-accent px-4 py-1 rounded-full">
                   <span className="text-xs font-semibold text-primary-foreground">PRE-SAVE</span>
