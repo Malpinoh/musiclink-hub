@@ -257,6 +257,8 @@ const CreatePreSave = () => {
       title={currentTitle}
       artist={currentArtist}
       subtitle="Pre-save · Coming soon"
+      showPresaveCta
+      ctaLabel="Pre-Save on Spotify"
       platforms={[
         { name: "Spotify", icon: <SpotifyIcon />, color: "#1DB954", hasUrl: !!metadata },
         { name: "Apple Music", icon: <AppleMusicIcon />, color: "#FA243C", hasUrl: !!metadata?.upc },
