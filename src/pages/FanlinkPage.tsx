@@ -453,13 +453,13 @@ const FanlinkPage = () => {
           <div className="mdistro-fanlink-layout mx-auto w-full max-w-5xl grid gap-8 lg:gap-12 lg:grid-cols-[minmax(0,400px)_minmax(0,1fr)] lg:items-start">
             {/* ── Left: release identity ── */}
             <motion.div
-              className="text-center lg:text-left lg:sticky lg:top-24"
+              className="mdistro-fanlink-identity text-center lg:text-left lg:sticky lg:top-24"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ ease: [0.16, 1, 0.3, 1], duration: 0.6 }}
             >
               <motion.div
-                className="relative mb-6 sm:mb-8 inline-block"
+                className="mdistro-fanlink-artwork-wrap relative mb-6 sm:mb-8 inline-block"
                 initial={{ scale: 0.92, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
                 transition={{ delay: 0.08, ease: [0.16, 1, 0.3, 1], duration: 0.7 }}
@@ -469,7 +469,7 @@ const FanlinkPage = () => {
                   src={fanlink.artwork_url || demoArtwork}
                   alt={`${fanlink.title} artwork`}
 
-                  className="mdistro-fanlink-artwork relative w-56 h-56 sm:w-64 sm:h-64 lg:w-[340px] lg:h-[340px] mx-auto rounded-[1.5rem] object-cover shadow-2xl ring-1 ring-white/15"
+                  className="mdistro-fanlink-artwork relative w-56 h-56 sm:w-64 sm:h-64 lg:w-[280px] lg:h-[280px] mx-auto rounded-[1.5rem] object-cover shadow-2xl ring-1 ring-white/15"
                 />
               </motion.div>
 
@@ -490,6 +490,7 @@ const FanlinkPage = () => {
                     </span>
                   )}
                 </div>
+                <p className="mdistro-eyebrow mb-3">OFFICIAL MUSIC LINK</p>
                 <h1 className="mdistro-release-title font-display text-3xl sm:text-4xl lg:text-5xl font-bold leading-[1.05] tracking-tight text-balance mb-2">
                   {fanlink.title}
                 </h1>
@@ -530,9 +531,11 @@ const FanlinkPage = () => {
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.22, ease: [0.16, 1, 0.3, 1] }}
                 >
-                  <p className="text-[10px] uppercase tracking-[0.25em] text-muted-foreground mb-4 px-1">
-                    Choose your platform
-                  </p>
+                  <div className="mdistro-platform-heading mb-5 px-1">
+                    <p className="mdistro-eyebrow mb-2">YOUR MUSIC, YOUR PLATFORM</p>
+                    <h2 className="font-display text-xl sm:text-2xl font-bold tracking-tight">Listen everywhere</h2>
+                    <p className="text-sm text-muted-foreground mt-1">Choose where you want to listen.</p>
+                  </div>
 
                   <div className="space-y-2.5">
                     {platformLinks.length > 0 ? (
@@ -579,11 +582,11 @@ const FanlinkPage = () => {
                               <span className="block font-semibold text-sm sm:text-base truncate">
                                 {formatPlatformName(link.platform_name)}
                               </span>
-                              <span className="block text-[11px] text-muted-foreground">
+                              <span className="block text-xs text-muted-foreground mt-1">
                                 {isRelease ? "Open full release" : "Play now"}
                               </span>
                             </span>
-                            <span className="relative inline-flex items-center gap-1 text-xs font-semibold uppercase tracking-wider opacity-70 group-hover:opacity-100 transition-opacity">
+                            <span className="mdistro-platform-action relative inline-flex items-center gap-1 text-xs font-semibold uppercase tracking-wider opacity-70 group-hover:opacity-100 transition-opacity">
                               <span className="hidden sm:inline">Listen</span>
                               <ExternalLink className="w-4 h-4" />
                             </span>
