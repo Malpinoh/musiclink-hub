@@ -11,6 +11,8 @@ interface DevicePreviewProps {
   platforms?: { name: string; icon?: ReactNode; color?: string; hasUrl: boolean }[];
   accent?: string; // hex or css color
   footerNote?: string;
+  showPresaveCta?: boolean;
+  ctaLabel?: string;
 }
 
 const DevicePreview = ({
@@ -21,6 +23,8 @@ const DevicePreview = ({
   platforms = [],
   accent,
   footerNote,
+  showPresaveCta = false,
+  ctaLabel = "Pre-Save on Spotify",
 }: DevicePreviewProps) => {
   const [device, setDevice] = useState<"phone" | "desktop">("phone");
 
@@ -108,6 +112,18 @@ const DevicePreview = ({
                 </p>
                 {subtitle && (
                   <p className="text-[10px] uppercase tracking-widest text-primary mt-1.5">{subtitle}</p>
+                )}
+
+                {showPresaveCta && (
+                  <div
+                    className="w-full mt-4 flex items-center justify-center rounded-xl px-3 py-3 text-xs font-semibold shadow-lg"
+                    style={{ backgroundColor: "#1DB954", color: "#000000" }}
+                  >
+                    <svg aria-hidden="true" viewBox="0 0 24 24" className="w-5 h-5 mr-2 shrink-0" fill="currentColor">
+                      <path d="M12 0C5.372 0 0 5.372 0 12s5.372 12 12 12 12-5.372 12-12S18.628 0 12 0Zm5.49 17.31a.75.75 0 0 1-1.032.248c-2.83-1.73-6.39-2.12-10.588-1.16a.75.75 0 1 1-.335-1.462c4.59-1.05 8.52-.6 11.708 1.342a.75.75 0 0 1 .247 1.032Zm1.472-3.276a.94.94 0 0 1-1.293.31c-3.24-1.99-8.18-2.566-12.013-1.404a.94.94 0 1 1-.546-1.798c4.38-1.328 9.82-.685 13.542 1.6a.94.94 0 0 1 .31 1.292Zm.126-3.411C15.202 8.26 8.76 8.05 5.03 9.182a1.125 1.125 0 1 1-.653-2.153c4.28-1.3 11.394-1.05 15.896 1.62a1.125 1.125 0 0 1-1.183 1.974Z" />
+                    </svg>
+                    <span className="truncate">{ctaLabel}</span>
+                  </div>
                 )}
 
                 <div className={cn("w-full mt-4 space-y-1.5", device === "desktop" && "max-w-xs mx-auto")}>
