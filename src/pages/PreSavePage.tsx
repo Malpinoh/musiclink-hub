@@ -473,256 +473,158 @@ function PreSaveContent({ artistParam, slugParam }: { artistParam?: string; slug
       </div>
 
       <div className="relative z-10 min-h-screen flex flex-col">
-        <header className="sticky top-0 z-30 px-4 sm:px-6 py-3.5 flex justify-between items-center backdrop-blur-2xl bg-background/35 border-b border-white/10">
-          <Link to="/" className="flex items-center gap-2 opacity-70 hover:opacity-100 transition-opacity">
-            <img src={logo} alt="MDistro Link" className="w-8 h-8 rounded-lg" />
-            <span className="font-display font-semibold text-sm">MDistro Link</span>
-          </Link>
-          <div className="flex gap-2">
-            <Button variant="ghost" size="icon" onClick={handleShare}><Share2 className="w-5 h-5" /></Button>
-            <Button variant="ghost" size="icon" onClick={handleCopyLink}>{copied ? <Check className="w-5 h-5 text-primary" /> : <Copy className="w-5 h-5" />}</Button>
-          </div>
-        </header>
-
-        <main className="mdistro-presave-main flex-1 flex flex-col items-center justify-center px-4 sm:px-6 py-8 sm:py-12">
-          <motion.div className="mdistro-presave-card mdistro-presave-layout w-full max-w-md mx-auto rounded-[2rem] border border-white/10 bg-card/20 backdrop-blur-2xl px-4 py-5 sm:px-6 sm:py-7 shadow-2xl" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ ease: [0.16, 1, 0.3, 1], duration: 0.6 }}>
-            <section className="mdistro-presave-identity text-center">
-              <p className="mdistro-eyebrow mb-4 text-[10px] tracking-[0.28em]">PRE-SAVE • COMING SOON</p>
-              {/* Artwork */}
-            <motion.div className="mdistro-presave-artwork-wrap relative mb-8 sm:mb-9" initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ delay: 0.1 }}>
-              <div className="absolute -inset-4 bg-gradient-to-r from-primary/30 to-accent/30 blur-2xl rounded-full opacity-50 animate-pulse-glow" />
-              <img src={preSave.theme_hero_image_url || preSave.artwork_url || demoArtwork} alt={`${preSave.title} artwork`} className="mdistro-presave-artwork relative w-[min(76vw,300px)] h-[min(76vw,300px)] sm:w-80 sm:h-80 mx-auto rounded-[1.35rem] object-cover shadow-2xl ring-1 ring-white/20" />
-              {!preSave.is_released && (
-                <div className="absolute -bottom-3 left-1/2 -translate-x-1/2 bg-gradient-to-r from-primary to-accent px-4 py-1 rounded-full">
-                  <span className="text-xs font-semibold text-primary-foreground">PRE-SAVE</span>
-                </div>
-              )}
-            </motion.div>
-
-            {/* Audio Preview */}
-            {preSave.preview_audio_url && (
-              <AudioPreviewPlayer
-                audioUrl={preSave.preview_audio_url}
-                artworkUrl={preSave.artwork_url || undefined}
-                title={preSave.title}
-                artist={preSave.artist}
-                previewStart={preSave.preview_start ?? 0}
-                previewEnd={preSave.preview_end ?? 30}
-                waveformData={preSave.waveform_data ?? undefined}
+        <main className="relative flex-1 flex flex-col items-center justify-center px-4 py-8 sm:py-12">
+          <motion.div
+            className="w-full max-w-[390px] mx-auto text-center"
+            initial={{ opacity: 0, y: 18 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.55 }}
+          >
+            <div className="relative mx-auto mb-5 w-[min(78vw,190px)] aspect-square">
+              <div className="absolute -inset-8 rounded-full bg-cyan-400/15 blur-3xl" />
+              <img
+                src={preSave.theme_hero_image_url || preSave.artwork_url || demoArtwork}
+                alt={`${preSave.title} artwork`}
+                className="relative z-10 h-full w-full rounded-[1.35rem] object-cover shadow-[0_22px_65px_rgba(0,0,0,.48)] ring-1 ring-white/20"
               />
-            )}
-
-
-            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="mdistro-presave-release-copy mb-6">
-              <h1 className="mdistro-presave-title font-display text-[2rem] sm:text-[2.35rem] font-bold tracking-tight leading-[1.02] text-balance mb-2">{preSave.title}</h1>
-              <p className="text-sm sm:text-base text-muted-foreground">{preSave.artist}</p>
-              {preSave.description && <p className="text-sm text-muted-foreground mt-3 max-w-sm mx-auto">{preSave.description}</p>}
-              {preSave.release_date && !preSave.is_released && (
-                <div className="flex items-center justify-center gap-2 mt-4 text-sm text-muted-foreground">
-                  <Calendar className="w-4 h-4 text-primary" />
-                  <span>Dropping {formatReleaseDate(preSave.release_date)}</span>
-                </div>
-              )}
-            </motion.div>
-
-            </section>
-
-            <section className="mdistro-presave-conversion">
-            {/* Countdown */}
-            {countdown && !preSave.is_released && (preSave.theme_countdown_enabled ?? true) && (
-              <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.25 }} className="mb-8">
-                <p className="text-xs uppercase tracking-widest text-muted-foreground mb-3">Drops in</p>
-                <div className="flex justify-center gap-2.5 sm:gap-4">
-                  {[{ value: countdown.days, label: "Days" }, { value: countdown.hours, label: "Hours" }, { value: countdown.minutes, label: "Min" }].map((item) => (
-                    <div key={item.label} className="flex flex-col items-center">
-                      <div className="w-[4.25rem] h-[4.25rem] sm:w-20 sm:h-20 rounded-2xl bg-card/60 backdrop-blur-md border border-border/50 shadow-[var(--shadow-md)] flex items-center justify-center">
-                        <span className="font-display text-2xl sm:text-3xl font-bold text-primary tabular-nums">{item.value}</span>
-                      </div>
-                      <span className="text-[10px] uppercase tracking-wider text-muted-foreground mt-1">{item.label}</span>
-                    </div>
-                  ))}
-                </div>
-              </motion.div>
-            )}
-
-            {/* Streaming destinations / pre-release actions */}
-            {platformLinks.length > 0 && (
-              <motion.div
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.28 }}
-                className="mb-5 rounded-[1.5rem] border border-white/10 bg-background/40 backdrop-blur-xl p-3 shadow-xl"
-              >
-                <div className="space-y-2">
-                  {platformLinks.slice(0, 8).map((link) => {
-                    const key = link.platform_name.toLowerCase().replace(/\s+/g, "_");
-                    const iconMap: Record<string, React.ReactNode> = {
-                      spotify: <SpotifyIcon />,
-                      apple_music: <AppleMusicIcon />,
-                      youtube: <YouTubeIcon />,
-                      deezer: <DeezerIcon />,
-                    };
-                    const colorMap: Record<string, string> = {
-                      spotify: "#1DB954",
-                      apple_music: "#FA243C",
-                      youtube: "#FF0000",
-                      deezer: "#FEAA2D",
-                    };
-                    const actionLabel =
-                      link.action_type === "presave" ? "PRE-SAVE" :
-                      link.action_type === "preadd" ? "PRE-ADD" :
-                      link.action_type === "notify" ? "NOTIFY" : "PLAY";
-                    return (
-                      <a
-                        key={link.id}
-                        href={link.platform_url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex min-h-12 items-center gap-3 rounded-full bg-white px-4 text-black transition-transform hover:-translate-y-0.5 active:scale-[0.99]"
-                      >
-                        <span className="w-7 h-7 flex items-center justify-center" style={{ color: colorMap[key] || "#111" }}>
-                          {iconMap[key] || <Music2 className="w-5 h-5" />}
-                        </span>
-                        <span className="flex-1 text-left text-sm font-medium">{link.platform_name}</span>
-                        <span className="text-[10px] font-bold tracking-wider text-black/55">{actionLabel}</span>
-                      </a>
-                    );
-                  })}
-                </div>
-              </motion.div>
-            )}
-
-            {/* Fan Notification Form */}
-            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}>
-              {spotifyPresaved ? (
-                <div className="rounded-2xl border border-[#1DB954]/35 bg-[#1DB954]/10 backdrop-blur-xl p-6 text-center shadow-xl">
-                  <div className="w-16 h-16 mx-auto rounded-full bg-[#1DB954]/15 flex items-center justify-center mb-4">
-                    <Check className="w-8 h-8 text-[#1DB954]" />
-                  </div>
-                  <h3 className="font-display text-lg font-semibold mb-2">Already pre-saved! 🎉</h3>
-                  <p className="text-sm text-muted-foreground"><strong>{preSave.title}</strong> by {preSave.artist} has been confirmed on this browser. You don’t need to pre-save it again.</p>
-                </div>
-              ) : submitted ? (
-                <div className="rounded-2xl border border-white/10 bg-background/45 backdrop-blur-xl p-6 text-center shadow-xl">
-                  <div className="w-16 h-16 mx-auto rounded-full bg-primary/20 flex items-center justify-center mb-4">
-                    <Bell className="w-8 h-8 text-primary" />
-                  </div>
-                  <h3 className="font-display text-lg font-semibold mb-2">You're on the list! 🎉</h3>
-                  <p className="text-sm text-muted-foreground">We'll send you a notification as soon as <strong>{preSave.title}</strong> drops.</p>
-                </div>
-              ) : (
-                <form onSubmit={handleNotifyMe} className="rounded-[1.5rem] border border-white/10 bg-background/45 backdrop-blur-xl p-4 sm:p-5 text-left space-y-4 shadow-xl">
-                  <div className="text-center mb-2">
-                    <h3 className="font-display font-semibold text-lg">Pre-save on Spotify</h3>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      Enter your name and email, then connect Spotify. We'll save it to your library and notify you on release day.
-                    </p>
-                  </div>
-                  {failureMessage && (
-                    <div className="rounded-lg border border-destructive/40 bg-destructive/10 p-3 text-sm">
-                      <div className="flex items-start gap-2">
-                        <AlertCircle className="w-4 h-4 mt-0.5 text-destructive shrink-0" />
-                        <div className="flex-1 min-w-0">
-                          <p className="font-medium text-destructive">
-                            We couldn't start your pre-save
-                          </p>
-                          <p className="mt-1 text-xs text-foreground/80 break-words">
-                            <span className="font-mono uppercase text-[10px] bg-destructive/20 px-1.5 py-0.5 rounded mr-1.5">
-                              {failureStep ?? "error"}
-                            </span>
-                            {failureMessage}
-                          </p>
-                          {debugEnabled && (
-                            <button
-                              type="button"
-                              onClick={() => setShowDebug((v) => !v)}
-                              className="mt-2 inline-flex items-center gap-1 text-[11px] text-muted-foreground hover:text-foreground"
-                            >
-                              {showDebug ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
-                              {showDebug ? "Hide" : "Show"} debug details
-                            </button>
-                          )}
-                          {debugEnabled && showDebug && (
-                            <pre className="mt-2 max-h-48 overflow-auto rounded bg-background/60 p-2 text-[10px] leading-snug text-muted-foreground whitespace-pre-wrap break-words">
-{JSON.stringify(
-  {
-    step: failureStep,
-    message: failureMessage,
-    origin: typeof window !== "undefined" ? window.location.origin : null,
-    href: typeof window !== "undefined" ? window.location.href : null,
-    redirectUri: typeof window !== "undefined" ? `${window.location.origin}/callback/spotify` : null,
-    preSaveId: preSave?.id,
-    detail: failureDetail,
-  },
-  null,
-  2,
-)}
-                            </pre>
-                          )}
-                          {!debugEnabled && (
-                            <p className="mt-1 text-[11px] text-muted-foreground">
-                              Please try again. If it keeps failing, contact the artist.
-                            </p>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                  <div>
-                    <Label htmlFor="fan-name" className="flex items-center gap-1.5 mb-1"><User className="w-3.5 h-3.5" /> Name</Label>
-                    <Input id="fan-name" placeholder="Your name (optional)" value={fanName} onChange={(e) => setFanName(e.target.value)} maxLength={100} />
-                  </div>
-                  <div>
-                    <Label htmlFor="fan-email" className="flex items-center gap-1.5 mb-1"><Mail className="w-3.5 h-3.5" /> Email <span className="text-muted-foreground font-normal">(optional — get a release-day alert)</span></Label>
-                    <Input id="fan-email" type="email" placeholder="you@email.com (optional)" value={fanEmail} onChange={(e) => setFanEmail(e.target.value)} maxLength={255} />
-                  </div>
-                  <Button
-                    type="button"
-                    variant="hero"
-                    size="lg"
-                    aria-label={preSave.theme_cta_text || "Pre-Save on Spotify"}
-                    className="w-full min-h-14 rounded-2xl border border-white/15 font-semibold text-[15px] shadow-lg transition-all duration-200 hover:-translate-y-0.5 hover:shadow-xl focus-visible:ring-2 focus-visible:ring-[#1DB954] focus-visible:ring-offset-2"
-                    style={{
-                      backgroundColor: preSave.theme_button_color || "#1DB954",
-                      color: preSave.theme_button_text_color || "#000000",
-                    }}
-                    disabled={submitting}
-                    onClick={handleSpotifyPresave}
-                  >
-                    {submitting ? (
-                      <Loader2 aria-hidden="true" className="w-5 h-5 animate-spin mr-2" />
-                    ) : (
-                      <svg aria-hidden="true" viewBox="0 0 24 24" className="w-6 h-6 mr-2 shrink-0" fill="currentColor">
-                        <path d="M12 0C5.372 0 0 5.372 0 12s5.372 12 12 12 12-5.372 12-12S18.628 0 12 0Zm5.49 17.31a.75.75 0 0 1-1.032.248c-2.83-1.73-6.39-2.12-10.588-1.16a.75.75 0 1 1-.335-1.462c4.59-1.05 8.52-.6 11.708 1.342a.75.75 0 0 1 .247 1.032Zm1.472-3.276a.94.94 0 0 1-1.293.31c-3.24-1.99-8.18-2.566-12.013-1.404a.94.94 0 1 1-.546-1.798c4.38-1.328 9.82-.685 13.542 1.6a.94.94 0 0 1 .31 1.292Zm.126-3.411C15.202 8.26 8.76 8.05 5.03 9.182a1.125 1.125 0 1 1-.653-2.153c4.28-1.3 11.394-1.05 15.896 1.62a1.125 1.125 0 0 1-1.183 1.974Z" />
-                      </svg>
-                    )}
-                    <span>{preSave.theme_cta_text || "Pre-Save on Spotify"}</span>
-                  </Button>
-                  <Button type="submit" variant="outline" size="sm" className="w-full" disabled={submitting}>
-                    <Bell className="w-3.5 h-3.5 mr-2" />
-                    Just notify me by email
-                  </Button>
-                </form>
-              )}
-            </motion.div>
-
-            {/* Optional artist-wide release email subscription — separate explicit consent. */}
-            <div className="mt-5 rounded-[1.5rem] border border-white/10 bg-background/45 backdrop-blur-xl p-4 text-left shadow-xl">
-              {futureSubscribed ? (
-                <div className="text-center py-2"><Mail className="w-7 h-7 mx-auto mb-2 text-primary" /><h3 className="font-semibold">You are following {preSave.artist}!</h3><p className="text-xs text-muted-foreground mt-1">You will receive email updates when this artist has new releases. You can unsubscribe from any email.</p></div>
-              ) : (
-                <form onSubmit={handleFutureArtistUpdates} className="space-y-3">
-                  <div><h3 className="font-semibold text-sm">Keep up with {preSave.artist}</h3><p className="text-xs text-muted-foreground mt-1">Optionally receive email notifications when this artist releases new music. This is separate from this pre-save.</p></div>
-                  <Input type="email" value={futureEmail} onChange={(e) => setFutureEmail(e.target.value)} placeholder="Your email address" maxLength={254} required />
-                  <label className="flex items-start gap-2 text-xs text-muted-foreground leading-relaxed"><input type="checkbox" checked={futureConsent} onChange={(e) => setFutureConsent(e.target.checked)} className="mt-0.5 accent-primary" /><span>I agree to receive email updates about future releases from {preSave.artist}. I understand I can unsubscribe at any time.</span></label>
-                  <Button type="submit" variant="outline" className="w-full" disabled={futureSubmitting || !futureConsent}>{futureSubmitting ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Mail className="w-4 h-4 mr-2" />}Notify me about future releases</Button>
-                </form>
-              )}
             </div>
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.4 }} className="mdistro-presave-ad mt-6">
-               <HouseAdSlot artistUserId={preSave.user_id} preSaveId={preSave.id} reserveSpace />
-            </motion.div>
-            </section>
+
+            <h1 className="font-display text-2xl sm:text-[1.8rem] font-extrabold tracking-tight leading-tight">
+              {preSave.title}
+            </h1>
+            <p className="mt-1 text-sm font-medium tracking-wide text-white/65">{preSave.artist}</p>
+            <p className="mt-3 text-[11px] font-semibold uppercase tracking-[.2em] text-cyan-300">
+              {preSave.is_released ? "OUT NOW" : "PRE-SAVE • COMING SOON"}
+            </p>
+            {preSave.release_date && (
+              <p className="mt-2 text-xs text-white/55">
+                {preSave.is_released ? "Released" : "Coming"} {formatReleaseDate(preSave.release_date)}
+              </p>
+            )}
+            {preSave.description && (
+              <p className="mx-auto mt-3 max-w-xs text-xs leading-relaxed text-white/60">{preSave.description}</p>
+            )}
+
+            {preSave.preview_audio_url && (
+              <div className="mt-5">
+                <AudioPreviewPlayer
+                  audioUrl={preSave.preview_audio_url}
+                  artworkUrl={preSave.artwork_url || undefined}
+                  title={preSave.title}
+                  artist={preSave.artist}
+                  previewStart={preSave.preview_start ?? 0}
+                  previewEnd={preSave.preview_end ?? 30}
+                  waveformData={preSave.waveform_data ?? undefined}
+                />
+              </div>
+            )}
+
+            {!preSave.is_released && (
+              <Button
+                type="button"
+                size="lg"
+                className="mt-6 min-h-[52px] w-full rounded-2xl bg-[#00c853] text-black hover:bg-[#00b94b] font-semibold shadow-[0_12px_35px_rgba(0,200,83,.22)]"
+                disabled={submitting || spotifyPresaved}
+                onClick={handleSpotifyPresave}
+              >
+                {submitting ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <SpotifyIcon />}
+                {spotifyPresaved ? "Already Pre-Saved" : "Pre-Save on Spotify"}
+              </Button>
+            )}
+
+            {platformLinks.length > 0 && (
+              <div className="mt-4 space-y-2.5">
+                {platformLinks.slice(0, 8).map((link) => {
+                  const key = link.platform_name.toLowerCase().replace(/\\s+/g, "_");
+                  const iconMap: Record<string, React.ReactNode> = {
+                    spotify: <SpotifyIcon />,
+                    apple_music: <AppleMusicIcon />,
+                    youtube: <YouTubeIcon />,
+                    deezer: <DeezerIcon />,
+                  };
+                  const colorMap: Record<string, string> = {
+                    spotify: "#1DB954",
+                    apple_music: "#FA243C",
+                    youtube: "#FF0000",
+                    deezer: "#FEAA2D",
+                  };
+                  const actionLabel =
+                    link.action_type === "presave" ? "PRE-SAVE" :
+                    link.action_type === "preadd" ? "PRE-ADD" :
+                    link.action_type === "notify" ? "NOTIFY" : "PLAY";
+                  return (
+                    <a
+                      key={link.id}
+                      href={link.platform_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex min-h-[44px] items-center gap-3 rounded-full bg-white px-4 text-left text-black shadow-sm transition-transform hover:-translate-y-0.5 active:scale-[.99]"
+                    >
+                      <span className="flex h-6 w-6 items-center justify-center" style={{ color: colorMap[key] || "#111" }}>
+                        {iconMap[key] || <Music2 className="h-5 w-5" />}
+                      </span>
+                      <span className="flex-1 text-[13px] font-medium">{link.platform_name}</span>
+                      <span className="text-[9px] font-bold tracking-wider text-black/55">{actionLabel}</span>
+                    </a>
+                  );
+                })}
+              </div>
+            )}
+
+            <details className="mt-5 rounded-2xl border border-white/15 bg-black/20 p-4 text-left backdrop-blur-xl">
+              <summary className="cursor-pointer list-none text-sm font-semibold text-white/90">
+                <span className="flex items-center justify-between">
+                  Keep up with {preSave.artist}
+                  <span className="text-xs text-cyan-300">Optional +</span>
+                </span>
+                <span className="mt-1 block text-xs font-normal text-white/55">
+                  Get an email when this artist releases new music.
+                </span>
+              </summary>
+              <div className="mt-4">
+                {futureSubscribed ? (
+                  <p className="text-sm text-emerald-300">You're following {preSave.artist}. You can unsubscribe from any email.</p>
+                ) : (
+                  <form onSubmit={handleFutureArtistUpdates} className="space-y-3">
+                    <Input
+                      type="email"
+                      value={futureEmail}
+                      onChange={(e) => setFutureEmail(e.target.value)}
+                      placeholder="Your email address"
+                      maxLength={254}
+                      required
+                      className="bg-white text-black placeholder:text-black/45"
+                    />
+                    <label className="flex items-start gap-2 text-xs leading-relaxed text-white/65">
+                      <input
+                        type="checkbox"
+                        checked={futureConsent}
+                        onChange={(e) => setFutureConsent(e.target.checked)}
+                        className="mt-0.5 accent-cyan-400"
+                      />
+                      <span>I agree to receive future release emails from {preSave.artist}. I can unsubscribe at any time.</span>
+                    </label>
+                    <Button type="submit" variant="outline" className="w-full" disabled={futureSubmitting || !futureConsent}>
+                      {futureSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Mail className="mr-2 h-4 w-4" />}
+                      Notify me about future releases
+                    </Button>
+                  </form>
+                )}
+              </div>
+            </details>
+
+            <div className="mt-5">
+              <HouseAdSlot artistUserId={preSave.user_id} preSaveId={preSave.id} reserveSpace />
+            </div>
+            <div className="mt-5 flex items-center justify-center gap-4 text-xs text-white/55">
+              <button type="button" onClick={handleShare} className="inline-flex items-center gap-1.5 hover:text-white">
+                <Share2 className="h-3.5 w-3.5" /> Share
+              </button>
+              <button type="button" onClick={handleCopyLink} className="inline-flex items-center gap-1.5 hover:text-white">
+                {copied ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
+                {copied ? "Copied" : "Copy link"}
+              </button>
+            </div>
           </motion.div>
         </main>
 
