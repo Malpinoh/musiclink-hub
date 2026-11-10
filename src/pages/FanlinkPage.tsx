@@ -411,7 +411,7 @@ const FanlinkPage = () => {
 
       <div className="relative z-10 min-h-screen flex flex-col">
         {/* Header */}
-        <header className="sticky top-0 z-30 px-4 sm:px-6 py-3.5 flex justify-between items-center backdrop-blur-2xl bg-background/35 border-b border-white/10">
+        <header className="sticky top-0 z-30 px-4 sm:px-5 py-3 flex justify-between items-center backdrop-blur-2xl bg-background/30 border-b border-white/10">
           <Link to="/" className="flex items-center gap-2 opacity-80 hover:opacity-100 transition-opacity">
             {theme?.logo_url ? (
               <img src={theme.logo_url} alt="Logo" className="w-8 h-8 rounded-lg object-cover" />
@@ -449,11 +449,11 @@ const FanlinkPage = () => {
         )}
 
         {/* Main Content */}
-        <main className="flex-1 px-4 py-8 sm:py-12">
-          <div className="mdistro-fanlink-layout mx-auto w-full max-w-5xl grid gap-8 lg:gap-12 lg:grid-cols-[minmax(0,400px)_minmax(0,1fr)] lg:items-start">
+        <main className="flex-1 px-4 py-6 sm:py-9">
+          <div className="mdistro-fanlink-layout mx-auto w-full max-w-md flex flex-col gap-6">
             {/* ── Left: release identity ── */}
             <motion.div
-              className="mdistro-fanlink-identity text-center lg:text-left lg:sticky lg:top-24"
+              className="mdistro-fanlink-identity text-center"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ ease: [0.16, 1, 0.3, 1], duration: 0.6 }}
@@ -469,7 +469,7 @@ const FanlinkPage = () => {
                   src={fanlink.artwork_url || demoArtwork}
                   alt={`${fanlink.title} artwork`}
 
-                  className="mdistro-fanlink-artwork relative w-56 h-56 sm:w-64 sm:h-64 lg:w-[280px] lg:h-[280px] mx-auto rounded-[1.5rem] object-cover shadow-2xl ring-1 ring-white/15"
+                  className="mdistro-fanlink-artwork relative w-[min(76vw,300px)] h-[min(76vw,300px)] sm:w-80 sm:h-80 mx-auto rounded-[1.35rem] object-cover shadow-2xl ring-1 ring-white/15"
                 />
               </motion.div>
 
@@ -491,7 +491,7 @@ const FanlinkPage = () => {
                   )}
                 </div>
                 <p className="mdistro-eyebrow mb-3">OFFICIAL MUSIC LINK</p>
-                <h1 className="mdistro-release-title font-display text-3xl sm:text-4xl lg:text-5xl font-bold leading-[1.05] tracking-tight text-balance mb-2">
+                <h1 className="mdistro-release-title font-display text-[2rem] sm:text-[2.35rem] font-bold leading-[1.02] tracking-tight text-balance mb-2">
                   {fanlink.title}
                 </h1>
                 <p className="text-lg text-muted-foreground">{fanlink.artist}</p>
@@ -502,7 +502,7 @@ const FanlinkPage = () => {
             </motion.div>
 
             {/* ── Right: actions ── */}
-            <div className="w-full max-w-md mx-auto lg:max-w-none">
+            <div className="w-full">
               {/* Fan Contact Form */}
               {showContactForm && !contactSubmitted && (
                 <FanContactForm
@@ -526,7 +526,7 @@ const FanlinkPage = () => {
               {/* Platform Links */}
               {(!showContactForm || contactSubmitted) && (
                 <motion.div
-                  className="mdistro-platform-panel rounded-[1.75rem] border border-white/10 bg-card/35 backdrop-blur-2xl p-4 sm:p-6 shadow-2xl"
+                  className="mdistro-platform-panel rounded-[1.75rem] border border-white/10 bg-card/35 backdrop-blur-2xl p-3.5 sm:p-5 shadow-2xl"
                   initial={{ opacity: 0, y: 16 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.22, ease: [0.16, 1, 0.3, 1] }}
@@ -555,15 +555,15 @@ const FanlinkPage = () => {
                               handlePlatformClick(link.platform_name);
                               trackPixelConversion("Lead", { platform: link.platform_name, content_name: fanlink.title });
                             }}
-                            className="mdistro-platform-link group relative flex items-center gap-3 sm:gap-4 rounded-2xl border border-white/10 bg-background/45 p-3 sm:p-4 overflow-hidden transition-all duration-300 hover:border-white/25 hover:bg-background/65 hover:shadow-xl"
+                            className="mdistro-platform-link group relative flex min-h-12 items-center gap-3 rounded-full border border-black/5 bg-white px-4 py-2.5 text-black overflow-hidden transition-all duration-300 hover:-translate-y-0.5 hover:shadow-xl"
                             initial={{ opacity: 0, y: 10 }}
                             animate={{ opacity: 1, y: 0 }}
                             transition={{ delay: 0.28 + index * 0.045, ease: [0.16, 1, 0.3, 1] }}
                             whileHover={{ y: -2 }}
                             whileTap={{ scale: 0.985 }}
                             style={{
-                              backgroundColor: theme?.button_color || undefined,
-                              color: theme?.button_color ? getContrastColor(theme.button_color) : undefined,
+                              backgroundColor: theme?.button_color || "#ffffff",
+                              color: theme?.button_color ? getContrastColor(theme.button_color) : "#000000",
                             }}
                           >
                             {/* brand wash */}
@@ -573,21 +573,21 @@ const FanlinkPage = () => {
                               aria-hidden
                             />
                             <span
-                              className="relative w-11 h-11 sm:w-12 sm:h-12 rounded-2xl flex items-center justify-center flex-shrink-0 transition-transform duration-300 group-hover:scale-105"
+                              className="relative w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 transition-transform duration-300 group-hover:scale-105"
                               style={{ color: config.color, backgroundColor: `${config.color}1F` }}
                             >
                               {config.icon}
                             </span>
                             <span className="relative flex-1 min-w-0 text-left">
-                              <span className="block font-semibold text-sm sm:text-base truncate">
+                              <span className="block font-semibold text-sm truncate text-black">
                                 {formatPlatformName(link.platform_name)}
                               </span>
-                              <span className="block text-xs text-muted-foreground mt-1">
+                              <span className="block text-[10px] text-black/45 mt-0.5">
                                 {isRelease ? "Open full release" : "Play now"}
                               </span>
                             </span>
                             <span className="mdistro-platform-action relative inline-flex items-center gap-1 text-xs font-semibold uppercase tracking-wider opacity-70 group-hover:opacity-100 transition-opacity">
-                              <span className="hidden sm:inline">Listen</span>
+                              <span className="hidden sm:inline text-black/60">PLAY</span>
                               <ExternalLink className="w-4 h-4" />
                             </span>
                           </motion.a>
