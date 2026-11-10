@@ -520,7 +520,7 @@ function PreSaveContent({ artistParam, slugParam }: { artistParam?: string; slug
               </motion.div>
             )}
 
-            {/* Streaming destinations — only shown when the linked release has real URLs. */}
+            {/* Streaming destinations / pre-release actions */}
             {platformLinks.length > 0 && (
               <motion.div
                 initial={{ opacity: 0, y: 10 }}
@@ -529,7 +529,7 @@ function PreSaveContent({ artistParam, slugParam }: { artistParam?: string; slug
                 className="mb-5 rounded-[1.5rem] border border-white/10 bg-background/40 backdrop-blur-xl p-3 shadow-xl"
               >
                 <div className="space-y-2">
-                  {platformLinks.slice(0, 4).map((link) => {
+                  {platformLinks.slice(0, 8).map((link) => {
                     const key = link.platform_name.toLowerCase().replace(/\s+/g, "_");
                     const iconMap: Record<string, React.ReactNode> = {
                       spotify: <SpotifyIcon />,
@@ -543,6 +543,10 @@ function PreSaveContent({ artistParam, slugParam }: { artistParam?: string; slug
                       youtube: "#FF0000",
                       deezer: "#FEAA2D",
                     };
+                    const actionLabel =
+                      link.action_type === "presave" ? "PRE-SAVE" :
+                      link.action_type === "preadd" ? "PRE-ADD" :
+                      link.action_type === "notify" ? "NOTIFY" : "PLAY";
                     return (
                       <a
                         key={link.id}
@@ -555,7 +559,7 @@ function PreSaveContent({ artistParam, slugParam }: { artistParam?: string; slug
                           {iconMap[key] || <Music2 className="w-5 h-5" />}
                         </span>
                         <span className="flex-1 text-left text-sm font-medium">{link.platform_name}</span>
-                        <span className="text-[10px] font-bold tracking-wider text-black/55">PLAY</span>
+                        <span className="text-[10px] font-bold tracking-wider text-black/55">{actionLabel}</span>
                       </a>
                     );
                   })}
