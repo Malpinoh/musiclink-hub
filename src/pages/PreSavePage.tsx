@@ -194,11 +194,17 @@ function PreSaveContent({ artistParam, slugParam }: { artistParam?: string; slug
           .select("id, platform_name, platform_url, action_type")
           .eq("pre_save_id", data.id)
           .order("display_order");
-        if (destinationsError) throw destinationsError;
-        setPlatformLinks((destinations || []).map((item) => ({
-          ...item,
-          action_type: item.action_type || "listen",
-        })));
+        if (destinationsError) {
+          // A campaign must remain viewable even if the optional DSP-action
+          // migration has not reached the database yet.
+          console.warn("Could not load optional pre-save DSP destinations:", destinationsError);
+          setPlatformLinks([]);
+        } else {
+          setPlatformLinks((destinations || []).map((item) => ({
+            ...item,
+            action_type: item.action_type || "listen",
+          })));
+        }
       } catch {
         setNotFound(true);
       } finally {
