@@ -63,6 +63,12 @@ async function logFailure(
 
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
+  if (req.method !== "POST") {
+    return new Response(
+      JSON.stringify({ success: false, error: "Method not allowed" }),
+      { status: 405, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+    );
+  }
 
   try {
     const body = await req.json();
@@ -75,13 +81,6 @@ serve(async (req) => {
       fanEmail,
       redirectUri,
     } = body;
-
-    if (req.method !== "POST") {
-      return new Response(
-        JSON.stringify({ success: false, error: "Method not allowed" }),
-        { status: 405, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-      );
-    }
 
     if (!code || !preSaveId || !redirectUri) {
       await logFailure("missing_callback_params", "Missing code/preSaveId/redirectUri", {
