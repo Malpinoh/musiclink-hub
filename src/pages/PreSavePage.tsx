@@ -171,26 +171,35 @@ function PreSaveContent({ artistParam, slugParam }: { artistParam?: string; slug
 
         if (error) throw error;
         if (!data) { setNotFound(true); return; }
-        // Released (flag set or release date passed) → hand fans off to the live page
+        // Once the release is live, send visitors to its fan link.
         const dropped = data.release_date && new Date(data.release_date).getTime() <= Date.now();
         if (data.is_released || (dropped && data.target_fanlink_id)) {
-          const { data: destinations } = await supabase
+          navigate(`/listen/${data.artist_slug}-${data.slug}`, { replace: true });
+          return;
+        }
+
+        try {
+          setSpotifyPresaved(localStorage.getItem(`mdistro_presaved_${data.id}`) === "true");
+        } catch {
+          // Storage can be unavailable in private browsing; the page still works.
+        }
+        setPreSave({
+          ...data,
+          waveform_data: Array.isArray(data.waveform_data) ? data.waveform_data as number[] : null,
+        });
+
+        // Campaign destinations are not the same as released fanlink destinations.
+        const { data: destinations, error: destinationsError } = await supabase
           .from("presave_streaming_links")
           .select("id, platform_name, platform_url, action_type")
           .eq("pre_save_id", data.id)
           .order("display_order");
+        if (destinationsError) throw destinationsError;
         setPlatformLinks((destinations || []).map((item) => ({
           ...item,
           action_type: item.action_type || "listen",
         })));
-          if (data.is_released) {
-            navigate(`/listen/${data.artist_slug}-${data.slug}`, { replace: true });
-            return;
-          }
-        }
-        try {
-          setSpotifyPresaved(localStorage.getItem(`mdistro_presaved_${data.id}`) === "true");
-        } catch {
+      } catch {
           // Storage can be unavailable in private browsing; the page still works.
         }
         setPreSave({
