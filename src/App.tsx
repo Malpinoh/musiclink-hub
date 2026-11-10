@@ -13,6 +13,7 @@ import Login from "./pages/Login";
 import NotFound from "./pages/NotFound";
 import OfflineBanner from "./components/OfflineBanner";
 import AdminRoute from "@/components/admin/AdminRoute";
+import GlobalErrorNotice, { RouteErrorBoundary } from "@/components/GlobalErrorNotice";
 
 // Lazy-loaded routes for code splitting
 const Dashboard = lazy(() => import("./pages/Dashboard"));
@@ -78,7 +79,9 @@ const App = () => {
           <Sonner />
           <BrowserRouter>
             <OfflineBanner />
-            <Suspense fallback={<RouteFallback />}>
+            <GlobalErrorNotice />
+            <RouteErrorBoundary>
+              <Suspense fallback={<RouteFallback />}>
               <Routes>
                 <Route path="/" element={<Index />} />
                 <Route path="/dashboard" element={<Dashboard />} />
@@ -115,7 +118,8 @@ const App = () => {
                 <Route path="/link/:id" element={<FanlinkPage />} />
                 <Route path="*" element={<NotFound />} />
               </Routes>
-            </Suspense>
+              </Suspense>
+            </RouteErrorBoundary>
           </BrowserRouter>
           <Analytics />
         </TooltipProvider>
