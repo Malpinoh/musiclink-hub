@@ -170,12 +170,15 @@ function PreSaveContent({ artistParam, slugParam }: { artistParam?: string; slug
         // Released (flag set or release date passed) → hand fans off to the live page
         const dropped = data.release_date && new Date(data.release_date).getTime() <= Date.now();
         if (data.is_released || (dropped && data.target_fanlink_id)) {
-          if (data.target_fanlink_id) {
-            const { data: fl } = await supabase
-              .from("fanlinks").select("artist_slug, slug")
-              .eq("id", data.target_fanlink_id).eq("is_published", true).maybeSingle();
-            if (fl) { navigate(`/${fl.artist_slug}/${fl.slug}`, { replace: true }); return; }
-          }
+          const { data: destinations } = await supabase
+          .from("presave_streaming_links")
+          .select("id, platform_name, platform_url, action_type")
+          .eq("pre_save_id", data.id)
+          .order("display_order");
+        setPlatformLinks((destinations || []).map((item) => ({
+          ...item,
+          action_type: item.action_type || "listen",
+        })));
           if (data.is_released) {
             navigate(`/listen/${data.artist_slug}-${data.slug}`, { replace: true });
             return;
