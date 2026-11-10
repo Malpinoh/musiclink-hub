@@ -535,7 +535,7 @@ function PreSaveContent({ artistParam, slugParam }: { artistParam?: string; slug
             {platformLinks.length > 0 && (
               <div className="mt-4 space-y-2.5">
                 {platformLinks.slice(0, 8).map((link) => {
-                  const key = link.platform_name.toLowerCase().replace(/\\s+/g, "_");
+                  const key = link.platform_name.toLowerCase().trim().replace(/\\s+/g, "_");
                   const iconMap: Record<string, React.ReactNode> = {
                     spotify: <SpotifyIcon />,
                     apple_music: <AppleMusicIcon />,
