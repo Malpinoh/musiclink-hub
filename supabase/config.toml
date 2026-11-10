@@ -39,14 +39,16 @@ verify_jwt = false
 [functions.generate-presave-links]
 verify_jwt = false
 
+# Internal release automation. These functions are invoked by trusted scheduled
+# jobs or other Edge Functions using the project service-role JWT.
 [functions.auto-resolve-presaves]
-verify_jwt = false
+verify_jwt = true
 
 [functions.spotify-oauth-callback]
 verify_jwt = false
 
 [functions.execute-presave-library-saves]
-verify_jwt = false
+verify_jwt = true
 
 [functions.track-geo]
 verify_jwt = false
@@ -55,10 +57,10 @@ verify_jwt = false
 verify_jwt = false
 
 [functions.send-presave-notification]
-verify_jwt = false
+verify_jwt = true
 
 [functions.resolve-presave-streaming-links]
-verify_jwt = false
+verify_jwt = true
 
 [functions.get-spotify-client-id]
 verify_jwt = false
@@ -72,8 +74,10 @@ verify_jwt = false
 [functions.backfill-release-links]
 verify_jwt = true
 
+# Public metadata GET remains public; the purge action performs its own admin check.
 [functions.meta]
 verify_jwt = false
 
+# Called by the database notification trigger with the service-role JWT.
 [functions.send-notification-email]
-verify_jwt = false
+verify_jwt = true
