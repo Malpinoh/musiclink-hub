@@ -794,6 +794,19 @@ const EditPreSave = () => {
                         placeholder="https://..."
                       />
                     </div>
+                    <div className="w-36">
+                      <Label className="text-xs">Action</Label>
+                      <select
+                        value={link.action_type}
+                        onChange={(e) => handleUpdateLink(index, "action_type", e.target.value)}
+                        className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
+                      >
+                        <option value="listen">Listen / Play</option>
+                        <option value="presave">Pre-Save</option>
+                        <option value="preadd">Pre-Add</option>
+                        <option value="notify">Notify</option>
+                      </select>
+                    </div>
                     <Button variant="ghost" size="icon" onClick={() => handleRemoveLink(index)} className="shrink-0">
                       <Trash2 className="w-4 h-4 text-destructive" />
                     </Button>
