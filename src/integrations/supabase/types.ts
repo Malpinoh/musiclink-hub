@@ -1653,6 +1653,7 @@ export type Database = {
       }
       presave_streaming_links: {
         Row: {
+          action_type: "presave" | "preadd" | "listen" | "notify"
           created_at: string
           display_order: number | null
           id: string
@@ -1662,6 +1663,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          action_type?: "presave" | "preadd" | "listen" | "notify"
           created_at?: string
           display_order?: number | null
           id?: string
@@ -1671,6 +1673,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          action_type?: "presave" | "preadd" | "listen" | "notify"
           created_at?: string
           display_order?: number | null
           id?: string
