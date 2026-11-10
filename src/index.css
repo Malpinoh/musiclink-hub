@@ -588,27 +588,19 @@ html, body { overflow-x: clip; max-width: 100%; }
 
 @media (min-width: 1024px) {
   .mdistro-presave-layout {
-    grid-template-columns: minmax(0, 1fr) minmax(360px, .88fr);
-    gap: clamp(2.5rem, 5vw, 5rem);
+    max-width: 28rem;
   }
 
   .mdistro-presave-identity {
-    align-items: flex-start;
+    align-items: center;
   }
 
   .mdistro-presave-release-copy {
-    text-align: left;
-  }
-
-  .mdistro-presave-release-copy .mdistro-presave-title,
-  .mdistro-presave-release-copy > p,
-  .mdistro-presave-release-copy > div {
-    margin-left: 0;
-    justify-content: flex-start;
+    text-align: center;
   }
 
   .mdistro-presave-conversion {
-    max-width: none;
+    max-width: 100%;
   }
 }
 
@@ -656,7 +648,7 @@ html, body { overflow-x: clip; max-width: 100%; }
   }
 
   .mdistro-release-title {
-    font-size: clamp(2.15rem, 10vw, 3rem);
+    font-size: clamp(1.95rem, 9vw, 2.35rem);
   }
 
   .mdistro-platform-heading h2 {
@@ -664,8 +656,8 @@ html, body { overflow-x: clip; max-width: 100%; }
   }
 
   .mdistro-platform-link {
-    min-height: 70px;
-    padding: .75rem;
+    min-height: 48px;
+    padding: .6rem .85rem;
   }
 
   .mdistro-platform-action .hidden {
@@ -673,8 +665,8 @@ html, body { overflow-x: clip; max-width: 100%; }
   }
 
   .mdistro-presave-layout {
-    padding: 1.1rem;
-    gap: 1.75rem;
+    padding: 1rem;
+    gap: 1.25rem;
     border-radius: 1.5rem;
   }
 

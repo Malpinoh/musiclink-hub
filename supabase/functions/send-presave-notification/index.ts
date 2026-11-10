@@ -61,7 +61,8 @@ function buildPlatformButtonHtml(link: StreamingLink): string {
 function buildEmailHtml(
   preSave: { title: string; artist: string; artwork_url: string | null; slug: string; artist_slug: string },
   fanName: string,
-  streamingLinks: StreamingLink[]
+  streamingLinks: StreamingLink[],
+  unsubscribeUrl?: string
 ): string {
   const artworkUrl = preSave.artwork_url || "https://via.placeholder.com/300x300?text=Music";
   // Smart landing page URL with all streaming links
@@ -95,6 +96,7 @@ function buildEmailHtml(
         <tr><td style="padding:20px 30px 30px;text-align:center;">
           <p style="color:#6b7280;font-size:11px;margin:0;">
             You received this because you signed up for release notifications on MDistro Link.
+            ${unsubscribeUrl ? `<br/><a href="${unsubscribeUrl}" style="color:#9ca3af;">Unsubscribe from this artist's future release emails</a>` : ""}
           </p>
         </td></tr>
       </table>
@@ -157,7 +159,7 @@ serve(async (req) => {
     // Step 2: Find pre-saves to process
     const releasingQuery = supabase
       .from("pre_saves")
-      .select("id, title, artist, artwork_url, release_date, upc, slug, artist_slug, links_resolved")
+      .select("id, user_id, title, artist, artwork_url, release_date, upc, slug, artist_slug, links_resolved")
       .eq("is_active", true);
     if (manualPreSaveId) {
       releasingQuery.eq("id", manualPreSaveId);
@@ -199,13 +201,10 @@ serve(async (req) => {
         .select("id, email, name")
         .eq("pre_save_id", preSave.id);
 
-      if (fansError || !fans || fans.length === 0) {
-        // Mark released even if no fans
-        await supabase.from("pre_saves").update({ is_released: true }).eq("id", preSave.id);
-        continue;
+      if (fansError) {
+        console.error("Could not load campaign pre-save fans:", fansError);
       }
-
-      for (const fan of fans) {
+      for (const fan of fans || []) {
         // Check if already notified
         const { data: existing } = await supabase
           .from("presave_notifications")
@@ -231,6 +230,51 @@ serve(async (req) => {
         if (result.success) totalSent++;
         else { totalErrors++; console.error(`Failed to send to ${fan.email}:`, result.error); }
 
+        await new Promise((r) => setTimeout(r, 100));
+      }
+
+      // Optional artist-wide subscribers are a separate, explicit opt-in.
+      // Send at most once per subscriber per release and include a working unsubscribe URL.
+      const { data: artistSubscribers, error: subscriberError } = await supabase
+        .from("artist_email_subscriptions")
+        .select("id, email, fan_name, unsubscribe_token")
+        .eq("artist_user_id", preSave.user_id)
+        .eq("is_active", true);
+      if (subscriberError) console.error("Could not load artist subscribers:", subscriberError);
+
+      for (const subscriber of artistSubscribers || []) {
+        const { data: alreadySent } = await supabase
+          .from("artist_subscription_notifications")
+          .select("id")
+          .eq("subscription_id", subscriber.id)
+          .eq("pre_save_id", preSave.id)
+          .maybeSingle();
+        if (alreadySent) continue;
+
+        const unsubscribeUrl = `https://${new URL(supabaseUrl).host}/functions/v1/unsubscribe-artist-updates?token=${subscriber.unsubscribe_token}`;
+        const subject = `New music from ${preSave.artist}: ${preSave.title}`;
+        const html = buildEmailHtml(
+          preSave,
+          subscriber.fan_name || "there",
+          streamingLinks || [],
+          unsubscribeUrl,
+        );
+        const result = await sendBrevoEmail(
+          brevoApiKey,
+          { email: subscriber.email, name: subscriber.fan_name || "Music fan" },
+          subject,
+          html,
+        );
+        if (result.success) {
+          await supabase.from("artist_subscription_notifications").insert({
+            subscription_id: subscriber.id,
+            pre_save_id: preSave.id,
+          });
+          totalSent++;
+        } else {
+          totalErrors++;
+          console.error(`Failed artist update email to ${subscriber.email}:`, result.error);
+        }
         await new Promise((r) => setTimeout(r, 100));
       }
 

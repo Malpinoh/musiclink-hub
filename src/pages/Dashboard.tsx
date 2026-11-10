@@ -54,6 +54,7 @@ interface PreSave {
 interface PreSaveStats {
   fanSignups: number;
   notificationsSent: number;
+  pageViews: number;
 }
 
 const Dashboard = () => {
@@ -150,11 +151,12 @@ const Dashboard = () => {
         const stats: Record<string, PreSaveStats> = {};
         await Promise.all(
           pss.map(async (ps) => {
-            const [fanRes, notifRes] = await Promise.all([
+            const [fanRes, notifRes, viewRes] = await Promise.all([
               supabase.from("presave_fans").select("*", { count: "exact", head: true }).eq("pre_save_id", ps.id),
               supabase.from("presave_notifications").select("*", { count: "exact", head: true }).eq("pre_save_id", ps.id).eq("status", "sent"),
+              supabase.from("presave_page_views").select("*", { count: "exact", head: true }).eq("pre_save_id", ps.id),
             ]);
-            stats[ps.id] = { fanSignups: fanRes.count || 0, notificationsSent: notifRes.count || 0 };
+            stats[ps.id] = { fanSignups: fanRes.count || 0, notificationsSent: notifRes.count || 0, pageViews: viewRes.count || 0 };
           })
         );
         setPreSaveStats(stats);
@@ -217,7 +219,9 @@ const Dashboard = () => {
   const totalClicks = Object.values(clickCounts).reduce((s, c) => s + c, 0);
   const totalFans = Object.values(fanContactCounts).reduce((s, c) => s + c, 0);
   const totalPreSaveSignups = Object.values(preSaveStats).reduce((s, st) => s + st.fanSignups, 0);
-  const conversionRate = totalClicks > 0 ? (totalFans / totalClicks) * 100 : 0;
+  const totalPreSaveViews = Object.values(preSaveStats).reduce((s, st) => s + st.pageViews, 0);
+  // Campaign conversion = unique pre-save signups divided by unique pre-save landing-page visitors.
+  const conversionRate = totalPreSaveViews > 0 ? (totalPreSaveSignups / totalPreSaveViews) * 100 : 0;
 
   const weekDelta = weekClicks.previous > 0
     ? Math.round(((weekClicks.current - weekClicks.previous) / weekClicks.previous) * 100)
@@ -317,7 +321,7 @@ const Dashboard = () => {
               delta={weekClicks.previous > 0 || weekClicks.current > 0 ? { value: weekDelta, label: `${weekClicks.current} this week` } : undefined} />
             <HeroMetric label="Fans Collected" value={totalFans} icon={Users} tone="accent" />
             <HeroMetric label="Pre-save Signups" value={totalPreSaveSignups} icon={Music2} tone="success" />
-            <HeroMetric label="Conversion" value={Number(conversionRate.toFixed(1))} suffix="%" icon={TrendingUp} tone="warning" />
+            <HeroMetric label="Pre-save Conversion" value={Number(conversionRate.toFixed(1))} suffix="%" icon={TrendingUp} tone="warning" />
           </div>
 
           {/* ── Health + Live Activity ── */}

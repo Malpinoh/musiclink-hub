@@ -19,6 +19,7 @@ import logo from "@/assets/logo.png";
 import { buildSpotifyAuthorizeUrl, getPresaveRedirectUri } from "@/lib/spotifyAuth";
 import HouseAdSlot from "@/components/HouseAdSlot";
 import { RetargetingPixels } from "@/components/RetargetingPixels";
+import { SpotifyIcon, AppleMusicIcon, YouTubeIcon, DeezerIcon } from "@/components/icons/PlatformIcons";
 
 interface PreSaveData {
   id: string;
@@ -128,6 +129,7 @@ function PreSaveContent({ artistParam, slugParam }: { artistParam?: string; slug
 
   const [loading, setLoading] = useState(true);
   const [preSave, setPreSave] = useState<PreSaveData | null>(null);
+  const [platformLinks, setPlatformLinks] = useState<Array<{ id: string; platform_name: string; platform_url: string; action_type: "presave" | "preadd" | "listen" | "notify" }>>([]);
   const [notFound, setNotFound] = useState(false);
   const [copied, setCopied] = useState(false);
 
@@ -136,6 +138,10 @@ function PreSaveContent({ artistParam, slugParam }: { artistParam?: string; slug
   const [fanEmail, setFanEmail] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const [futureEmail, setFutureEmail] = useState("");
+  const [futureConsent, setFutureConsent] = useState(false);
+  const [futureSubmitting, setFutureSubmitting] = useState(false);
+  const [futureSubscribed, setFutureSubscribed] = useState(false);
   // Persist the completed Spotify pre-save state on this browser across reloads.
   const [spotifyPresaved, setSpotifyPresaved] = useState(false);
   // Debug / error surfacing for the Spotify pre-save flow.
@@ -165,20 +171,13 @@ function PreSaveContent({ artistParam, slugParam }: { artistParam?: string; slug
 
         if (error) throw error;
         if (!data) { setNotFound(true); return; }
-        // Released (flag set or release date passed) → hand fans off to the live page
+        // Once the release is live, send visitors to its fan link.
         const dropped = data.release_date && new Date(data.release_date).getTime() <= Date.now();
         if (data.is_released || (dropped && data.target_fanlink_id)) {
-          if (data.target_fanlink_id) {
-            const { data: fl } = await supabase
-              .from("fanlinks").select("artist_slug, slug")
-              .eq("id", data.target_fanlink_id).eq("is_published", true).maybeSingle();
-            if (fl) { navigate(`/${fl.artist_slug}/${fl.slug}`, { replace: true }); return; }
-          }
-          if (data.is_released) {
-            navigate(`/listen/${data.artist_slug}-${data.slug}`, { replace: true });
-            return;
-          }
+          navigate(`/listen/${data.artist_slug}-${data.slug}`, { replace: true });
+          return;
         }
+
         try {
           setSpotifyPresaved(localStorage.getItem(`mdistro_presaved_${data.id}`) === "true");
         } catch {
@@ -188,6 +187,35 @@ function PreSaveContent({ artistParam, slugParam }: { artistParam?: string; slug
           ...data,
           waveform_data: Array.isArray(data.waveform_data) ? data.waveform_data as number[] : null,
         });
+
+        // Campaign destinations are not the same as released fanlink destinations.
+        const { data: destinations, error: destinationsError } = await supabase
+          .from("presave_streaming_links")
+          .select("id, platform_name, platform_url, action_type")
+          .eq("pre_save_id", data.id)
+          .order("display_order");
+        if (destinationsError) throw destinationsError;
+        setPlatformLinks((destinations || []).map((item) => ({
+          ...item,
+          action_type: item.action_type || "listen",
+        })));
+      } catch {
+          // Storage can be unavailable in private browsing; the page still works.
+        }
+        setPreSave({
+          ...data,
+          waveform_data: Array.isArray(data.waveform_data) ? data.waveform_data as number[] : null,
+        });
+
+        if (data.target_fanlink_id) {
+          const { data: destinations } = await supabase
+            .from("platform_links")
+            .select("id, platform_name, platform_url")
+            .eq("fanlink_id", data.target_fanlink_id)
+            .eq("is_active", true)
+            .order("display_order");
+          setPlatformLinks(destinations || []);
+        }
       } catch {
         setNotFound(true);
       } finally {
@@ -196,6 +224,29 @@ function PreSaveContent({ artistParam, slugParam }: { artistParam?: string; slug
     })();
   }, [artist, slug]);
 
+  // Count one pre-save landing-page visit per browser session.
+  useEffect(() => {
+    if (!preSave) return;
+    try {
+      const key = "mdistro_presave_visitor_" + preSave.id;
+      let visitorId = sessionStorage.getItem(key);
+      if (!visitorId) { visitorId = crypto.randomUUID(); sessionStorage.setItem(key, visitorId); }
+      void supabase.from("presave_page_views").upsert({ pre_save_id: preSave.id, visitor_id: visitorId }, { onConflict: "pre_save_id,visitor_id", ignoreDuplicates: true });
+    } catch (error) { console.warn("Could not record pre-save page view", error); }
+  }, [preSave]);
+
+  const handleFutureArtistUpdates = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!preSave || !futureConsent || !emailRegex.test(futureEmail.trim())) { toast.error("Enter a valid email and tick the consent box to subscribe."); return; }
+    setFutureSubmitting(true);
+    try {
+      const { error } = await supabase.functions.invoke("subscribe-artist-updates", { body: { preSaveId: preSave.id, email: futureEmail.trim().toLowerCase(), name: fanName.trim() } });
+      if (error) throw error;
+      setFutureSubscribed(true);
+      toast.success("You are subscribed to this artist’s future release updates.");
+    } catch (error) { console.error("Artist email subscription failed", error); toast.error("We could not subscribe you. Please try again."); }
+    finally { setFutureSubmitting(false); }
+  };
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   const validateForm = (): boolean => {
     if (!fanName.trim()) { toast.error("Please enter your name"); return false; }
@@ -445,13 +496,13 @@ function PreSaveContent({ artistParam, slugParam }: { artistParam?: string; slug
         </header>
 
         <main className="mdistro-presave-main flex-1 flex flex-col items-center justify-center px-4 sm:px-6 py-8 sm:py-12">
-          <motion.div className="mdistro-presave-card mdistro-presave-layout w-full max-w-6xl mx-auto rounded-[2rem] border border-white/10 bg-card/25 backdrop-blur-xl px-4 py-6 sm:px-8 sm:py-10 lg:px-12 lg:py-12 shadow-2xl" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ ease: [0.16, 1, 0.3, 1], duration: 0.6 }}>
-            <section className="mdistro-presave-identity text-center lg:text-left">
-              <p className="mdistro-eyebrow mb-5">THE NEXT CHAPTER STARTS HERE</p>
+          <motion.div className="mdistro-presave-card mdistro-presave-layout w-full max-w-md mx-auto rounded-[2rem] border border-white/10 bg-card/20 backdrop-blur-2xl px-4 py-5 sm:px-6 sm:py-7 shadow-2xl" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ ease: [0.16, 1, 0.3, 1], duration: 0.6 }}>
+            <section className="mdistro-presave-identity text-center">
+              <p className="mdistro-eyebrow mb-4 text-[10px] tracking-[0.28em]">PRE-SAVE • COMING SOON</p>
               {/* Artwork */}
             <motion.div className="mdistro-presave-artwork-wrap relative mb-8 sm:mb-9" initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ delay: 0.1 }}>
               <div className="absolute -inset-4 bg-gradient-to-r from-primary/30 to-accent/30 blur-2xl rounded-full opacity-50 animate-pulse-glow" />
-              <img src={preSave.theme_hero_image_url || preSave.artwork_url || demoArtwork} alt={`${preSave.title} artwork`} className="mdistro-presave-artwork relative w-64 h-64 sm:w-80 sm:h-80 lg:w-[min(100%,420px)] lg:h-auto lg:aspect-square mx-auto lg:mx-0 rounded-[1.5rem] object-cover shadow-2xl ring-1 ring-white/20" />
+              <img src={preSave.theme_hero_image_url || preSave.artwork_url || demoArtwork} alt={`${preSave.title} artwork`} className="mdistro-presave-artwork relative w-[min(76vw,300px)] h-[min(76vw,300px)] sm:w-80 sm:h-80 mx-auto rounded-[1.35rem] object-cover shadow-2xl ring-1 ring-white/20" />
               {!preSave.is_released && (
                 <div className="absolute -bottom-3 left-1/2 -translate-x-1/2 bg-gradient-to-r from-primary to-accent px-4 py-1 rounded-full">
                   <span className="text-xs font-semibold text-primary-foreground">PRE-SAVE</span>
@@ -474,8 +525,8 @@ function PreSaveContent({ artistParam, slugParam }: { artistParam?: string; slug
 
 
             <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="mdistro-presave-release-copy mb-6">
-              <h1 className="mdistro-presave-title font-display text-3xl sm:text-[2.6rem] lg:text-5xl font-bold tracking-tight leading-[1.02] text-balance mb-2">{preSave.title}</h1>
-              <p className="text-lg text-muted-foreground">{preSave.artist}</p>
+              <h1 className="mdistro-presave-title font-display text-[2rem] sm:text-[2.35rem] font-bold tracking-tight leading-[1.02] text-balance mb-2">{preSave.title}</h1>
+              <p className="text-sm sm:text-base text-muted-foreground">{preSave.artist}</p>
               {preSave.description && <p className="text-sm text-muted-foreground mt-3 max-w-sm mx-auto">{preSave.description}</p>}
               {preSave.release_date && !preSave.is_released && (
                 <div className="flex items-center justify-center gap-2 mt-4 text-sm text-muted-foreground">
@@ -505,6 +556,53 @@ function PreSaveContent({ artistParam, slugParam }: { artistParam?: string; slug
               </motion.div>
             )}
 
+            {/* Streaming destinations / pre-release actions */}
+            {platformLinks.length > 0 && (
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.28 }}
+                className="mb-5 rounded-[1.5rem] border border-white/10 bg-background/40 backdrop-blur-xl p-3 shadow-xl"
+              >
+                <div className="space-y-2">
+                  {platformLinks.slice(0, 8).map((link) => {
+                    const key = link.platform_name.toLowerCase().replace(/\s+/g, "_");
+                    const iconMap: Record<string, React.ReactNode> = {
+                      spotify: <SpotifyIcon />,
+                      apple_music: <AppleMusicIcon />,
+                      youtube: <YouTubeIcon />,
+                      deezer: <DeezerIcon />,
+                    };
+                    const colorMap: Record<string, string> = {
+                      spotify: "#1DB954",
+                      apple_music: "#FA243C",
+                      youtube: "#FF0000",
+                      deezer: "#FEAA2D",
+                    };
+                    const actionLabel =
+                      link.action_type === "presave" ? "PRE-SAVE" :
+                      link.action_type === "preadd" ? "PRE-ADD" :
+                      link.action_type === "notify" ? "NOTIFY" : "PLAY";
+                    return (
+                      <a
+                        key={link.id}
+                        href={link.platform_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex min-h-12 items-center gap-3 rounded-full bg-white px-4 text-black transition-transform hover:-translate-y-0.5 active:scale-[0.99]"
+                      >
+                        <span className="w-7 h-7 flex items-center justify-center" style={{ color: colorMap[key] || "#111" }}>
+                          {iconMap[key] || <Music2 className="w-5 h-5" />}
+                        </span>
+                        <span className="flex-1 text-left text-sm font-medium">{link.platform_name}</span>
+                        <span className="text-[10px] font-bold tracking-wider text-black/55">{actionLabel}</span>
+                      </a>
+                    );
+                  })}
+                </div>
+              </motion.div>
+            )}
+
             {/* Fan Notification Form */}
             <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}>
               {spotifyPresaved ? (
@@ -524,7 +622,7 @@ function PreSaveContent({ artistParam, slugParam }: { artistParam?: string; slug
                   <p className="text-sm text-muted-foreground">We'll send you a notification as soon as <strong>{preSave.title}</strong> drops.</p>
                 </div>
               ) : (
-                <form onSubmit={handleNotifyMe} className="rounded-2xl border border-white/10 bg-background/45 backdrop-blur-xl p-5 sm:p-6 text-left space-y-4 shadow-xl">
+                <form onSubmit={handleNotifyMe} className="rounded-[1.5rem] border border-white/10 bg-background/45 backdrop-blur-xl p-4 sm:p-5 text-left space-y-4 shadow-xl">
                   <div className="text-center mb-2">
                     <h3 className="font-display font-semibold text-lg">Pre-save on Spotify</h3>
                     <p className="text-xs text-muted-foreground mt-1">
@@ -594,7 +692,7 @@ function PreSaveContent({ artistParam, slugParam }: { artistParam?: string; slug
                     variant="hero"
                     size="lg"
                     aria-label={preSave.theme_cta_text || "Pre-Save on Spotify"}
-                    className="w-full min-h-14 rounded-full border border-white/15 font-semibold text-base shadow-lg transition-all duration-200 hover:-translate-y-0.5 hover:shadow-xl focus-visible:ring-2 focus-visible:ring-[#1DB954] focus-visible:ring-offset-2"
+                    className="w-full min-h-14 rounded-2xl border border-white/15 font-semibold text-[15px] shadow-lg transition-all duration-200 hover:-translate-y-0.5 hover:shadow-xl focus-visible:ring-2 focus-visible:ring-[#1DB954] focus-visible:ring-offset-2"
                     style={{
                       backgroundColor: preSave.theme_button_color || "#1DB954",
                       color: preSave.theme_button_text_color || "#000000",
@@ -619,6 +717,19 @@ function PreSaveContent({ artistParam, slugParam }: { artistParam?: string; slug
               )}
             </motion.div>
 
+            {/* Optional artist-wide release email subscription — separate explicit consent. */}
+            <div className="mt-5 rounded-[1.5rem] border border-white/10 bg-background/45 backdrop-blur-xl p-4 text-left shadow-xl">
+              {futureSubscribed ? (
+                <div className="text-center py-2"><Mail className="w-7 h-7 mx-auto mb-2 text-primary" /><h3 className="font-semibold">You are following {preSave.artist}!</h3><p className="text-xs text-muted-foreground mt-1">You will receive email updates when this artist has new releases. You can unsubscribe from any email.</p></div>
+              ) : (
+                <form onSubmit={handleFutureArtistUpdates} className="space-y-3">
+                  <div><h3 className="font-semibold text-sm">Keep up with {preSave.artist}</h3><p className="text-xs text-muted-foreground mt-1">Optionally receive email notifications when this artist releases new music. This is separate from this pre-save.</p></div>
+                  <Input type="email" value={futureEmail} onChange={(e) => setFutureEmail(e.target.value)} placeholder="Your email address" maxLength={254} required />
+                  <label className="flex items-start gap-2 text-xs text-muted-foreground leading-relaxed"><input type="checkbox" checked={futureConsent} onChange={(e) => setFutureConsent(e.target.checked)} className="mt-0.5 accent-primary" /><span>I agree to receive email updates about future releases from {preSave.artist}. I understand I can unsubscribe at any time.</span></label>
+                  <Button type="submit" variant="outline" className="w-full" disabled={futureSubmitting || !futureConsent}>{futureSubmitting ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Mail className="w-4 h-4 mr-2" />}Notify me about future releases</Button>
+                </form>
+              )}
+            </div>
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.4 }} className="mdistro-presave-ad mt-6">
                <HouseAdSlot artistUserId={preSave.user_id} preSaveId={preSave.id} reserveSpace />
             </motion.div>
