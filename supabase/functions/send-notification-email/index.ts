@@ -1,5 +1,6 @@
 // Sends an email for a newly created in-app notification (triggered by the database).
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.4";
+import { isServiceRoleRequest } from "../_shared/internalAuth.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -25,6 +26,7 @@ const emailShell = (title: string, message: string, link?: string | null) => `
 
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
+  if (!isServiceRoleRequest(req)) return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
 
   const json = (body: unknown, status = 200) =>
     new Response(JSON.stringify(body), { status, headers: { ...corsHeaders, "Content-Type": "application/json" } });

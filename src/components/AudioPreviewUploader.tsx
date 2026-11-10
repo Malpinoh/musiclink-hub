@@ -56,33 +56,24 @@ const AudioPreviewUploader = ({ userId, currentUrl, onUploaded, onDeleted }: Aud
     setProcessing(true);
 
     try {
-      // Step 1: Process audio — trim, normalize, fade, generate waveform
       toast.info("Processing audio preview...");
       const result = await processAudioPreview(file, trimStart, trimEnd);
       setProcessing(false);
 
-      // Step 2: Upload original to storage (hidden from frontend)
-      const ext = file.name.split(".").pop();
+      // Only the trimmed preview is uploaded. The full original recording is
+      // deliberately kept in memory and is never placed in the public bucket.
       const timestamp = Date.now();
-      const originalPath = `original/${userId}/${timestamp}.${ext}`;
-      await supabase.storage.from("audio-previews").upload(originalPath, file, {
-        cacheControl: "3600",
-      });
-
-      // Step 3: Upload processed preview
       const previewPath = `preview/${userId}/${timestamp}.wav`;
       const { error: previewError } = await supabase.storage
         .from("audio-previews")
         .upload(previewPath, result.previewBlob, {
           contentType: "audio/wav",
-          cacheControl: "31536000", // 1 year cache
+          cacheControl: "31536000",
         });
 
       if (previewError) throw previewError;
 
       const { data } = supabase.storage.from("audio-previews").getPublicUrl(previewPath);
-
-      // The uploaded file is the already-trimmed clip, so playback range is 0..clipLen.
       const clipLen = result.actualEnd - result.actualStart;
       onUploaded(data.publicUrl, 0, clipLen, result.waveformData);
       setUploaded(true);
@@ -144,7 +135,7 @@ const AudioPreviewUploader = ({ userId, currentUrl, onUploaded, onDeleted }: Aud
           <Upload className="w-8 h-8 mx-auto text-muted-foreground mb-2" />
           <p className="text-sm text-muted-foreground">Upload MP3, WAV, or AAC (max 10MB)</p>
           <p className="text-xs text-muted-foreground/60 mt-1">
-            Audio will be auto-trimmed, normalized, and optimized
+            Only the trimmed audio preview is uploaded; the original stays local.
           </p>
           <input
             ref={fileRef}
@@ -166,7 +157,6 @@ const AudioPreviewUploader = ({ userId, currentUrl, onUploaded, onDeleted }: Aud
             </Button>
           </div>
 
-          {/* Waveform Trimmer */}
           {preview && !uploaded && (
             <AudioWaveformTrimmer
               audioUrl={preview}

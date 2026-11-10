@@ -2,8 +2,8 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 
 interface GeoData {
@@ -12,145 +12,81 @@ interface GeoData {
   ip: string | null;
 }
 
-// Use ip-api.com for free geolocation (no API key required, 45 requests/min limit)
 async function getGeoFromIP(ip: string): Promise<GeoData> {
   try {
-    // Skip for localhost/private IPs
     if (ip === "127.0.0.1" || ip === "::1" || ip.startsWith("192.168.") || ip.startsWith("10.") || ip.startsWith("172.")) {
-      console.log("Private/local IP detected, skipping geolocation");
       return { country: null, city: null, ip };
     }
-
     const response = await fetch(`http://ip-api.com/json/${ip}?fields=status,country,city`);
-    
-    if (!response.ok) {
-      console.error("Geolocation API error:", response.status);
-      return { country: null, city: null, ip };
-    }
-
+    if (!response.ok) return { country: null, city: null, ip };
     const data = await response.json();
-    console.log("Geolocation response:", data);
-
     if (data.status === "success") {
-      return {
-        country: data.country || null,
-        city: data.city || null,
-        ip,
-      };
+      return { country: data.country || null, city: data.city || null, ip };
     }
-
     return { country: null, city: null, ip };
   } catch (error) {
-    console.error("Error fetching geolocation:", error);
+    console.error("Geolocation lookup failed:", error);
     return { country: null, city: null, ip };
   }
 }
 
-// Extract client IP from request headers
 function getClientIP(req: Request): string {
-  // Check various headers used by proxies/load balancers
-  const cfConnectingIP = req.headers.get("cf-connecting-ip");
-  if (cfConnectingIP) return cfConnectingIP;
-
-  const xRealIP = req.headers.get("x-real-ip");
-  if (xRealIP) return xRealIP;
-
-  const xForwardedFor = req.headers.get("x-forwarded-for");
-  if (xForwardedFor) {
-    // Can contain multiple IPs, get the first (original client)
-    return xForwardedFor.split(",")[0].trim();
-  }
-
-  return "unknown";
+  return req.headers.get("cf-connecting-ip")
+    || req.headers.get("x-real-ip")
+    || req.headers.get("x-forwarded-for")?.split(",")[0].trim()
+    || "unknown";
 }
 
+const isUuid = (value: unknown): value is string =>
+  typeof value === "string" && /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
+
 Deno.serve(async (req: Request) => {
-  // Handle CORS preflight
-  if (req.method === "OPTIONS") {
-    return new Response("ok", { headers: corsHeaders });
-  }
+  if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
+  const json = (body: unknown, status = 200) =>
+    new Response(JSON.stringify(body), { status, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+
+  if (req.method !== "POST") return json({ error: "Method not allowed" }, 405);
 
   try {
     const body = await req.json();
-    const { type, id, platform_name, content_type, user_agent, device_type, action_type, email, spotify_user_id, spotify_access_token, spotify_refresh_token, token_expires_at } = body;
+    // This endpoint is intentionally public for fanlink click analytics only.
+    // OAuth completion and token-bearing pre-save actions must use the
+    // authenticated Spotify callback, never this public telemetry endpoint.
+    const { type, id, platform_name, content_type, user_agent, device_type } = body ?? {};
+    if (type !== "click") return json({ error: "Unsupported tracking event" }, 400);
+    if (!isUuid(id)) return json({ error: "A valid fanlink ID is required" }, 400);
 
-    // Get client IP
+    const supabaseUrl = Deno.env.get("SUPABASE_URL");
+    const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+    if (!supabaseUrl || !serviceKey) return json({ error: "Tracking is temporarily unavailable" }, 503);
+
     const clientIP = getClientIP(req);
-    console.log("Client IP:", clientIP);
-
-    // Get geolocation from IP
     const geoData = await getGeoFromIP(clientIP);
-    console.log("GeoData:", geoData);
+    const supabase = createClient(supabaseUrl, serviceKey);
 
-    // Initialize Supabase client
-    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+    const { data: fanlink, error: lookupError } = await supabase
+      .from("fanlinks")
+      .select("id,is_published")
+      .eq("id", id)
+      .maybeSingle();
+    if (lookupError) throw lookupError;
+    if (!fanlink?.is_published) return json({ error: "Fanlink not found" }, 404);
 
-    let result;
+    const { error } = await supabase.from("clicks").insert({
+      fanlink_id: id,
+      platform_name: typeof platform_name === "string" ? platform_name.slice(0, 100) : null,
+      content_type: content_type === "release" ? "release" : "track",
+      user_agent: typeof user_agent === "string" ? user_agent.slice(0, 500) : null,
+      device_type: typeof device_type === "string" ? device_type.slice(0, 50) : null,
+      ip_address: geoData.ip,
+      country: geoData.country,
+      city: geoData.city,
+    });
+    if (error) throw error;
 
-    if (type === "click") {
-      // Insert click with geo data
-      const { data, error } = await supabase.from("clicks").insert({
-        fanlink_id: id,
-        platform_name: platform_name || null,
-        content_type: content_type === "release" ? "release" : "track",
-        user_agent: user_agent || null,
-        device_type: device_type || null,
-        ip_address: geoData.ip,
-        country: geoData.country,
-        city: geoData.city,
-      }).select();
-
-      if (error) {
-        console.error("Error inserting click:", error);
-        throw error;
-      }
-      result = data;
-    } else if (type === "presave_action") {
-      // Insert pre-save action with geo data
-      const insertData: Record<string, unknown> = {
-        pre_save_id: id,
-        action_type: action_type || "presave",
-        country: geoData.country,
-        city: geoData.city,
-        completed: true,
-      };
-
-      // Add optional fields
-      if (email) insertData.email = email;
-      if (spotify_user_id) insertData.spotify_user_id = spotify_user_id;
-      if (spotify_access_token) insertData.spotify_access_token = spotify_access_token;
-      if (spotify_refresh_token) insertData.spotify_refresh_token = spotify_refresh_token;
-      if (token_expires_at) insertData.token_expires_at = token_expires_at;
-
-      const { data, error } = await supabase.from("pre_save_actions").insert(insertData).select();
-
-      if (error) {
-        console.error("Error inserting pre-save action:", error);
-        throw error;
-      }
-      result = data;
-    } else {
-      throw new Error("Invalid type. Must be 'click' or 'presave_action'");
-    }
-
-    return new Response(
-      JSON.stringify({ success: true, data: result, geo: geoData }),
-      {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-        status: 200,
-      }
-    );
+    return json({ success: true, geo: { country: geoData.country, city: geoData.city } });
   } catch (error) {
-    console.error("Error in track-geo function:", error);
-    const errorMessage = error instanceof Error ? error.message : "Unknown error";
-    return new Response(
-      JSON.stringify({ success: false, error: errorMessage }),
-      {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-        status: 400,
-      }
-    );
+    console.error("Error in track-geo:", error);
+    return json({ success: false, error: "Unable to record this click" }, 500);
   }
 });

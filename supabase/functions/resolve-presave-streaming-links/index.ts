@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { isAuthorizedPreSaveRequest } from "../_shared/internalAuth.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
 const corsHeaders = {
@@ -114,14 +115,18 @@ async function resolveLinks(upc: string, isrc: string | null, artist: string, ti
 
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
-
   try {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
     const body = await req.json().catch(() => ({}));
-    const preSaveId = body.pre_save_id;
+    const preSaveId = typeof body.pre_save_id === "string" ? body.pre_save_id : null;
+    if (!await isAuthorizedPreSaveRequest(req, preSaveId, supabaseUrl, supabaseKey)) {
+      return new Response(JSON.stringify({ error: "Unauthorized: sign in as the campaign owner or use an internal service request." }), {
+        status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
 
     // If specific ID, resolve just that one. Otherwise resolve all unresolved releases due today or past.
     let preSaves: any[] = [];
