@@ -496,17 +496,6 @@ const EditPreSave = () => {
                   placeholder="https://..."
                 />
               </div>
-                        <select
-                          value={link.action_type}
-                          onChange={(e) => handleUpdateLink(index, "action_type", e.target.value)}
-                          className="h-10 rounded-md border border-input bg-background px-3 text-sm"
-                          aria-label="Link action"
-                        >
-                          <option value="listen">Listen / Play</option>
-                          <option value="presave">Pre-Save</option>
-                          <option value="preadd">Pre-Add</option>
-                          <option value="notify">Notify</option>
-                        </select>
             </div>
           </motion.div>
 
