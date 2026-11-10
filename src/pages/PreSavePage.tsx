@@ -200,23 +200,6 @@ function PreSaveContent({ artistParam, slugParam }: { artistParam?: string; slug
           action_type: item.action_type || "listen",
         })));
       } catch {
-          // Storage can be unavailable in private browsing; the page still works.
-        }
-        setPreSave({
-          ...data,
-          waveform_data: Array.isArray(data.waveform_data) ? data.waveform_data as number[] : null,
-        });
-
-        if (data.target_fanlink_id) {
-          const { data: destinations } = await supabase
-            .from("platform_links")
-            .select("id, platform_name, platform_url")
-            .eq("fanlink_id", data.target_fanlink_id)
-            .eq("is_active", true)
-            .order("display_order");
-          setPlatformLinks(destinations || []);
-        }
-      } catch {
         setNotFound(true);
       } finally {
         setLoading(false);
