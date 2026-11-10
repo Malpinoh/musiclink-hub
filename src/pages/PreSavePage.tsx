@@ -138,6 +138,10 @@ function PreSaveContent({ artistParam, slugParam }: { artistParam?: string; slug
   const [fanEmail, setFanEmail] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const [futureEmail, setFutureEmail] = useState("");
+  const [futureConsent, setFutureConsent] = useState(false);
+  const [futureSubmitting, setFutureSubmitting] = useState(false);
+  const [futureSubscribed, setFutureSubscribed] = useState(false);
   // Persist the completed Spotify pre-save state on this browser across reloads.
   const [spotifyPresaved, setSpotifyPresaved] = useState(false);
   // Debug / error surfacing for the Spotify pre-save flow.
@@ -211,6 +215,29 @@ function PreSaveContent({ artistParam, slugParam }: { artistParam?: string; slug
     })();
   }, [artist, slug]);
 
+  // Count one pre-save landing-page visit per browser session.
+  useEffect(() => {
+    if (!preSave) return;
+    try {
+      const key = "mdistro_presave_visitor_" + preSave.id;
+      let visitorId = sessionStorage.getItem(key);
+      if (!visitorId) { visitorId = crypto.randomUUID(); sessionStorage.setItem(key, visitorId); }
+      void supabase.from("presave_page_views").upsert({ pre_save_id: preSave.id, visitor_id: visitorId }, { onConflict: "pre_save_id,visitor_id", ignoreDuplicates: true });
+    } catch (error) { console.warn("Could not record pre-save page view", error); }
+  }, [preSave]);
+
+  const handleFutureArtistUpdates = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!preSave || !futureConsent || !emailRegex.test(futureEmail.trim())) { toast.error("Enter a valid email and tick the consent box to subscribe."); return; }
+    setFutureSubmitting(true);
+    try {
+      const { error } = await supabase.functions.invoke("subscribe-artist-updates", { body: { preSaveId: preSave.id, email: futureEmail.trim().toLowerCase(), name: fanName.trim() } });
+      if (error) throw error;
+      setFutureSubscribed(true);
+      toast.success("You are subscribed to this artist’s future release updates.");
+    } catch (error) { console.error("Artist email subscription failed", error); toast.error("We could not subscribe you. Please try again."); }
+    finally { setFutureSubmitting(false); }
+  };
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   const validateForm = (): boolean => {
     if (!fanName.trim()) { toast.error("Please enter your name"); return false; }
@@ -681,6 +708,19 @@ function PreSaveContent({ artistParam, slugParam }: { artistParam?: string; slug
               )}
             </motion.div>
 
+            {/* Optional artist-wide release email subscription — separate explicit consent. */}
+            <div className="mt-5 rounded-[1.5rem] border border-white/10 bg-background/45 backdrop-blur-xl p-4 text-left shadow-xl">
+              {futureSubscribed ? (
+                <div className="text-center py-2"><Mail className="w-7 h-7 mx-auto mb-2 text-primary" /><h3 className="font-semibold">You are following {preSave.artist}!</h3><p className="text-xs text-muted-foreground mt-1">You will receive email updates when this artist has new releases. You can unsubscribe from any email.</p></div>
+              ) : (
+                <form onSubmit={handleFutureArtistUpdates} className="space-y-3">
+                  <div><h3 className="font-semibold text-sm">Keep up with {preSave.artist}</h3><p className="text-xs text-muted-foreground mt-1">Optionally receive email notifications when this artist releases new music. This is separate from this pre-save.</p></div>
+                  <Input type="email" value={futureEmail} onChange={(e) => setFutureEmail(e.target.value)} placeholder="Your email address" maxLength={254} required />
+                  <label className="flex items-start gap-2 text-xs text-muted-foreground leading-relaxed"><input type="checkbox" checked={futureConsent} onChange={(e) => setFutureConsent(e.target.checked)} className="mt-0.5 accent-primary" /><span>I agree to receive email updates about future releases from {preSave.artist}. I understand I can unsubscribe at any time.</span></label>
+                  <Button type="submit" variant="outline" className="w-full" disabled={futureSubmitting || !futureConsent}>{futureSubmitting ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Mail className="w-4 h-4 mr-2" />}Notify me about future releases</Button>
+                </form>
+              )}
+            </div>
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.4 }} className="mdistro-presave-ad mt-6">
                <HouseAdSlot artistUserId={preSave.user_id} preSaveId={preSave.id} reserveSpace />
             </motion.div>
