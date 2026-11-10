@@ -1,5 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { isServiceRoleRequest } from "../_shared/internalAuth.ts";
+import { isAuthorizedPreSaveRequest } from "../_shared/internalAuth.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
 const corsHeaders = {
@@ -109,8 +109,6 @@ function buildEmailHtml(
 
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
-  if (!isServiceRoleRequest(req)) return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
-
   try {
     const brevoApiKey = Deno.env.get("BREVO_API_KEY");
     if (!brevoApiKey) throw new Error("BREVO_API_KEY is not configured");
@@ -119,14 +117,20 @@ serve(async (req) => {
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    const today = new Date().toISOString().split("T")[0];
-
-    // Check for optional pre_save_id for manual trigger
+    // Owners may trigger notifications only for their own campaign. The
+    // service-role credential remains reserved for scheduled global runs.
     let manualPreSaveId: string | null = null;
     try {
       const body = await req.json();
-      manualPreSaveId = body?.pre_save_id || null;
-    } catch { /* no body */ }
+      manualPreSaveId = typeof body?.pre_save_id === "string" ? body.pre_save_id : null;
+    } catch { /* scheduled invocation may have no body */ }
+    if (!await isAuthorizedPreSaveRequest(req, manualPreSaveId, supabaseUrl, supabaseKey)) {
+      return new Response(JSON.stringify({ error: "Unauthorized: sign in as the campaign owner or use an internal service request." }), {
+        status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const today = new Date().toISOString().split("T")[0];
 
     // Step 1: Resolve streaming links for unresolved releases
     const unresolvedQuery = supabase
