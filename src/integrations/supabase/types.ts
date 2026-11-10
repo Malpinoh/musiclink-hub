@@ -10,7 +10,7 @@ export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: "14.5"
+    PostgrestVersion: "13.0.5"
   }
   public: {
     Tables: {
@@ -259,6 +259,53 @@ export type Database = {
           },
         ]
       }
+      artist_email_subscriptions: {
+        Row: {
+          artist_user_id: string
+          consented_at: string
+          created_at: string
+          email: string
+          fan_name: string
+          id: string
+          is_active: boolean
+          source_pre_save_id: string | null
+          unsubscribe_token: string
+          updated_at: string
+        }
+        Insert: {
+          artist_user_id: string
+          consented_at?: string
+          created_at?: string
+          email: string
+          fan_name?: string
+          id?: string
+          is_active?: boolean
+          source_pre_save_id?: string | null
+          unsubscribe_token?: string
+          updated_at?: string
+        }
+        Update: {
+          artist_user_id?: string
+          consented_at?: string
+          created_at?: string
+          email?: string
+          fan_name?: string
+          id?: string
+          is_active?: boolean
+          source_pre_save_id?: string | null
+          unsubscribe_token?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "artist_email_subscriptions_source_pre_save_id_fkey"
+            columns: ["source_pre_save_id"]
+            isOneToOne: false
+            referencedRelation: "pre_saves"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       artist_link_clicks: {
         Row: {
           artist_profile_id: string
@@ -388,6 +435,42 @@ export type Database = {
           youtube_url?: string | null
         }
         Relationships: []
+      }
+      artist_subscription_notifications: {
+        Row: {
+          id: string
+          pre_save_id: string
+          sent_at: string
+          subscription_id: string
+        }
+        Insert: {
+          id?: string
+          pre_save_id: string
+          sent_at?: string
+          subscription_id: string
+        }
+        Update: {
+          id?: string
+          pre_save_id?: string
+          sent_at?: string
+          subscription_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "artist_subscription_notifications_pre_save_id_fkey"
+            columns: ["pre_save_id"]
+            isOneToOne: false
+            referencedRelation: "pre_saves"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "artist_subscription_notifications_subscription_id_fkey"
+            columns: ["subscription_id"]
+            isOneToOne: false
+            referencedRelation: "artist_email_subscriptions"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       campaign_templates: {
         Row: {
@@ -1651,9 +1734,37 @@ export type Database = {
           },
         ]
       }
+      presave_page_views: {
+        Row: {
+          id: string
+          pre_save_id: string
+          viewed_at: string
+          visitor_id: string
+        }
+        Insert: {
+          id?: string
+          pre_save_id: string
+          viewed_at?: string
+          visitor_id: string
+        }
+        Update: {
+          id?: string
+          pre_save_id?: string
+          viewed_at?: string
+          visitor_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "presave_page_views_pre_save_id_fkey"
+            columns: ["pre_save_id"]
+            isOneToOne: false
+            referencedRelation: "pre_saves"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       presave_streaming_links: {
         Row: {
-          action_type: "presave" | "preadd" | "listen" | "notify"
           created_at: string
           display_order: number | null
           id: string
@@ -1663,7 +1774,6 @@ export type Database = {
           updated_at: string
         }
         Insert: {
-          action_type?: "presave" | "preadd" | "listen" | "notify"
           created_at?: string
           display_order?: number | null
           id?: string
@@ -1673,7 +1783,6 @@ export type Database = {
           updated_at?: string
         }
         Update: {
-          action_type?: "presave" | "preadd" | "listen" | "notify"
           created_at?: string
           display_order?: number | null
           id?: string
@@ -1691,24 +1800,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
-      }
-      presave_page_views: {
-        Row: { id: string; pre_save_id: string; visitor_id: string; viewed_at: string }
-        Insert: { id?: string; pre_save_id: string; visitor_id: string; viewed_at?: string }
-        Update: { id?: string; pre_save_id?: string; visitor_id?: string; viewed_at?: string }
-        Relationships: []
-      }
-      artist_email_subscriptions: {
-        Row: { id: string; artist_user_id: string; email: string; fan_name: string; is_active: boolean; consented_at: string; unsubscribe_token: string; source_pre_save_id: string | null; created_at: string; updated_at: string }
-        Insert: { id?: string; artist_user_id: string; email: string; fan_name?: string; is_active?: boolean; consented_at?: string; unsubscribe_token?: string; source_pre_save_id?: string | null; created_at?: string; updated_at?: string }
-        Update: { id?: string; artist_user_id?: string; email?: string; fan_name?: string; is_active?: boolean; consented_at?: string; unsubscribe_token?: string; source_pre_save_id?: string | null; created_at?: string; updated_at?: string }
-        Relationships: []
-      }
-      artist_subscription_notifications: {
-        Row: { id: string; subscription_id: string; pre_save_id: string; sent_at: string }
-        Insert: { id?: string; subscription_id: string; pre_save_id: string; sent_at?: string }
-        Update: { id?: string; subscription_id?: string; pre_save_id?: string; sent_at?: string }
-        Relationships: []
       }
       profiles: {
         Row: {
