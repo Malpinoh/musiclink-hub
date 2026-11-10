@@ -17,6 +17,7 @@ import { buildPresaveMeta } from "@/lib/seoMeta";
 import { getShareablePresaveUrl } from "@/lib/shareUrl";
 import logo from "@/assets/logo.png";
 import { buildSpotifyAuthorizeUrl, getPresaveRedirectUri } from "@/lib/spotifyAuth";
+import { readSubscriptionResponse } from "@/lib/subscriptionResponse";
 import HouseAdSlot from "@/components/HouseAdSlot";
 import { RetargetingPixels } from "@/components/RetargetingPixels";
 import { SpotifyIcon, AppleMusicIcon, YouTubeIcon, DeezerIcon } from "@/components/icons/PlatformIcons";
@@ -142,6 +143,8 @@ function PreSaveContent({ artistParam, slugParam }: { artistParam?: string; slug
   const [futureConsent, setFutureConsent] = useState(false);
   const [futureSubmitting, setFutureSubmitting] = useState(false);
   const [futureSubscribed, setFutureSubscribed] = useState(false);
+  const [futureError, setFutureError] = useState<string | null>(null);
+  const [spotifyBrowserUrl, setSpotifyBrowserUrl] = useState<string | null>(null);
   // Persist the completed Spotify pre-save state on this browser across reloads.
   const [spotifyPresaved, setSpotifyPresaved] = useState(false);
   // Debug / error surfacing for the Spotify pre-save flow.
@@ -193,7 +196,9 @@ function PreSaveContent({ artistParam, slugParam }: { artistParam?: string; slug
           .from("presave_streaming_links")
           .select("id, platform_name, platform_url, action_type")
           .eq("pre_save_id", data.id)
-          .order("display_order");
+          .order("display_order")
+          // Optional DSP schema is not represented in the generated client types.
+          .returns<Array<{ id: string; platform_name: string; platform_url: string; action_type?: "presave" | "preadd" | "listen" | "notify" }>>();
         if (destinationsError) {
           // A campaign must remain viewable even if the optional DSP-action
           // migration has not reached the database yet.
@@ -226,14 +231,26 @@ function PreSaveContent({ artistParam, slugParam }: { artistParam?: string; slug
 
   const handleFutureArtistUpdates = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!preSave || !futureConsent || !emailRegex.test(futureEmail.trim())) { toast.error("Enter a valid email and tick the consent box to subscribe."); return; }
+    if (futureSubmitting) return;
+    setFutureError(null);
+    if (!preSave || !futureConsent || !emailRegex.test(futureEmail.trim()) || futureEmail.trim().length > 254) {
+      const message = !futureConsent ? "Tick the consent box to receive future release emails." : "Enter a valid email address (up to 254 characters).";
+      setFutureError(message);
+      toast.error(message);
+      return;
+    }
     setFutureSubmitting(true);
     try {
-      const { error } = await supabase.functions.invoke("subscribe-artist-updates", { body: { preSaveId: preSave.id, email: futureEmail.trim().toLowerCase(), name: fanName.trim() } });
-      if (error) throw error;
+      const { data, error } = await supabase.functions.invoke("subscribe-artist-updates", { body: { preSaveId: preSave.id, email: futureEmail.trim().toLowerCase(), name: fanName.trim(), consent: futureConsent } });
+      const response = await readSubscriptionResponse(data, error);
+      if (error || response.success !== true) throw new Error(response.message || response.error || "We couldn't confirm your subscription. Please try again shortly.");
       setFutureSubscribed(true);
-      toast.success("You are subscribed to this artist’s future release updates.");
-    } catch (error) { console.error("Artist email subscription failed", error); toast.error("We could not subscribe you. Please try again."); }
+      toast.success(response.message || "You are subscribed to this artist’s future release updates.");
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "The subscription service is unavailable. Please try again shortly.";
+      setFutureError(message);
+      toast.error(message);
+    }
     finally { setFutureSubmitting(false); }
   };
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -340,7 +357,7 @@ function PreSaveContent({ artistParam, slugParam }: { artistParam?: string; slug
         fanId,
         action: "save_and_follow",
         redirectUri,
-        returnUrl: window.location.pathname,
+        returnUrl: window.location.pathname + window.location.search,
       });
       if (!authorizeUrl) {
         const step = "spotify_client_id_missing";
@@ -355,13 +372,15 @@ function PreSaveContent({ artistParam, slugParam }: { artistParam?: string; slug
           context: { redirectUri, origin: window.location.origin },
         });
         toast.error("Spotify integration is not configured.");
+        setSubmitting(false);
         return;
       }
       sessionStorage.setItem(
         `presave_fan_${preSave.id}`,
         JSON.stringify({ fanId, name: fanName.trim(), email: fanEmail.trim().toLowerCase() }),
       );
-      window.location.href = authorizeUrl;
+      setSpotifyBrowserUrl(authorizeUrl);
+      window.location.assign(authorizeUrl);
     } catch (err) {
       console.error(err);
       const message = err instanceof Error ? err.message : "Could not start Spotify pre-save.";
@@ -531,6 +550,11 @@ function PreSaveContent({ artistParam, slugParam }: { artistParam?: string; slug
                 {spotifyPresaved ? "Already Pre-Saved" : "Pre-Save on Spotify"}
               </Button>
             )}
+            {spotifyBrowserUrl && (
+              <Button variant="link" asChild>
+                <a href={spotifyBrowserUrl}>Continue in browser with Spotify</a>
+              </Button>
+            )}
 
             {platformLinks.length > 0 && (
               <div className="mt-4 space-y-2.5">
@@ -593,17 +617,21 @@ function PreSaveContent({ artistParam, slugParam }: { artistParam?: string; slug
                       placeholder="Your email address"
                       maxLength={254}
                       required
+                      aria-label="Email for future artist updates"
+                      aria-describedby={futureError ? "future-subscription-error" : undefined}
                       className="bg-white text-black placeholder:text-black/45"
                     />
                     <label className="flex items-start gap-2 text-xs leading-relaxed text-white/65">
                       <input
                         type="checkbox"
                         checked={futureConsent}
+                        required
                         onChange={(e) => setFutureConsent(e.target.checked)}
                         className="mt-0.5 accent-cyan-400"
                       />
                       <span>I agree to receive future release emails from {preSave.artist}. I can unsubscribe at any time.</span>
                     </label>
+                    {futureError && <p id="future-subscription-error" role="alert" className="text-sm text-destructive">{futureError}</p>}
                     <Button type="submit" variant="outline" className="w-full" disabled={futureSubmitting || !futureConsent}>
                       {futureSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Mail className="mr-2 h-4 w-4" />}
                       Notify me about future releases

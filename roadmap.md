@@ -1,7 +1,9 @@
 # Roadmap
 
-- [ ] Route every public fanlink, pre-save, and campaign URL through page-specific crawler metadata
-- [ ] Add public active-campaign metadata with cache invalidation
-- [ ] Match campaign browser metadata to social crawler metadata
-- [ ] Start ads during pre-save and campaign loading, then preserve artist attribution
-- [ ] Verify previews and ads across public routes
+## Current request: subscription failure and Spotify browser OAuth
+- [ ] Match subscription handling to the existing Cloud schema; enforce consent and safe errors.
+- [ ] Validate Spotify OAuth state and same-campaign return without changing scopes or token exchange.
+- [ ] Run focused tests, inspect preview diagnostics and diff; do not deploy or publish.
+
+## Previously deferred (outside this request)
+- [ ] Complete public-preview and ad verification across routes (requires separate follow-up).

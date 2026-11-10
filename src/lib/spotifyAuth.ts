@@ -3,6 +3,7 @@
 // for each origin (preview + production + custom domains).
 import { supabase } from "@/integrations/supabase/client";
 import { logApiError } from "@/lib/apiLogger";
+import { createPresaveState } from "./spotifyOAuthState";
 
 export const SPOTIFY_PRESAVE_SCOPES = [
   "user-library-modify",
@@ -65,7 +66,7 @@ export async function buildSpotifyAuthorizeUrl(state: PresaveOAuthState): Promis
     client_id: clientId,
     scope: SPOTIFY_PRESAVE_SCOPES,
     redirect_uri: state.redirectUri,
-    state: btoa(JSON.stringify(state)),
+    state: createPresaveState(state, sessionStorage, window.location.origin),
     show_dialog: "false",
   });
   return `https://accounts.spotify.com/authorize?${params.toString()}`;

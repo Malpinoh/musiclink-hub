@@ -166,7 +166,8 @@ const EditPreSave = () => {
         .from("presave_streaming_links")
         .select("*")
         .eq("pre_save_id", id!)
-        .order("display_order");
+        .order("display_order")
+        .returns<StreamingLink[]>();
       setStreamingLinks(links || []);
 
       // Fetch fan/notification counts
@@ -205,7 +206,8 @@ const EditPreSave = () => {
         .from("presave_streaming_links")
         .select("*")
         .eq("pre_save_id", preSave.id)
-        .order("display_order");
+        .order("display_order")
+        .returns<StreamingLink[]>();
       setStreamingLinks(links || []);
     } catch (error) {
       console.error("Error resolving links:", error);
