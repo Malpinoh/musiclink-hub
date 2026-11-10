@@ -379,8 +379,12 @@ function PreSaveContent({ artistParam, slugParam }: { artistParam?: string; slug
         `presave_fan_${preSave.id}`,
         JSON.stringify({ fanId, name: fanName.trim(), email: fanEmail.trim().toLowerCase() }),
       );
+      // Keep the authorization URL on the campaign page until the visitor
+      // explicitly continues. This gives mobile browsers a direct user gesture
+      // for any OS/app-link handling, while preserving the same tab and its
+      // sessionStorage-backed OAuth state for the callback.
       setSpotifyBrowserUrl(authorizeUrl);
-      window.location.assign(authorizeUrl);
+      setSubmitting(false);
     } catch (err) {
       console.error(err);
       const message = err instanceof Error ? err.message : "Could not start Spotify pre-save.";
@@ -538,7 +542,7 @@ function PreSaveContent({ artistParam, slugParam }: { artistParam?: string; slug
               </div>
             )}
 
-            {!preSave.is_released && (
+            {!preSave.is_released && !spotifyBrowserUrl && (
               <Button
                 type="button"
                 size="lg"
@@ -551,9 +555,29 @@ function PreSaveContent({ artistParam, slugParam }: { artistParam?: string; slug
               </Button>
             )}
             {spotifyBrowserUrl && (
-              <Button variant="link" asChild>
-                <a href={spotifyBrowserUrl}>Continue in browser with Spotify</a>
-              </Button>
+              <div className="mt-6 rounded-2xl border border-[#1DB954]/30 bg-[#1DB954]/10 p-4 text-left">
+                <p className="text-sm font-semibold">Your Spotify authorization is ready</p>
+                <p className="mt-1 text-xs leading-relaxed text-white/65">
+                  Continue below. Depending on your phone and browser, Spotify may open in its app; otherwise, authorization will continue in this browser.
+                </p>
+                <Button
+                  asChild
+                  size="lg"
+                  className="mt-4 min-h-[50px] w-full rounded-xl bg-[#00c853] text-black hover:bg-[#00b94b] font-semibold"
+                >
+                  <a href={spotifyBrowserUrl}>
+                    <SpotifyIcon />
+                    Continue to Spotify
+                  </a>
+                </Button>
+                <button
+                  type="button"
+                  className="mt-3 w-full text-center text-xs font-medium text-white/65 underline underline-offset-4"
+                  onClick={() => setSpotifyBrowserUrl(null)}
+                >
+                  Cancel and return to campaign
+                </button>
+              </div>
             )}
 
             {platformLinks.length > 0 && (
