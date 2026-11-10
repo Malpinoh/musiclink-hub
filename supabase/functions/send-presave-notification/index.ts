@@ -201,13 +201,10 @@ serve(async (req) => {
         .select("id, email, name")
         .eq("pre_save_id", preSave.id);
 
-      if (fansError || !fans || fans.length === 0) {
-        // Mark released even if no fans
-        await supabase.from("pre_saves").update({ is_released: true }).eq("id", preSave.id);
-        continue;
+      if (fansError) {
+        console.error("Could not load campaign pre-save fans:", fansError);
       }
-
-      for (const fan of fans) {
+      for (const fan of fans || []) {
         // Check if already notified
         const { data: existing } = await supabase
           .from("presave_notifications")
