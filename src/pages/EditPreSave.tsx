@@ -219,6 +219,20 @@ const EditPreSave = () => {
     setStreamingLinks([...streamingLinks, { platform_name: "", platform_url: "", action_type: "listen", display_order: streamingLinks.length + 1 }]);
   };
 
+  // Add a ready-made DSP row. The artist must supply a real destination URL;
+  // MDistro Link never fabricates a pre-save/pre-add endpoint.
+  const addPlatformPreset = (platform_name: string, action_type: StreamingLink["action_type"]) => {
+    const exists = streamingLinks.some((link) => link.platform_name.trim().toLowerCase() === platform_name.toLowerCase());
+    if (exists) {
+      toast.info(`${platform_name} is already in this campaign.`);
+      return;
+    }
+    setStreamingLinks((current) => [
+      ...current,
+      { platform_name, platform_url: "", action_type, display_order: current.length + 1 },
+    ]);
+  };
+
   const handleRemoveLink = async (index: number) => {
     const link = streamingLinks[index];
     if (link.id) {
@@ -753,15 +767,32 @@ const EditPreSave = () => {
                   Auto-Generate
                 </Button>
                 <Button variant="outline" size="sm" onClick={handleAddLink}>
-                  <Plus className="w-4 h-4 mr-1" /> Add Link
+                  <Plus className="w-4 h-4 mr-1" /> Custom Link
                 </Button>
+              </div>
+            </div>
+
+            <div className="mb-4 space-y-2">
+              <p className="text-sm font-medium">Add streaming services</p>
+              <p className="text-xs text-muted-foreground">
+                Choose the services you want displayed. Paste each service's real campaign or release URL, then select the correct action. Spotify's main OAuth pre-save button is configured separately above.
+              </p>
+              <div className="flex flex-wrap gap-2">
+                <Button type="button" size="sm" variant="secondary" onClick={() => addPlatformPreset("Apple Music", "preadd")}>+ Apple Music · Pre-Add</Button>
+                <Button type="button" size="sm" variant="secondary" onClick={() => addPlatformPreset("Deezer", "notify")}>+ Deezer · Notify</Button>
+                <Button type="button" size="sm" variant="secondary" onClick={() => addPlatformPreset("YouTube Music", "listen")}>+ YouTube Music</Button>
+                <Button type="button" size="sm" variant="secondary" onClick={() => addPlatformPreset("Amazon Music", "listen")}>+ Amazon Music</Button>
+                <Button type="button" size="sm" variant="secondary" onClick={() => addPlatformPreset("Audiomack", "listen")}>+ Audiomack</Button>
+                <Button type="button" size="sm" variant="secondary" onClick={() => addPlatformPreset("TIDAL", "listen")}>+ TIDAL</Button>
+                <Button type="button" size="sm" variant="secondary" onClick={() => addPlatformPreset("Boomplay", "listen")}>+ Boomplay</Button>
+                <Button type="button" size="sm" variant="secondary" onClick={() => addPlatformPreset("SoundCloud", "listen")}>+ SoundCloud</Button>
               </div>
             </div>
 
             {streamingLinks.length === 0 ? (
               <div className="text-center py-6 text-muted-foreground text-sm">
                 <Link2 className="w-8 h-8 mx-auto mb-2 opacity-50" />
-                <p>No streaming links yet. Click "Auto-Generate" to resolve links from UPC/ISRC, or add manually.</p>
+                <p>No additional services configured yet. Add a service above or use Auto-Generate when a UPC/ISRC is available.</p>
               </div>
             ) : (
               <div className="space-y-3">
