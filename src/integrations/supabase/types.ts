@@ -1692,6 +1692,24 @@ export type Database = {
           },
         ]
       }
+      presave_page_views: {
+        Row: { id: string; pre_save_id: string; visitor_id: string; viewed_at: string }
+        Insert: { id?: string; pre_save_id: string; visitor_id: string; viewed_at?: string }
+        Update: { id?: string; pre_save_id?: string; visitor_id?: string; viewed_at?: string }
+        Relationships: []
+      }
+      artist_email_subscriptions: {
+        Row: { id: string; artist_user_id: string; email: string; fan_name: string; is_active: boolean; consented_at: string; unsubscribe_token: string; source_pre_save_id: string | null; created_at: string; updated_at: string }
+        Insert: { id?: string; artist_user_id: string; email: string; fan_name?: string; is_active?: boolean; consented_at?: string; unsubscribe_token?: string; source_pre_save_id?: string | null; created_at?: string; updated_at?: string }
+        Update: { id?: string; artist_user_id?: string; email?: string; fan_name?: string; is_active?: boolean; consented_at?: string; unsubscribe_token?: string; source_pre_save_id?: string | null; created_at?: string; updated_at?: string }
+        Relationships: []
+      }
+      artist_subscription_notifications: {
+        Row: { id: string; subscription_id: string; pre_save_id: string; sent_at: string }
+        Insert: { id?: string; subscription_id: string; pre_save_id: string; sent_at?: string }
+        Update: { id?: string; subscription_id?: string; pre_save_id?: string; sent_at?: string }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
