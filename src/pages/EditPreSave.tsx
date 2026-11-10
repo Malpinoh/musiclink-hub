@@ -117,6 +117,7 @@ interface StreamingLink {
   id?: string;
   platform_name: string;
   platform_url: string;
+  action_type: "presave" | "preadd" | "listen" | "notify";
   display_order: number;
 }
 
@@ -215,7 +216,7 @@ const EditPreSave = () => {
   };
 
   const handleAddLink = () => {
-    setStreamingLinks([...streamingLinks, { platform_name: "", platform_url: "", display_order: streamingLinks.length + 1 }]);
+    setStreamingLinks([...streamingLinks, { platform_name: "", platform_url: "", action_type: "listen", display_order: streamingLinks.length + 1 }]);
   };
 
   const handleRemoveLink = async (index: number) => {
@@ -286,6 +287,7 @@ const EditPreSave = () => {
           await supabase.from("presave_streaming_links").update({
             platform_name: link.platform_name,
             platform_url: link.platform_url,
+            action_type: link.action_type || "listen",
             display_order: link.display_order,
           }).eq("id", link.id);
         } else {
@@ -293,6 +295,7 @@ const EditPreSave = () => {
             pre_save_id: preSave.id,
             platform_name: link.platform_name,
             platform_url: link.platform_url,
+            action_type: link.action_type || "listen",
             display_order: link.display_order,
           });
         }
@@ -493,6 +496,17 @@ const EditPreSave = () => {
                   placeholder="https://..."
                 />
               </div>
+                        <select
+                          value={link.action_type}
+                          onChange={(e) => handleUpdateLink(index, "action_type", e.target.value)}
+                          className="h-10 rounded-md border border-input bg-background px-3 text-sm"
+                          aria-label="Link action"
+                        >
+                          <option value="listen">Listen / Play</option>
+                          <option value="presave">Pre-Save</option>
+                          <option value="preadd">Pre-Add</option>
+                          <option value="notify">Notify</option>
+                        </select>
             </div>
           </motion.div>
 
