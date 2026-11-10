@@ -129,7 +129,7 @@ function PreSaveContent({ artistParam, slugParam }: { artistParam?: string; slug
 
   const [loading, setLoading] = useState(true);
   const [preSave, setPreSave] = useState<PreSaveData | null>(null);
-  const [platformLinks, setPlatformLinks] = useState<Array<{ id: string; platform_name: string; platform_url: string }>>([]);
+  const [platformLinks, setPlatformLinks] = useState<Array<{ id: string; platform_name: string; platform_url: string; action_type: "presave" | "preadd" | "listen" | "notify" }>>([]);
   const [notFound, setNotFound] = useState(false);
   const [copied, setCopied] = useState(false);
 
