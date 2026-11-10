@@ -76,12 +76,74 @@ serve(async (req) => {
       redirectUri,
     } = body;
 
+    if (req.method !== "POST") {
+      return new Response(
+        JSON.stringify({ success: false, error: "Method not allowed" }),
+        { status: 405, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
+
     if (!code || !preSaveId || !redirectUri) {
       await logFailure("missing_callback_params", "Missing code/preSaveId/redirectUri", {
         hasCode: !!code, hasPreSaveId: !!preSaveId, hasRedirectUri: !!redirectUri,
       }, preSaveId, fanId);
       return new Response(
         JSON.stringify({ success: false, error: "Missing required parameters", step: "missing_callback_params" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
+
+    // Bind the token exchange redirect URI to the browser origin that invoked
+    // this function. The client must not be able to choose an arbitrary
+    // Spotify-registered callback URL when exchanging an authorization code.
+    const requestOrigin = req.headers.get("origin");
+    let parsedRedirect: URL | null = null;
+    try {
+      parsedRedirect = new URL(redirectUri);
+    } catch {
+      parsedRedirect = null;
+    }
+    const isLocalDevelopment =
+      parsedRedirect?.protocol === "http:" &&
+      (parsedRedirect.hostname === "localhost" || parsedRedirect.hostname === "127.0.0.1");
+    const validRedirect =
+      !!requestOrigin &&
+      !!parsedRedirect &&
+      parsedRedirect.origin === requestOrigin &&
+      parsedRedirect.pathname === "/callback/spotify" &&
+      !parsedRedirect.search &&
+      !parsedRedirect.hash &&
+      (parsedRedirect.protocol === "https:" || isLocalDevelopment);
+
+    if (!validRedirect) {
+      await logFailure("invalid_redirect_uri", "Spotify callback URI did not match the invoking origin", {
+        hasOrigin: !!requestOrigin,
+        redirectPath: parsedRedirect?.pathname ?? null,
+        redirectProtocol: parsedRedirect?.protocol ?? null,
+      }, preSaveId, fanId);
+      return new Response(
+        JSON.stringify({ success: false, error: "Invalid Spotify callback address", step: "invalid_redirect_uri" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
+
+    if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(preSaveId)) {
+      return new Response(
+        JSON.stringify({ success: false, error: "Invalid pre-save campaign", step: "invalid_presave_id" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
+
+    if (fanId != null && !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(fanId)) {
+      return new Response(
+        JSON.stringify({ success: false, error: "Invalid fan reference", step: "invalid_fan_id" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
+
+    if (action != null && !["presave", "save_and_follow"].includes(action)) {
+      return new Response(
+        JSON.stringify({ success: false, error: "Invalid pre-save action", step: "invalid_action" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     }
