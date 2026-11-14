@@ -220,8 +220,11 @@ const Dashboard = () => {
   const totalFans = Object.values(fanContactCounts).reduce((s, c) => s + c, 0);
   const totalPreSaveSignups = Object.values(preSaveStats).reduce((s, st) => s + st.fanSignups, 0);
   const totalPreSaveViews = Object.values(preSaveStats).reduce((s, st) => s + st.pageViews, 0);
-  // Campaign conversion = unique pre-save signups divided by unique pre-save landing-page visitors.
-  const conversionRate = totalPreSaveViews > 0 ? (totalPreSaveSignups / totalPreSaveViews) * 100 : 0;
+  // Overall conversion combines fanlink lead captures and pre-save signups across all owned links.
+  // Each conversion is divided by its corresponding tracked visit (fanlink click or pre-save page view).
+  const totalConversions = totalFans + totalPreSaveSignups;
+  const totalTrackedVisits = totalClicks + totalPreSaveViews;
+  const conversionRate = totalTrackedVisits > 0 ? (totalConversions / totalTrackedVisits) * 100 : 0;
 
   const weekDelta = weekClicks.previous > 0
     ? Math.round(((weekClicks.current - weekClicks.previous) / weekClicks.previous) * 100)
@@ -321,7 +324,7 @@ const Dashboard = () => {
               delta={weekClicks.previous > 0 || weekClicks.current > 0 ? { value: weekDelta, label: `${weekClicks.current} this week` } : undefined} />
             <HeroMetric label="Fans Collected" value={totalFans} icon={Users} tone="accent" />
             <HeroMetric label="Pre-save Signups" value={totalPreSaveSignups} icon={Music2} tone="success" />
-            <HeroMetric label="Pre-save Conversion" value={Number(conversionRate.toFixed(1))} suffix="%" icon={TrendingUp} tone="warning" />
+            <HeroMetric label="Overall Conversion" value={Number(conversionRate.toFixed(1))} suffix="%" icon={TrendingUp} tone="warning" />
           </div>
 
           {/* ── Health + Live Activity ── */}

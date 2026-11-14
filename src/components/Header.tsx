@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Menu, X, LogOut, BarChart3, User, Wallet, Shield, Bell } from "lucide-react";
+import { Menu, X, LogOut, BarChart3, User, Wallet, Shield, Bell, Activity as ActivityIcon } from "lucide-react";
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "@/contexts/AuthContext";
@@ -38,6 +38,10 @@ const Header = () => {
             <>
               <Link to="/dashboard" className="text-muted-foreground hover:text-foreground transition-colors">
                 Dashboard
+              </Link>
+              <Link to="/activity" className="text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1">
+                <ActivityIcon className="w-4 h-4" />
+                Activity
               </Link>
               <Link to="/artist/campaigns" className="text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1">
                 <BarChart3 className="w-4 h-4" />
@@ -120,6 +124,14 @@ const Header = () => {
                     onClick={() => setMobileMenuOpen(false)}
                   >
                     Dashboard
+                  </Link>
+                  <Link
+                    to="/activity"
+                    className="py-2 text-muted-foreground hover:text-foreground transition-colors flex items-center gap-2"
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
+                    <ActivityIcon className="w-4 h-4" />
+                    Activity
                   </Link>
                   <Link 
                     to="/artist/campaigns" 
