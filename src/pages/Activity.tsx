@@ -42,6 +42,15 @@ const kindIcon = {
   spotify: Radio,
 };
 
+const formatPlatformName = (name: string) => {
+  const labels: Record<string, string> = {
+    spotify: "Spotify", apple_music: "Apple Music", youtube: "YouTube Music",
+    audiomack: "Audiomack", boomplay: "Boomplay", deezer: "Deezer",
+    tidal: "Tidal", amazon: "Amazon Music", soundcloud: "SoundCloud", shazam: "Shazam",
+  };
+  return labels[name.toLowerCase()] || name.replaceAll("_", " ").replace(/\b\w/g, letter => letter.toUpperCase());
+};
+
 const Activity = () => {
   const navigate = useNavigate();
   const { user, loading: authLoading } = useAuth();
@@ -134,15 +143,6 @@ const Activity = () => {
     })();
     return () => { cancelled = true; };
   }, [user, fanlinkIds, linkNames, clickPeriod]);
-
-  const formatPlatformName = (name: string) => {
-    const labels: Record<string, string> = {
-      spotify: "Spotify", apple_music: "Apple Music", youtube: "YouTube Music",
-      audiomack: "Audiomack", boomplay: "Boomplay", deezer: "Deezer",
-      tidal: "Tidal", amazon: "Amazon Music", soundcloud: "SoundCloud", shazam: "Shazam",
-    };
-    return labels[name.toLowerCase()] || name.replaceAll("_", " ").replace(/\\b\\w/g, letter => letter.toUpperCase());
-  };
 
   const clickTotals = useMemo(() => releaseSummaries.reduce((totals, release) => ({
     total: totals.total + release.total,
