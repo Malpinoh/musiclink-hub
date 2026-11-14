@@ -17,6 +17,7 @@ import GlobalErrorNotice, { RouteErrorBoundary } from "@/components/GlobalErrorN
 
 // Lazy-loaded routes for code splitting
 const Dashboard = lazy(() => import("./pages/Dashboard"));
+const Activity = lazy(() => import("./pages/Activity"));
 const CreateFanlink = lazy(() => import("./pages/CreateFanlink"));
 const CreatePreSave = lazy(() => import("./pages/CreatePreSave"));
 const EditFanlink = lazy(() => import("./pages/EditFanlink"));
@@ -85,6 +86,7 @@ const App = () => {
               <Routes>
                 <Route path="/" element={<Index />} />
                 <Route path="/dashboard" element={<Dashboard />} />
+                <Route path="/activity" element={<Activity />} />
                 <Route path="/create" element={<CreateFanlink />} />
                 <Route path="/edit/fanlink/:id" element={<EditFanlink />} />
                 <Route path="/edit/presave/:id" element={<EditPreSave />} />
