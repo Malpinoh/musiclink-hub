@@ -14,6 +14,7 @@ import NotFound from "./pages/NotFound";
 import OfflineBanner from "./components/OfflineBanner";
 import AdminRoute from "@/components/admin/AdminRoute";
 import GlobalErrorNotice, { RouteErrorBoundary } from "@/components/GlobalErrorNotice";
+import { TikTokBusinessPixel } from "@/components/RetargetingPixels";
 
 // Lazy-loaded routes for code splitting
 const Dashboard = lazy(() => import("./pages/Dashboard"));
@@ -79,6 +80,7 @@ const App = () => {
           <Toaster />
           <Sonner />
           <BrowserRouter>
+            <TikTokBusinessPixel />
             <OfflineBanner />
             <GlobalErrorNotice />
             <RouteErrorBoundary>
