@@ -12,7 +12,7 @@ import demoArtwork from "@/assets/demo-artwork.jpg";
 import MetaTags from "@/components/MetaTags";
 import MonetagTag from "@/components/monetization/MonetagTag";
 import { buildFanlinkMeta } from "@/lib/seoMeta";
-import { RetargetingPixels, trackPixelConversion } from "@/components/RetargetingPixels";
+import { RetargetingPixels, trackPixelConversion, trackTikTokEvent } from "@/components/RetargetingPixels";
 
 import FanContactForm from "@/components/FanContactForm";
 import { getShareableFanlinkUrl } from "@/lib/shareUrl";
@@ -138,6 +138,16 @@ const FanlinkPage = () => {
   useEffect(() => {
     fetchFanlink();
   }, [artist, song, id, key]);
+
+  // Track a real fan-link content view after its record has loaded.
+  useEffect(() => {
+    if (!fanlink) return;
+    trackTikTokEvent("ViewContent", {
+      content_id: fanlink.id,
+      content_name: fanlink.title,
+      description: `${fanlink.artist} - ${fanlink.title}`,
+    });
+  }, [fanlink?.id]);
 
   const fetchFanlink = async () => {
     try {
