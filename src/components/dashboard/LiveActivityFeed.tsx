@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import { MousePointerClick, UserPlus, Music2, Radio } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -144,6 +145,7 @@ const LiveActivityFeed = ({ userId, fanlinkIds, presaveIds, linkNames, presaveNa
         <h3 className="font-display text-sm font-semibold text-muted-foreground uppercase tracking-wider">
           Live Activity
         </h3>
+        <Link to="/activity" className="ml-auto text-xs font-medium text-primary hover:underline">View all activity</Link>
       </div>
 
       {events.length === 0 ? (
