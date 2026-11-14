@@ -48,7 +48,7 @@ const formatPlatformName = (name: string) => {
     audiomack: "Audiomack", boomplay: "Boomplay", deezer: "Deezer",
     tidal: "Tidal", amazon: "Amazon Music", soundcloud: "SoundCloud", shazam: "Shazam",
   };
-  return labels[name.toLowerCase()] || name.replaceAll("_", " ").replace(/\b\w/g, letter => letter.toUpperCase());
+  return labels[name.toLowerCase()] || name.replace(/_/g, " ").replace(/\b\w/g, letter => letter.toUpperCase());
 };
 
 const Activity = () => {
@@ -194,7 +194,7 @@ const Activity = () => {
         description: "Fan joined the pre-save campaign", at: x.created_at, href: `/analytics/presave/${x.pre_save_id}`,
       }));
       (actions.data || []).forEach((x: any) => next.push({
-        id: `spotify-${x.id}`, kind: "spotify", title: `${x.completed ? "Completed" : "Started"} ${(x.action_type || "Spotify").replaceAll("_", " ")} for ${presaveNames[x.pre_save_id] || "your release"}`,
+        id: `spotify-${x.id}`, kind: "spotify", title: `${x.completed ? "Completed" : "Started"} ${(x.action_type || "Spotify").replace(/_/g, " ")} for ${presaveNames[x.pre_save_id] || "your release"}`,
         description: "Pre-save platform action", meta: [x.city, x.country].filter(Boolean).join(" · "),
         at: x.created_at, href: `/analytics/presave/${x.pre_save_id}`,
       }));

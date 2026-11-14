@@ -10,7 +10,7 @@ const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 async function logFailure(
-  client: ReturnType<typeof createClient>,
+  client: any,
   step: string,
   message: string,
   context: Record<string, unknown>,
