@@ -1,3 +1,4 @@
+import { supabase } from "@/integrations/supabase/client";
 import { useEffect } from "react";
 import { useLocation } from "react-router-dom";
 
@@ -135,7 +136,7 @@ export function RetargetingPixels({ metaPixelId, tiktokPixelId, googleAnalyticsI
 export function trackTikTokEvent(event: string, data: Record<string, unknown> = {}) {
   try {
     for (const pixelId of window.__mdistroTikTokPixelIds || []) {
-      window.ttq?.instance?.(pixelId)?.track?.(event, data);
+      window.ttq?.instance?.(pixelId)?.track?.(event, data, data.event_id ? { event_id: data.event_id } : undefined);
     }
   } catch {
     // Tracking must never interrupt the fan-link experience.
@@ -148,6 +149,24 @@ export function trackPixelConversion(event: "Lead" | "Subscribe", data: Record<s
     window.fbq?.("track", event, data);
     trackTikTokEvent(event === "Lead" ? "ClickButton" : "Subscribe", data);
     window.gtag?.("event", event === "Lead" ? "generate_lead" : "sign_up", data);
+  } catch {
+    // Tracking must never interrupt the fan-link experience.
+  }
+}
+
+/** Fanlink-only: fire TikTok browser pixel + server Events API with a shared event_id for dedup. */
+export function trackTikTokFanlinkEvent(
+  event: "ViewContent" | "ClickButton",
+  data: { content_id?: string; content_name?: string; description?: string; platform?: string } = {},
+) {
+  const event_id = `${event}_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`;
+  trackTikTokEvent(event, { ...data, event_id });
+  try {
+    const cookie = (n: string) => document.cookie.match(new RegExp(`(?:^|; )${n}=([^;]*)`))?.[1];
+    const ttclid = new URLSearchParams(window.location.search).get("ttclid") || undefined;
+    void supabase.functions.invoke("tiktok-events-api", {
+      body: { event, event_id, url: window.location.href, referrer: document.referrer || undefined, ttp: cookie("_ttp"), ttclid, ...data },
+    });
   } catch {
     // Tracking must never interrupt the fan-link experience.
   }

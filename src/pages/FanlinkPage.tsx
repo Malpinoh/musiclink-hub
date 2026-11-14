@@ -12,7 +12,7 @@ import demoArtwork from "@/assets/demo-artwork.jpg";
 import MetaTags from "@/components/MetaTags";
 import MonetagTag from "@/components/monetization/MonetagTag";
 import { buildFanlinkMeta } from "@/lib/seoMeta";
-import { RetargetingPixels, trackPixelConversion, trackTikTokEvent } from "@/components/RetargetingPixels";
+import { RetargetingPixels, trackTikTokFanlinkEvent } from "@/components/RetargetingPixels";
 
 import FanContactForm from "@/components/FanContactForm";
 import { getShareableFanlinkUrl } from "@/lib/shareUrl";
@@ -142,7 +142,7 @@ const FanlinkPage = () => {
   // Track a real fan-link content view after its record has loaded.
   useEffect(() => {
     if (!fanlink) return;
-    trackTikTokEvent("ViewContent", {
+    trackTikTokFanlinkEvent("ViewContent", {
       content_id: fanlink.id,
       content_name: fanlink.title,
       description: `${fanlink.artist} - ${fanlink.title}`,
@@ -563,7 +563,9 @@ const FanlinkPage = () => {
                             rel="noopener noreferrer"
                             onClick={() => {
                               handlePlatformClick(link.platform_name);
-                              trackPixelConversion("Lead", { platform: link.platform_name, content_name: fanlink.title });
+                              window.fbq?.("track", "Lead", { platform: link.platform_name, content_name: fanlink.title });
+                              window.gtag?.("event", "generate_lead", { platform: link.platform_name, content_name: fanlink.title });
+                              trackTikTokFanlinkEvent("ClickButton", { content_id: fanlink.id, content_name: fanlink.title, platform: link.platform_name });
                             }}
                             className="mdistro-platform-link group relative flex min-h-12 items-center gap-3 rounded-full border border-black/5 bg-white px-4 py-2.5 text-black overflow-hidden transition-all duration-300 hover:-translate-y-0.5 hover:shadow-xl"
                             initial={{ opacity: 0, y: 10 }}
