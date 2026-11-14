@@ -32,12 +32,6 @@ const relativeTime = (value: string) => {
   if (seconds < 86400) return `${Math.floor(seconds / 3600)}h ago`;
   return `${Math.floor(seconds / 86400)}d ago`;
 };
-const kindLabel: Record<ActivityKind, string> = {
-  click: "Fanlink click",
-  fan: "Fan collected",
-  presave: "Pre-save signup",
-  spotify: "Spotify save action",
-};
 const kindIcon = {
   click: Link2,
   fan: UserPlus,
@@ -102,7 +96,7 @@ const Activity = () => {
       return q;
     };
     try {
-      const requests: Promise<any>[] = [];
+      const requests: Array<PromiseLike<any>> = [];
       if (fanlinkIds.length) {
         requests.push(build(supabase.from("clicks").select("id,fanlink_id,platform_name,clicked_at,country,city,device_type").in("fanlink_id", fanlinkIds), "clicked_at"));
         requests.push(build(supabase.from("fan_contacts").select("id,link_id,email,collected_at,country").in("link_id", fanlinkIds), "collected_at"));
@@ -112,6 +106,7 @@ const Activity = () => {
         requests.push(build(supabase.from("pre_save_actions").select("id,pre_save_id,action_type,completed,created_at,country,city").in("pre_save_id", presaveIds), "created_at"));
       } else requests.push(Promise.resolve({ data: [] }), Promise.resolve({ data: [] }));
       const [clicks, fans, signups, actions] = await Promise.all(requests);
+      [clicks, fans, signups, actions].forEach((result: any) => { if (result.error) console.error("Activity query failed:", result.error); });
       const next: ActivityEvent[] = [];
       (clicks.data || []).forEach((x: any) => next.push({
         id: `click-${x.id}`, kind: "click", title: `Someone opened ${linkNames[x.fanlink_id] || "your fanlink"}`,
