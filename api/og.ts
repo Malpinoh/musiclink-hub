@@ -13,7 +13,7 @@ const SUPABASE_URL =
 const META_ENDPOINT = `${SUPABASE_URL}/functions/v1/meta`;
 
 const CRAWLER_PATTERN =
-  /(bot\b|bot\/|spider|crawler|crawl|slurp|googlebot|google-inspectiontool|googleother|bingbot|bingpreview|facebookexternalhit|facebot|facebook|twitterbot|linkedinbot|whatsapp|telegrambot|telegram|discordbot|discord|slackbot|slack-imgproxy|skypeuripreview|embedly|pinterest|redditbot|applebot|vkshare|flipboard|tumblr|snapchat|viber|mastodon|iframely|preview|chatgpt|gptbot|oai-searchbot|perplexitybot|claudebot|anthropic-ai|yandex|baiduspider|duckduckbot)/i;
+  /(bot\\b|bot\\/|spider|crawler|crawl|slurp|googlebot|google-inspectiontool|googleother|bingbot|bingpreview|facebookexternalhit|facebot|facebook|twitterbot|linkedinbot|whatsapp|telegrambot|telegram|discordbot|discord|slackbot|slack-imgproxy|skypeuripreview|embedly|pinterest|redditbot|applebot|vkshare|flipboard|tumblr|snapchat|viber|mastodon|iframely|preview|chatgpt|gptbot|oai-searchbot|perplexitybot|claudebot|anthropic-ai|yandex|baiduspider|duckduckbot)/i;
 
 export function isCrawler(userAgent: string | null | undefined): boolean {
   if (!userAgent) return true; // no UA → serve metadata so previews never break
@@ -37,10 +37,16 @@ export default async function handler(
   req: VercelRequest,
   res: VercelResponse
 ): Promise<void> {
-  const origin = new URL(
-    req.url ?? "/",
-    `https://${process.env.VERCEL_URL ?? "localhost"}`
-  ).origin;
+  // Production fan links use the public custom domain. Fetching index.html
+  // through VERCEL_URL can hit Vercel Deployment Protection on the underlying
+  // deployment hostname and return Vercel's login page instead of our SPA.
+  // Keep preview deployments isolated on their own deployment hostname.
+  const requestHost = getHeader(req, "host")?.toLowerCase();
+  const origin =
+    requestHost === "md.malpinohdistro.com.ng"
+      ? "https://md.malpinohdistro.com.ng"
+      : `https://${process.env.VERCEL_URL ?? "localhost"}`;
+
   const path = appPath(req);
   const ua = getHeader(req, "user-agent");
 
