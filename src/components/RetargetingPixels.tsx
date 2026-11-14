@@ -6,6 +6,7 @@ declare global {
   interface Window {
     fbq?: any;
     ttq?: any;
+    TiktokAnalyticsObject?: string;
     gtag?: any;
     dataLayer?: any[];
     _fbq?: any;
