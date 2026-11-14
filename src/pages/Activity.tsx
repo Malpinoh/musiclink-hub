@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Activity as ActivityIcon, Clock, Filter, Link2, Music2, Radio, Search, UserPlus, RefreshCw, ArrowUpRight } from "lucide-react";
+import { Activity as ActivityIcon, Clock, Filter, Link2, Music2, Radio, Search, UserPlus, RefreshCw, ArrowUpRight, BarChart3, Disc3 } from "lucide-react";
 import { motion } from "framer-motion";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
@@ -11,8 +11,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
+import { fetchAllRows } from "@/lib/fetchAllRows";
 
 type ActivityKind = "click" | "fan" | "presave" | "spotify";
+type ReleaseClickSummary = { id: string; title: string; total: number; pageViews: number; platformClicks: number; platforms: { name: string; count: number }[] };
+
 type ActivityEvent = {
   id: string;
   kind: ActivityKind;
@@ -55,6 +58,9 @@ const Activity = () => {
   const [hasMore, setHasMore] = useState(false);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
+  const [releaseSummaries, setReleaseSummaries] = useState<ReleaseClickSummary[]>([]);
+  const [clickPeriod, setClickPeriod] = useState("all");
+  const [loadingClickSummary, setLoadingClickSummary] = useState(false);
 
   useEffect(() => {
     if (!authLoading && !user) navigate("/login");
@@ -78,6 +84,71 @@ const Activity = () => {
     })();
     return () => { cancelled = true; };
   }, [user]);
+
+  useEffect(() => {
+    if (!user) return;
+    if (!fanlinkIds.length) {
+      setReleaseSummaries([]);
+      return;
+    }
+    let cancelled = false;
+    setLoadingClickSummary(true);
+    (async () => {
+      try {
+        const start = clickPeriod === "all" ? null : new Date(Date.now() - Number(clickPeriod) * 86400000).toISOString();
+        const rows = await fetchAllRows<{ fanlink_id: string; platform_name: string | null; clicked_at: string }>(() => {
+          let query = supabase.from("clicks").select("fanlink_id,platform_name,clicked_at").in("fanlink_id", fanlinkIds);
+          if (start) query = query.gte("clicked_at", start);
+          return query;
+        });
+        if (cancelled) return;
+        const grouped = new Map<string, { total: number; pageViews: number; platformClicks: number; platforms: Map<string, number> }>();
+        fanlinkIds.forEach(id => grouped.set(id, { total: 0, pageViews: 0, platformClicks: 0, platforms: new Map() }));
+        rows.forEach(row => {
+          const item = grouped.get(row.fanlink_id);
+          if (!item) return;
+          item.total += 1;
+          if (row.platform_name) {
+            const name = formatPlatformName(row.platform_name);
+            item.platformClicks += 1;
+            item.platforms.set(name, (item.platforms.get(name) || 0) + 1);
+          } else {
+            item.pageViews += 1;
+          }
+        });
+        const summaries = fanlinkIds.map(id => {
+          const item = grouped.get(id)!;
+          return {
+            id, title: linkNames[id] || "Untitled release",
+            total: item.total, pageViews: item.pageViews, platformClicks: item.platformClicks,
+            platforms: Array.from(item.platforms, ([name, count]) => ({ name, count })).sort((a, b) => b.count - a.count),
+          };
+        }).sort((a, b) => b.total - a.total);
+        setReleaseSummaries(summaries);
+      } catch (error) {
+        console.error("Unable to load release click summary:", error);
+        if (!cancelled) setReleaseSummaries([]);
+      } finally {
+        if (!cancelled) setLoadingClickSummary(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [user, fanlinkIds, linkNames, clickPeriod]);
+
+  const formatPlatformName = (name: string) => {
+    const labels: Record<string, string> = {
+      spotify: "Spotify", apple_music: "Apple Music", youtube: "YouTube Music",
+      audiomack: "Audiomack", boomplay: "Boomplay", deezer: "Deezer",
+      tidal: "Tidal", amazon: "Amazon Music", soundcloud: "SoundCloud", shazam: "Shazam",
+    };
+    return labels[name.toLowerCase()] || name.replaceAll("_", " ").replace(/\\b\\w/g, letter => letter.toUpperCase());
+  };
+
+  const clickTotals = useMemo(() => releaseSummaries.reduce((totals, release) => ({
+    total: totals.total + release.total,
+    pageViews: totals.pageViews + release.pageViews,
+    platformClicks: totals.platformClicks + release.platformClicks,
+  }), { total: 0, pageViews: 0, platformClicks: 0 }), [releaseSummaries]);
 
   const loadEvents = useCallback(async (pageOffset = 0, append = false) => {
     if (!user) return;
@@ -184,6 +255,95 @@ const Activity = () => {
             </div>
             <Button variant="outline" onClick={() => loadEvents(0, false)} disabled={loading}><RefreshCw className={`w-4 h-4 mr-2 ${loading ? "animate-spin" : ""}`} />Refresh</Button>
           </div>
+
+          <section className="space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3">
+              <div>
+                <p className="text-xs uppercase tracking-[0.2em] text-primary font-semibold mb-1">Release performance</p>
+                <h2 className="font-display text-xl sm:text-2xl font-bold">Clicks by release</h2>
+                <p className="text-sm text-muted-foreground mt-1">See how many people opened each fanlink and which music platforms they selected.</p>
+              </div>
+              <Select value={clickPeriod} onValueChange={setClickPeriod}>
+                <SelectTrigger className="w-full sm:w-[180px]"><SelectValue placeholder="Reporting period" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="7">Last 7 days</SelectItem>
+                  <SelectItem value="30">Last 30 days</SelectItem>
+                  <SelectItem value="90">Last 90 days</SelectItem>
+                  <SelectItem value="all">All time</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div className="rounded-2xl border border-border/50 bg-card/70 p-4">
+                <div className="flex items-center gap-2 text-muted-foreground text-xs"><BarChart3 className="w-4 h-4" />Total tracked clicks</div>
+                <p className="font-display text-2xl sm:text-3xl font-bold mt-2 tabular-nums">{loadingClickSummary ? "—" : clickTotals.total.toLocaleString()}</p>
+                <p className="text-xs text-muted-foreground mt-1">Page views + platform clicks</p>
+              </div>
+              <div className="rounded-2xl border border-border/50 bg-card/70 p-4">
+                <div className="flex items-center gap-2 text-muted-foreground text-xs"><ActivityIcon className="w-4 h-4" />Fanlink page views</div>
+                <p className="font-display text-2xl sm:text-3xl font-bold mt-2 tabular-nums">{loadingClickSummary ? "—" : clickTotals.pageViews.toLocaleString()}</p>
+                <p className="text-xs text-muted-foreground mt-1">Visits where no platform was selected</p>
+              </div>
+              <div className="rounded-2xl border border-border/50 bg-card/70 p-4">
+                <div className="flex items-center gap-2 text-muted-foreground text-xs"><Disc3 className="w-4 h-4" />Platform clicks</div>
+                <p className="font-display text-2xl sm:text-3xl font-bold mt-2 tabular-nums">{loadingClickSummary ? "—" : clickTotals.platformClicks.toLocaleString()}</p>
+                <p className="text-xs text-muted-foreground mt-1">Clicks on Spotify, Apple Music, etc.</p>
+              </div>
+            </div>
+
+            <div className="rounded-2xl border border-border/50 bg-card/60 backdrop-blur-md overflow-hidden">
+              <div className="px-4 sm:px-5 py-4 border-b border-border/40 flex items-center justify-between gap-3">
+                <div>
+                  <h3 className="font-semibold">Release click breakdown</h3>
+                  <p className="text-xs text-muted-foreground mt-1">Ranked by total tracked clicks</p>
+                </div>
+                <span className="text-xs text-muted-foreground">{releaseSummaries.length} releases</span>
+              </div>
+              {loadingClickSummary ? (
+                <div className="p-8 text-center text-sm text-muted-foreground">Loading release click totals…</div>
+              ) : releaseSummaries.length === 0 ? (
+                <div className="p-8 text-center">
+                  <Disc3 className="w-8 h-8 mx-auto mb-2 text-muted-foreground" />
+                  <p className="font-medium">No fanlink releases yet</p>
+                  <p className="text-sm text-muted-foreground mt-1">Create a fanlink to start tracking release clicks.</p>
+                </div>
+              ) : (
+                <div className="divide-y divide-border/40">
+                  {releaseSummaries.map((release, index) => (
+                    <div key={release.id} className="p-4 sm:px-5 space-y-3">
+                      <div className="flex items-start gap-3">
+                        <span className="w-7 h-7 rounded-lg bg-secondary flex items-center justify-center text-xs font-semibold shrink-0">{index + 1}</span>
+                        <div className="flex-1 min-w-0">
+                          <Link to={`/analytics/fanlink/${release.id}`} className="font-semibold text-sm sm:text-base hover:text-primary hover:underline underline-offset-4">{release.title}</Link>
+                          <p className="text-xs text-muted-foreground mt-1">{release.total.toLocaleString()} total tracked clicks</p>
+                        </div>
+                        <Link to={`/analytics/fanlink/${release.id}`} className="text-xs text-primary hover:underline shrink-0">Details <ArrowUpRight className="inline w-3 h-3" /></Link>
+                      </div>
+                      <div className="grid grid-cols-3 gap-2 pl-10">
+                        <div><p className="text-[10px] sm:text-xs text-muted-foreground">Page views</p><p className="font-semibold text-sm tabular-nums">{release.pageViews.toLocaleString()}</p></div>
+                        <div><p className="text-[10px] sm:text-xs text-muted-foreground">Platform clicks</p><p className="font-semibold text-sm tabular-nums">{release.platformClicks.toLocaleString()}</p></div>
+                        <div><p className="text-[10px] sm:text-xs text-muted-foreground">Total clicks</p><p className="font-semibold text-sm tabular-nums">{release.total.toLocaleString()}</p></div>
+                      </div>
+                      <div className="pl-10">
+                        <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-2">Platform breakdown</p>
+                        {release.platforms.length ? (
+                          <div className="flex flex-wrap gap-2">
+                            {release.platforms.map(platform => (
+                              <span key={platform.name} className="inline-flex items-center gap-1.5 rounded-full bg-secondary/70 px-2.5 py-1 text-xs">
+                                <span className="font-medium">{platform.name}</span>
+                                <span className="text-muted-foreground tabular-nums">{platform.count.toLocaleString()}</span>
+                              </span>
+                            ))}
+                          </div>
+                        ) : <p className="text-xs text-muted-foreground">No platform clicks recorded for this release yet.</p>}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </section>
 
           <div className="rounded-2xl border border-border/50 bg-card/60 backdrop-blur-md p-4 sm:p-5 space-y-4">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
