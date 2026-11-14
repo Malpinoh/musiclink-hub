@@ -15,7 +15,7 @@ declare global {
 }
 
 const SAFE = /^[A-Za-z0-9_-]{3,40}$/;
-export const MDISTRO_TIKTOK_PIXEL_ID = "DBS1OD3C77UDGS03KM10";
+export const MDISTRO_TIKTOK_PIXEL_ID = "DBS37QJC77UDGS03KMQG";
 
 export interface PixelIds {
   metaPixelId?: string | null;
