@@ -104,6 +104,51 @@ interface PlatformLink {
   display_order: number;
 }
 
+
+interface TikTokAttribution {
+  ttclid?: string;
+  campaignId?: string;
+  campaignName?: string;
+  adgroupId?: string;
+  adgroupName?: string;
+  adId?: string;
+  adName?: string;
+  source?: string;
+  medium?: string;
+  content?: string;
+  term?: string;
+}
+
+const TIKTOK_ATTRIBUTION_STORAGE_KEY = "mdistro_tiktok_attribution";
+
+function getTikTokAttribution(): TikTokAttribution {
+  try {
+    const params = new URLSearchParams(window.location.search);
+    const current: TikTokAttribution = {};
+    const read = (keys: string[]) => keys.map((key) => params.get(key)).find(Boolean) || undefined;
+    current.ttclid = read(["ttclid"]);
+    current.campaignId = read(["utm_campaign_id", "campaign_id"]);
+    current.campaignName = read(["utm_campaign", "campaign_name"]);
+    current.adgroupId = read(["utm_adgroup_id", "adgroup_id"]);
+    current.adgroupName = read(["utm_adgroup", "adgroup_name"]);
+    current.adId = read(["utm_ad_id", "ad_id"]);
+    current.adName = read(["utm_ad", "ad_name"]);
+    current.source = read(["utm_source"]);
+    current.medium = read(["utm_medium"]);
+    current.content = read(["utm_content"]);
+    current.term = read(["utm_term"]);
+
+    const hasCurrent = Object.values(current).some(Boolean);
+    if (hasCurrent) sessionStorage.setItem(TIKTOK_ATTRIBUTION_STORAGE_KEY, JSON.stringify(current));
+
+    const stored = sessionStorage.getItem(TIKTOK_ATTRIBUTION_STORAGE_KEY);
+    if (!stored) return current;
+    return { ...JSON.parse(stored), ...current };
+  } catch {
+    return {};
+  }
+}
+
 interface LinkThemeData {
   background_color: string;
   button_color: string;
@@ -133,6 +178,7 @@ const FanlinkPage = () => {
   const watimagboRedirectStarted = useRef(false);
 
   const currentUrl = getCurrentShareUrl();
+  const tiktokAttribution = getTikTokAttribution();
   
   // Generate shareable URL that works with social media crawlers
   const shareableUrl = artist && song 
@@ -237,6 +283,7 @@ const FanlinkPage = () => {
             content_type: fanlinkData.content_type || "track",
             user_agent: navigator.userAgent,
             device_type: /mobile/i.test(navigator.userAgent) ? "mobile" : "desktop",
+            tiktok_attribution: tiktokAttribution,
           },
         });
       } catch (geoError) {
@@ -348,6 +395,7 @@ const FanlinkPage = () => {
       content_type: fanlink.content_type || "track",
       user_agent: navigator.userAgent,
       device_type: /mobile/i.test(navigator.userAgent) ? "mobile" : "desktop",
+      tiktok_attribution: tiktokAttribution,
     };
 
     // keepalive so the click still lands when the browser navigates away
