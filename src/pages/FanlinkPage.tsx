@@ -30,6 +30,8 @@ import {
   ShazamIcon,
 } from "@/components/icons/PlatformIcons";
 
+const WATIMAGBO_SPOTIFY_TRACK_URL = "https://open.spotify.com/track/5EuErnwjFlkcBwl4UhWQgz";
+
 const platformConfig: Record<string, { icon: React.ReactNode; color: string }> = {
   spotify: { icon: <SpotifyIcon />, color: "#1DB954" },
   apple_music: { icon: <AppleMusicIcon />, color: "#FA243C" },
@@ -189,7 +191,15 @@ const FanlinkPage = () => {
         .order("display_order");
 
       if (linksError) throw linksError;
-      setPlatformLinks(linksData || []);
+      const isWatimagboFanlink =
+        fanlinkData.artist_slug?.toLowerCase() === "ade-s-kay" &&
+        fanlinkData.slug?.toLowerCase() === "watimagbo";
+      const resolvedPlatformLinks = (linksData || []).map((link) =>
+        isWatimagboFanlink && link.platform_name?.toLowerCase() === "spotify"
+          ? { ...link, platform_url: WATIMAGBO_SPOTIFY_TRACK_URL }
+          : link
+      );
+      setPlatformLinks(resolvedPlatformLinks);
 
       // Load theme
       const { data: themeData } = await supabase
