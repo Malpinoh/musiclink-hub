@@ -250,7 +250,7 @@ const FanlinkPage = () => {
   const getPlatformAppUrl = (platformName: string, platformUrl: string): string | null => {
     try {
       const url = new URL(platformUrl);
-      const path = url.pathname.replace(/^\\/+/, "");
+      const path = url.pathname.replace(/^\/+/, "");
 
       if (platformName === "spotify" && url.hostname.includes("spotify.com")) {
         const parts = path.split("/").filter(Boolean);
@@ -288,7 +288,6 @@ const FanlinkPage = () => {
 
     try {
       window.location.assign(appUrl);
-      window.setTimeout(() => window.clearTimeout(fallbackTimer), 100);
     } catch {
       window.clearTimeout(fallbackTimer);
       window.location.assign(platformUrl);
