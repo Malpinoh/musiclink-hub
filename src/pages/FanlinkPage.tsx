@@ -358,13 +358,6 @@ const FanlinkPage = () => {
     if (!spotifyLink) return;
 
     watimagboRedirectStarted.current = true;
-    trackEvent("link_clicked", {
-      type: "fanlink",
-      content_type: fanlink.content_type || "track",
-      platform: "spotify",
-      fanlink_id: fanlink.id,
-      source: "watimagbo_direct_redirect",
-    });
     window.fbq?.("track", "Lead", { platform: "spotify", content_name: fanlink.title });
     window.gtag?.("event", "generate_lead", { platform: "spotify", content_name: fanlink.title });
     trackTikTokFanlinkEvent("ClickButton", {
