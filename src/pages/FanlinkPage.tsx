@@ -263,7 +263,7 @@ const FanlinkPage = () => {
   const getPlatformAppUrl = (platformName: string, platformUrl: string): string | null => {
     try {
       const url = new URL(platformUrl);
-      const path = url.pathname.replace(/^\\/+/, "");
+      const path = url.pathname.startsWith("/") ? url.pathname.slice(1) : url.pathname;
       const isAndroid = /android/i.test(navigator.userAgent);
       const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
 
