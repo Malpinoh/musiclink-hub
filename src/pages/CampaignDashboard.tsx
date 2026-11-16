@@ -34,7 +34,7 @@ const cardHover = {
 };
 
 interface SpotifyReportRow {
-  id: string; campaignName: string; tiktokCampaignName: string; artist: string; song: string; link: string;
+  id: string; campaignName: string; tiktokCampaignId: string; tiktokCampaignName: string; artist: string; song: string; link: string;
   pageViews: number; spotifyClicks: number; otherPlatformClicks: number; ctr: number;
 }
 
@@ -172,28 +172,86 @@ const CampaignDashboard = () => {
       else counts.other += 1;
       clickCounts.set(click.fanlink_id, counts);
     });
+
+    // TikTok URL parameters/macros are captured at the fan-link entry point and
+    // persisted by track-geo. This lets the report attribute traffic to the
+    // actual TikTok campaign without requiring manual campaign-name entry.
+    const tiktokAttributionRows = fanlinkIds.length
+      ? await fetchAllRows<any>(
+          () => (db.from("tiktok_attributions")
+            .select("fanlink_id, click_id, platform_name, campaign_id, campaign_name, adgroup_id, adgroup_name, ad_id, ad_name, ttclid, created_at")
+            .in("fanlink_id", fanlinkIds)
+            .gte("created_at", startISO))
+        )
+      : [];
+
     const campaignByFanlink = new Map<string, any>();
     ((campaignRecordsRes.data || []) as any[]).forEach((campaign) => {
       if (campaign.fanlink_id && !campaignByFanlink.has(campaign.fanlink_id)) campaignByFanlink.set(campaign.fanlink_id, campaign);
     });
-    const reportRows: SpotifyReportRow[] = ownedFanlinks.map((fanlink) => {
-      const counts = clickCounts.get(fanlink.id) || { views: 0, spotify: 0, other: 0 };
-      const campaign = campaignByFanlink.get(fanlink.id);
-      const metadata = campaign?.metadata && typeof campaign.metadata === "object" ? campaign.metadata as Record<string, unknown> : {};
-      return {
-        id: fanlink.id,
-        campaignName: campaign?.campaign_name || "Direct fan-link promotion",
-        tiktokCampaignName: typeof metadata.tiktok_campaign_name === "string" && metadata.tiktok_campaign_name.trim() ? metadata.tiktok_campaign_name.trim() : "Not specified",
-        artist: fanlink.artist || campaign?.artist_name || "—",
-        song: fanlink.title || "—",
-        link: `/${fanlink.artist_slug}/${fanlink.slug}`,
-        pageViews: counts.views,
-        spotifyClicks: counts.spotify,
-        otherPlatformClicks: counts.other,
-        ctr: counts.views > 0 ? (counts.spotify / counts.views) * 100 : 0,
+
+    const attributionGroups = new Map<string, { fanlinkId: string; campaignId: string; campaignName: string; views: number; spotify: number; other: number }>();
+    tiktokAttributionRows.forEach((row) => {
+      const campaignId = String(row.campaign_id || "");
+      const campaignName = String(row.campaign_name || "");
+      const campaignKey = campaignId || campaignName || (row.ttclid ? `ttclid:${row.ttclid}` : "");
+      if (!campaignKey) return;
+      const key = `${row.fanlink_id}::${campaignKey}`;
+      const group = attributionGroups.get(key) || {
+        fanlinkId: row.fanlink_id,
+        campaignId,
+        campaignName,
+        views: 0,
+        spotify: 0,
+        other: 0,
       };
-    }).sort((a, b) => b.spotifyClicks - a.spotifyClicks || b.pageViews - a.pageViews);
-    setSpotifyReport(reportRows);
+      if (!row.platform_name) group.views += 1;
+      else if (String(row.platform_name).toLowerCase() === "spotify") group.spotify += 1;
+      else group.other += 1;
+      attributionGroups.set(key, group);
+    });
+
+    const reportRows: SpotifyReportRow[] = [];
+    ownedFanlinks.forEach((fanlink) => {
+      const campaign = campaignByFanlink.get(fanlink.id);
+      const fanlinkGroups = [...attributionGroups.values()].filter((group) => group.fanlinkId === fanlink.id);
+
+      if (fanlinkGroups.length === 0) {
+        const counts = clickCounts.get(fanlink.id) || { views: 0, spotify: 0, other: 0 };
+        const metadata = campaign?.metadata && typeof campaign.metadata === "object" ? campaign.metadata as Record<string, unknown> : {};
+        reportRows.push({
+          id: fanlink.id,
+          campaignName: campaign?.campaign_name || "Direct fan-link promotion",
+          tiktokCampaignId: "",
+          tiktokCampaignName: typeof metadata.tiktok_campaign_name === "string" && metadata.tiktok_campaign_name.trim() ? metadata.tiktok_campaign_name.trim() : "Not specified",
+          artist: fanlink.artist || campaign?.artist_name || "—",
+          song: fanlink.title || "—",
+          link: `/${fanlink.artist_slug}/${fanlink.slug}`,
+          pageViews: counts.views,
+          spotifyClicks: counts.spotify,
+          otherPlatformClicks: counts.other,
+          ctr: counts.views > 0 ? (counts.spotify / counts.views) * 100 : 0,
+        });
+      } else {
+        fanlinkGroups.forEach((group) => {
+          reportRows.push({
+            id: `${fanlink.id}-${group.campaignId || group.campaignName}`,
+            campaignName: campaign?.campaign_name || "Direct fan-link promotion",
+            tiktokCampaignId: group.campaignId,
+            tiktokCampaignName: group.campaignName || "TikTok campaign (ID only)",
+            artist: fanlink.artist || campaign?.artist_name || "—",
+            song: fanlink.title || "—",
+            link: `/${fanlink.artist_slug}/${fanlink.slug}`,
+            pageViews: group.views,
+            spotifyClicks: group.spotify,
+            otherPlatformClicks: group.other,
+            ctr: group.views > 0 ? (group.spotify / group.views) * 100 : 0,
+          });
+        });
+      }
+    });
+
+    setSpotifyReport(reportRows.sort((a, b) => b.spotifyClicks - a.spotifyClicks || b.pageViews - a.pageViews));
     setLoading(false);
   }, [user, dateRange]);
 
@@ -290,7 +348,7 @@ const CampaignDashboard = () => {
               <span className="text-xs text-muted-foreground">Ranked by Spotify outbound clicks</span>
             </div>
             <p className="text-xs text-muted-foreground mb-4">
-              Compare artist, song, MDistro campaign and fan-link performance. Add the exact TikTok Ads campaign name when creating a campaign. Spotify clicks are handoff attempts, not verified streams.
+              Compare artist, song, MDistro campaign and fan-link performance. TikTok campaign IDs/names are captured from TikTok URL parameters when available; manual campaign names remain a fallback. Spotify clicks are handoff attempts, not verified streams.
             </p>
             {spotifyReport.length === 0 ? (
               <div className="rounded-xl border border-dashed border-border p-8 text-center text-sm text-muted-foreground">Your report will appear after visitors use your fan links.</div>
@@ -305,7 +363,7 @@ const CampaignDashboard = () => {
                   <tbody>{spotifyReport.map((row) => (
                     <tr key={row.id} className="border-b border-border/60 last:border-0">
                       <td className="py-3 pr-4 min-w-[180px]"><p className="font-medium">{row.campaignName}</p><p className="text-xs text-muted-foreground">{row.artist} — {row.song}</p></td>
-                      <td className="py-3 pr-4 text-xs text-muted-foreground min-w-[140px]">{row.tiktokCampaignName}</td>
+                      <td className="py-3 pr-4 text-xs text-muted-foreground min-w-[180px]"><p>{row.tiktokCampaignName}</p>{row.tiktokCampaignId && <p className="text-[10px] opacity-70">ID: {row.tiktokCampaignId}</p>}</td>
                       <td className="py-3 pr-4 text-right tabular-nums">{row.pageViews.toLocaleString()}</td>
                       <td className="py-3 pr-4 text-right tabular-nums font-semibold">{row.spotifyClicks.toLocaleString()}</td>
                       <td className="py-3 pr-4 text-right tabular-nums">{row.ctr.toFixed(1)}%</td>
