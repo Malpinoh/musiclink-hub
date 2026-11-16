@@ -15,6 +15,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { trackEvent } from "@/lib/analytics";
 import { Link } from "react-router-dom";
+import { fetchAllRows } from "@/lib/fetchAllRows";
 
 const sectionVariants = {
   hidden: { opacity: 0, y: 24 },
@@ -32,6 +33,11 @@ const cardHover = {
   transition: { duration: 0.2 },
 };
 
+interface SpotifyReportRow {
+  id: string; campaignName: string; tiktokCampaignName: string; artist: string; song: string; link: string;
+  pageViews: number; spotifyClicks: number; otherPlatformClicks: number; ctr: number;
+}
+
 const CampaignDashboard = () => {
   const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
@@ -48,6 +54,7 @@ const CampaignDashboard = () => {
   const [platforms, setPlatforms] = useState<{ name: string; count: number }[]>([]);
   const [countries, setCountries] = useState<{ name: string; count: number }[]>([]);
   const [campaigns, setCampaigns] = useState<CampaignRow[]>([]);
+  const [spotifyReport, setSpotifyReport] = useState<SpotifyReportRow[]>([]);
 
   const fetchData = useCallback(async () => {
     if (!user) return;
@@ -66,14 +73,16 @@ const CampaignDashboard = () => {
       presaveBreakdownRes,
       fanlinksRes,
       presavesRes,
+      campaignRecordsRes,
     ] = await Promise.all([
       db.rpc("get_campaign_totals", { _user_id: user.id, _start: startISO }),
       db.rpc("get_click_dimensions", { _user_id: user.id, _start: startISO }),
       db.rpc("get_campaign_timeseries", { _user_id: user.id, _start: startISO }),
       db.rpc("get_fanlink_breakdown", { _user_id: user.id, _start: startISO }),
       db.rpc("get_presave_breakdown", { _user_id: user.id, _start: startISO }),
-      supabase.from("fanlinks").select("id, title, artist, created_at, is_published, expires_at").eq("user_id", user.id),
+      supabase.from("fanlinks").select("id, title, artist, artist_slug, slug, created_at, is_published, expires_at").eq("user_id", user.id),
       supabase.from("pre_saves").select("id, title, artist, created_at, is_active").eq("user_id", user.id),
+      supabase.from("campaigns").select("id, campaign_name, artist_name, fanlink_id, metadata, created_at").eq("user_id", user.id).order("created_at", { ascending: false }),
     ]);
 
     const totals = (totalsRes.data?.[0] as any) || {};
@@ -146,6 +155,45 @@ const CampaignDashboard = () => {
       });
     });
     setCampaigns(rows.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()));
+
+    // Spotify outbound clicks are handoff attempts, not confirmed Spotify streams.
+    const ownedFanlinks = (fanlinksRes.data || []) as any[];
+    const fanlinkIds = ownedFanlinks.map((f) => f.id);
+    const clickRows = fanlinkIds.length
+      ? await fetchAllRows<{ fanlink_id: string; platform_name: string | null; clicked_at: string }>(
+          () => supabase.from("clicks").select("fanlink_id, platform_name, clicked_at").in("fanlink_id", fanlinkIds).gte("clicked_at", startISO)
+        )
+      : [];
+    const clickCounts = new Map<string, { views: number; spotify: number; other: number }>();
+    clickRows.forEach((click) => {
+      const counts = clickCounts.get(click.fanlink_id) || { views: 0, spotify: 0, other: 0 };
+      if (!click.platform_name) counts.views += 1;
+      else if (click.platform_name.toLowerCase() === "spotify") counts.spotify += 1;
+      else counts.other += 1;
+      clickCounts.set(click.fanlink_id, counts);
+    });
+    const campaignByFanlink = new Map<string, any>();
+    ((campaignRecordsRes.data || []) as any[]).forEach((campaign) => {
+      if (campaign.fanlink_id && !campaignByFanlink.has(campaign.fanlink_id)) campaignByFanlink.set(campaign.fanlink_id, campaign);
+    });
+    const reportRows: SpotifyReportRow[] = ownedFanlinks.map((fanlink) => {
+      const counts = clickCounts.get(fanlink.id) || { views: 0, spotify: 0, other: 0 };
+      const campaign = campaignByFanlink.get(fanlink.id);
+      const metadata = campaign?.metadata && typeof campaign.metadata === "object" ? campaign.metadata as Record<string, unknown> : {};
+      return {
+        id: fanlink.id,
+        campaignName: campaign?.campaign_name || "Direct fan-link promotion",
+        tiktokCampaignName: typeof metadata.tiktok_campaign_name === "string" && metadata.tiktok_campaign_name.trim() ? metadata.tiktok_campaign_name.trim() : "Not specified",
+        artist: fanlink.artist || campaign?.artist_name || "—",
+        song: fanlink.title || "—",
+        link: `/${fanlink.artist_slug}/${fanlink.slug}`,
+        pageViews: counts.views,
+        spotifyClicks: counts.spotify,
+        otherPlatformClicks: counts.other,
+        ctr: counts.views > 0 ? (counts.spotify / counts.views) * 100 : 0,
+      };
+    }).sort((a, b) => b.spotifyClicks - a.spotifyClicks || b.pageViews - a.pageViews);
+    setSpotifyReport(reportRows);
     setLoading(false);
   }, [user, dateRange]);
 
@@ -237,6 +285,39 @@ const CampaignDashboard = () => {
           </motion.div>
 
           <motion.section className="rounded-2xl border border-border/50 bg-card/50 backdrop-blur-sm p-6" custom={5} variants={sectionVariants} initial="hidden" animate="visible">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-2">
+              <h2 className="font-display text-lg font-semibold text-muted-foreground">Spotify Traffic Report</h2>
+              <span className="text-xs text-muted-foreground">Ranked by Spotify outbound clicks</span>
+            </div>
+            <p className="text-xs text-muted-foreground mb-4">
+              Compare artist, song, MDistro campaign and fan-link performance. Add the exact TikTok Ads campaign name when creating a campaign. Spotify clicks are handoff attempts, not verified streams.
+            </p>
+            {spotifyReport.length === 0 ? (
+              <div className="rounded-xl border border-dashed border-border p-8 text-center text-sm text-muted-foreground">Your report will appear after visitors use your fan links.</div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead><tr className="border-b border-border text-left text-xs text-muted-foreground">
+                    <th className="py-3 pr-4">Campaign / Artist / Song</th><th className="py-3 pr-4">TikTok Ads campaign</th>
+                    <th className="py-3 pr-4 text-right">Views</th><th className="py-3 pr-4 text-right">Spotify clicks</th>
+                    <th className="py-3 pr-4 text-right">Spotify CTR</th><th className="py-3 text-right">Link</th>
+                  </tr></thead>
+                  <tbody>{spotifyReport.map((row) => (
+                    <tr key={row.id} className="border-b border-border/60 last:border-0">
+                      <td className="py-3 pr-4 min-w-[180px]"><p className="font-medium">{row.campaignName}</p><p className="text-xs text-muted-foreground">{row.artist} — {row.song}</p></td>
+                      <td className="py-3 pr-4 text-xs text-muted-foreground min-w-[140px]">{row.tiktokCampaignName}</td>
+                      <td className="py-3 pr-4 text-right tabular-nums">{row.pageViews.toLocaleString()}</td>
+                      <td className="py-3 pr-4 text-right tabular-nums font-semibold">{row.spotifyClicks.toLocaleString()}</td>
+                      <td className="py-3 pr-4 text-right tabular-nums">{row.ctr.toFixed(1)}%</td>
+                      <td className="py-3 text-right"><a href={row.link} target="_blank" rel="noreferrer" className="text-primary hover:underline">Open</a></td>
+                    </tr>
+                  ))}</tbody>
+                </table>
+              </div>
+            )}
+          </motion.section>
+
+          <motion.section className="rounded-2xl border border-border/50 bg-card/50 backdrop-blur-sm p-6" custom={6} variants={sectionVariants} initial="hidden" animate="visible">
             <h2 className="font-display text-lg font-semibold mb-4 text-muted-foreground">All Campaigns</h2>
             <CampaignTable campaigns={campaigns} onExport={handleExport} />
           </motion.section>
