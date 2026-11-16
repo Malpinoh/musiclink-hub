@@ -246,6 +246,54 @@ const FanlinkPage = () => {
     }
   };
 
+  // Attempt native app handoff, then fall back to the original HTTPS URL.
+  const getPlatformAppUrl = (platformName: string, platformUrl: string): string | null => {
+    try {
+      const url = new URL(platformUrl);
+      const path = url.pathname.replace(/^\/+/, "");
+
+      if (platformName === "spotify" && url.hostname.includes("spotify.com")) {
+        const parts = path.split("/").filter(Boolean);
+        if (parts.length >= 2 && ["track", "album", "artist", "playlist", "episode", "show", "audiobook"].includes(parts[0])) {
+          return "spotify:" + parts[0] + ":" + parts[1];
+        }
+      }
+
+      if (platformName === "apple_music" && url.hostname.includes("apple.com")) {
+        return "music://" + path + url.search + url.hash;
+      }
+
+      if (platformName === "audiomack" && url.hostname.includes("audiomack.com")) {
+        return "audiomack://" + path + url.search + url.hash;
+      }
+    } catch {
+      // Use the original URL when the platform URL cannot be parsed.
+    }
+    return null;
+  };
+
+  const openPlatformLink = (platformName: string, platformUrl: string) => {
+    const appUrl = getPlatformAppUrl(platformName, platformUrl);
+    if (!appUrl) {
+      window.location.assign(platformUrl);
+      return;
+    }
+
+    let fallbackTriggered = false;
+    const fallbackTimer = window.setTimeout(() => {
+      if (fallbackTriggered) return;
+      fallbackTriggered = true;
+      window.location.assign(platformUrl);
+    }, 1400);
+
+    try {
+      window.location.assign(appUrl);
+    } catch {
+      window.clearTimeout(fallbackTimer);
+      window.location.assign(platformUrl);
+    }
+  };
+
   const handlePlatformClick = (platformName: string) => {
     if (!fanlink) return;
 
@@ -559,13 +607,13 @@ const FanlinkPage = () => {
                           <motion.a
                             key={link.id}
                             href={link.platform_url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            onClick={() => {
+                            onClick={(event) => {
+                              event.preventDefault();
                               handlePlatformClick(link.platform_name);
                               window.fbq?.("track", "Lead", { platform: link.platform_name, content_name: fanlink.title });
                               window.gtag?.("event", "generate_lead", { platform: link.platform_name, content_name: fanlink.title });
                               trackTikTokFanlinkEvent("ClickButton", { content_id: fanlink.id, content_name: fanlink.title, platform: link.platform_name });
+                              openPlatformLink(link.platform_name, link.platform_url);
                             }}
                             className="mdistro-platform-link group relative flex min-h-12 items-center gap-3 rounded-full border border-black/5 bg-white px-4 py-2.5 text-black overflow-hidden transition-all duration-300 hover:-translate-y-0.5 hover:shadow-xl"
                             initial={{ opacity: 0, y: 10 }}
