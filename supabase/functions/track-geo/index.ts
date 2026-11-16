@@ -72,7 +72,7 @@ Deno.serve(async (req: Request) => {
 
   try {
     const body = await req.json();
-    const { type, id, platform_name, content_type, user_agent, device_type, action_type, email, spotify_user_id, spotify_access_token, spotify_refresh_token, token_expires_at } = body;
+    const { type, id, platform_name, content_type, user_agent, device_type, action_type, email, spotify_user_id, spotify_access_token, spotify_refresh_token, token_expires_at, tiktok_attribution } = body;
 
     // Get client IP
     const clientIP = getClientIP(req);
@@ -107,6 +107,32 @@ Deno.serve(async (req: Request) => {
         throw error;
       }
       result = data;
+
+      // Persist TikTok campaign attribution separately from the core click row.
+      // TikTok Ads can append ttclid and/or UTM/macros such as campaign name/ID to the landing URL.
+      if (tiktok_attribution && typeof tiktok_attribution === "object" && Object.values(tiktok_attribution).some(Boolean)) {
+        const { error: attributionError } = await supabase.from("tiktok_attributions").insert({
+          fanlink_id: id,
+          click_id: data?.[0]?.id || null,
+          platform_name: platform_name || null,
+          ttclid: typeof tiktok_attribution.ttclid === "string" ? tiktok_attribution.ttclid.slice(0, 1000) : null,
+          campaign_id: typeof tiktok_attribution.campaignId === "string" ? tiktok_attribution.campaignId.slice(0, 255) : null,
+          campaign_name: typeof tiktok_attribution.campaignName === "string" ? tiktok_attribution.campaignName.slice(0, 255) : null,
+          adgroup_id: typeof tiktok_attribution.adgroupId === "string" ? tiktok_attribution.adgroupId.slice(0, 255) : null,
+          adgroup_name: typeof tiktok_attribution.adgroupName === "string" ? tiktok_attribution.adgroupName.slice(0, 255) : null,
+          ad_id: typeof tiktok_attribution.adId === "string" ? tiktok_attribution.adId.slice(0, 255) : null,
+          ad_name: typeof tiktok_attribution.adName === "string" ? tiktok_attribution.adName.slice(0, 255) : null,
+          utm_source: typeof tiktok_attribution.source === "string" ? tiktok_attribution.source.slice(0, 100) : null,
+          utm_medium: typeof tiktok_attribution.medium === "string" ? tiktok_attribution.medium.slice(0, 100) : null,
+          utm_content: typeof tiktok_attribution.content === "string" ? tiktok_attribution.content.slice(0, 255) : null,
+          utm_term: typeof tiktok_attribution.term === "string" ? tiktok_attribution.term.slice(0, 255) : null,
+          user_agent: user_agent || null,
+          device_type: device_type || null,
+          country: geoData.country,
+          city: geoData.city,
+        });
+        if (attributionError) console.error("TikTok attribution insert error:", attributionError);
+      }
     } else if (type === "presave_action") {
       // Insert pre-save action with geo data
       const insertData: Record<string, unknown> = {
