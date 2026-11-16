@@ -129,6 +129,7 @@ const FanlinkPage = () => {
     { id: string; title: string; slug: string; artist_slug: string; artwork_url: string | null }[]
   >([]);
   const [contactSubmitted, setContactSubmitted] = useState(false);
+  const [showSpotifyFallback, setShowSpotifyFallback] = useState(false);
   const watimagboRedirectStarted = useRef(false);
 
   const currentUrl = getCurrentShareUrl();
@@ -257,27 +258,32 @@ const FanlinkPage = () => {
     }
   };
 
-  // Attempt native app handoff, then fall back to the original HTTPS URL.
+  // Prefer platform-supported HTTPS app links on iOS and app URI schemes on Android.
+  // A web fallback is retained for browsers where the native app handoff is unavailable.
   const getPlatformAppUrl = (platformName: string, platformUrl: string): string | null => {
     try {
       const url = new URL(platformUrl);
-      const path = url.pathname.replace(/^\/+/, "");
+      const path = url.pathname.startsWith("/") ? url.pathname.slice(1) : url.pathname;
+      const isAndroid = /android/i.test(navigator.userAgent);
+      const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
 
       if (platformName === "spotify" && url.hostname.includes("spotify.com")) {
+        // Spotify recommends HTTPS content links on iOS; Android supports spotify: URIs.
+        if (!isAndroid || isIOS) return null;
         const parts = path.split("/").filter(Boolean);
         if (parts.length >= 2 && ["track", "album", "artist", "playlist", "episode", "show", "audiobook"].includes(parts[0])) {
-          // Experimental: Spotify's album :play URI can start album playback.
-          // Spotify may force shuffle mode; this is not a guaranteed ordered-playback feature.
           const contentUri = "spotify:" + parts[0] + ":" + parts[1];
+          // Keep the existing experimental album-play behaviour; Spotify controls playback mode.
           return parts[0] === "album" ? contentUri + ":play" : contentUri;
         }
       }
 
-      if (platformName === "apple_music" && url.hostname.includes("apple.com")) {
+      // Use custom app schemes only on Android; iOS receives the platform HTTPS universal link.
+      if (isAndroid && platformName === "apple_music" && url.hostname.includes("apple.com")) {
         return "music://" + path + url.search + url.hash;
       }
 
-      if (platformName === "audiomack" && url.hostname.includes("audiomack.com")) {
+      if (isAndroid && platformName === "audiomack" && url.hostname.includes("audiomack.com")) {
         return "audiomack://" + path + url.search + url.hash;
       }
     } catch {
@@ -286,25 +292,42 @@ const FanlinkPage = () => {
     return null;
   };
 
-  const openPlatformLink = (platformName: string, platformUrl: string) => {
+  const openPlatformLink = (
+    platformName: string,
+    platformUrl: string,
+    onFallback?: () => void
+  ) => {
     const appUrl = getPlatformAppUrl(platformName, platformUrl);
     if (!appUrl) {
       window.location.assign(platformUrl);
       return;
     }
 
-    let fallbackTriggered = false;
+    let handoffStarted = false;
     const fallbackTimer = window.setTimeout(() => {
-      if (fallbackTriggered) return;
-      fallbackTriggered = true;
-      window.location.assign(platformUrl);
-    }, 1400);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+      if (handoffStarted || document.visibilityState === "hidden") return;
+      if (onFallback) onFallback();
+      else window.location.assign(platformUrl);
+    }, 1600);
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "hidden") {
+        handoffStarted = true;
+        window.clearTimeout(fallbackTimer);
+        document.removeEventListener("visibilitychange", handleVisibilityChange);
+      }
+    };
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
 
     try {
       window.location.assign(appUrl);
     } catch {
       window.clearTimeout(fallbackTimer);
-      window.location.assign(platformUrl);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+      if (onFallback) onFallback();
+      else window.location.assign(platformUrl);
     }
   };
 
@@ -376,7 +399,7 @@ const FanlinkPage = () => {
       platform: "spotify",
     });
     handlePlatformClick("spotify");
-    openPlatformLink("spotify", spotifyLink.platform_url);
+    openPlatformLink("spotify", spotifyLink.platform_url, () => setShowSpotifyFallback(true));
   }, [fanlink, platformLinks]);
 
   const handleCopyLink = async () => {
@@ -603,6 +626,38 @@ const FanlinkPage = () => {
 
             {/* ── Right: actions ── */}
             <div className="w-full">
+              {showSpotifyFallback && fanlink.artist_slug?.toLowerCase() === "ade-s-kay" && fanlink.slug?.toLowerCase() === "watimagbo" && (
+                <div role="status" className="mb-4 rounded-2xl border border-[#1DB954]/30 bg-[#1DB954]/10 p-4 text-center">
+                  <p className="text-sm font-semibold">Spotify didn't open automatically?</p>
+                  <p className="mt-1 text-xs text-muted-foreground">Tap below to try opening the track in the Spotify app, or continue to Spotify on the web.</p>
+                  <div className="mt-3 flex flex-col gap-2 sm:flex-row">
+                    <Button
+                      className="flex-1"
+                      onClick={() => {
+                        setShowSpotifyFallback(false);
+                        handlePlatformClick("spotify");
+                        trackTikTokFanlinkEvent("ClickButton", {
+                          content_id: fanlink.id,
+                          content_name: fanlink.title,
+                          platform: "spotify",
+                        });
+                        openPlatformLink("spotify", WATIMAGBO_SPOTIFY_TRACK_URL);
+                      }}
+                    >
+                      <SpotifyIcon />
+                      Try Spotify app again
+                    </Button>
+                    <Button
+                      variant="outline"
+                      className="flex-1"
+                      onClick={() => window.location.assign(WATIMAGBO_SPOTIFY_TRACK_URL)}
+                    >
+                      Continue in browser
+                    </Button>
+                  </div>
+                </div>
+              )}
+
               {/* Fan Contact Form */}
               {showContactForm && !contactSubmitted && (
                 <FanContactForm
