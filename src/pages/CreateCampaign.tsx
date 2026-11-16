@@ -39,6 +39,7 @@ const CreateCampaign = () => {
 
   // Common fields
   const [campaignName, setCampaignName] = useState("");
+  const [tiktokCampaignName, setTiktokCampaignName] = useState("");
   const [artistName, setArtistName] = useState("");
   const [releaseDate, setReleaseDate] = useState("");
   const [description, setDescription] = useState("");
@@ -186,7 +187,7 @@ const CreateCampaign = () => {
           fanlink_id: fanlinkId,
           pre_save_id: presaveId,
           description: description || null,
-          metadata: { template_type: type, ...templateData },
+          metadata: { template_type: type, tiktok_campaign_name: tiktokCampaignName.trim() || null, ...templateData },
         })
         .select("id")
         .single();
@@ -404,6 +405,16 @@ const CreateCampaign = () => {
                 <div>
                   <Label>Artist Name *</Label>
                   <Input value={artistName} onChange={(e) => setArtistName(e.target.value)} placeholder="Your artist name" className="mt-1" />
+                </div>
+                <div>
+                  <Label>TikTok Ads Campaign Name (optional)</Label>
+                  <Input
+                    value={tiktokCampaignName}
+                    onChange={(e) => setTiktokCampaignName(e.target.value)}
+                    placeholder="Enter the campaign name from TikTok Ads Manager"
+                    className="mt-1"
+                  />
+                  <p className="mt-1 text-xs text-muted-foreground">Use the same name shown in TikTok Ads Manager so you can compare promotion results in your report.</p>
                 </div>
 
                 {/* Template-specific fields */}
