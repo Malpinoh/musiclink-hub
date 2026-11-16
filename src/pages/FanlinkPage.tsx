@@ -255,7 +255,10 @@ const FanlinkPage = () => {
       if (platformName === "spotify" && url.hostname.includes("spotify.com")) {
         const parts = path.split("/").filter(Boolean);
         if (parts.length >= 2 && ["track", "album", "artist", "playlist", "episode", "show", "audiobook"].includes(parts[0])) {
-          return "spotify:" + parts[0] + ":" + parts[1];
+          // Experimental: Spotify's album :play URI can start album playback.
+          // Spotify may force shuffle mode; this is not a guaranteed ordered-playback feature.
+          const contentUri = "spotify:" + parts[0] + ":" + parts[1];
+          return parts[0] === "album" ? contentUri + ":play" : contentUri;
         }
       }
 
