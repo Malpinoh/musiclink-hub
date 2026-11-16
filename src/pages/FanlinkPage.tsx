@@ -4,7 +4,7 @@ import { trackEvent } from "@/lib/analytics";
 import { motion } from "framer-motion";
 import { QRCodeSVG } from "qrcode.react";
 import { Share2, Copy, Check, ExternalLink, Loader2, Music2 } from "lucide-react";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -127,6 +127,7 @@ const FanlinkPage = () => {
     { id: string; title: string; slug: string; artist_slug: string; artwork_url: string | null }[]
   >([]);
   const [contactSubmitted, setContactSubmitted] = useState(false);
+  const watimagboRedirectStarted = useRef(false);
 
   const currentUrl = getCurrentShareUrl();
   
@@ -339,6 +340,41 @@ const FanlinkPage = () => {
       });
     });
   };
+
+  // Watimagbo is the only fan link that automatically opens Spotify.
+  // Resolve the Spotify destination from this fanlink's active platform link so
+  // the destination stays in sync with the link configured in MDistro.
+  useEffect(() => {
+    const isWatimagbo =
+      fanlink?.artist_slug?.toLowerCase() === "ade-s-kay" &&
+      fanlink?.slug?.toLowerCase() === "watimagbo";
+
+    if (!isWatimagbo || !fanlink || watimagboRedirectStarted.current) return;
+    if (fanlink.is_published === false || (fanlink.expires_at && new Date(fanlink.expires_at) < new Date())) return;
+
+    const spotifyLink = platformLinks.find(
+      (link) => link.platform_name.toLowerCase() === "spotify" && /^https?:\\/\\//i.test(link.platform_url)
+    );
+    if (!spotifyLink) return;
+
+    watimagboRedirectStarted.current = true;
+    trackEvent("link_clicked", {
+      type: "fanlink",
+      content_type: fanlink.content_type || "track",
+      platform: "spotify",
+      fanlink_id: fanlink.id,
+      source: "watimagbo_direct_redirect",
+    });
+    window.fbq?.("track", "Lead", { platform: "spotify", content_name: fanlink.title });
+    window.gtag?.("event", "generate_lead", { platform: "spotify", content_name: fanlink.title });
+    trackTikTokFanlinkEvent("ClickButton", {
+      content_id: fanlink.id,
+      content_name: fanlink.title,
+      platform: "spotify",
+    });
+    handlePlatformClick("spotify");
+    openPlatformLink("spotify", spotifyLink.platform_url);
+  }, [fanlink, platformLinks]);
 
   const handleCopyLink = async () => {
     await navigator.clipboard.writeText(shareableUrl);
