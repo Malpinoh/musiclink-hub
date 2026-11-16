@@ -353,7 +353,7 @@ const FanlinkPage = () => {
     if (fanlink.is_published === false || (fanlink.expires_at && new Date(fanlink.expires_at) < new Date())) return;
 
     const spotifyLink = platformLinks.find(
-      (link) => link.platform_name.toLowerCase() === "spotify" && /^https?:\\/\\//i.test(link.platform_url)
+      (link) => link.platform_name.toLowerCase() === "spotify" && (link.platform_url.startsWith("https://") || link.platform_url.startsWith("http://"))
     );
     if (!spotifyLink) return;
 
