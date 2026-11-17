@@ -5,7 +5,7 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-const SITE_URL = "https://md.malpinohdistro.com.ng";
+// mdistro.online is the canonical public domain.\n// md.malpinohdistro.com.ng remains active and is redirected to this domain by Vercel,\n// so existing campaign links continue to work.\nconst SITE_URL = "https://mdistro.online";
 
 Deno.serve(async (req: Request) => {
   // Handle CORS preflight
