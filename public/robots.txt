@@ -1,5 +1,5 @@
 # MDistro Link - robots.txt
-# https://md.malpinohdistro.com.ng
+# https://mdistro.online
 
 # Allow all search engines
 User-agent: *
@@ -69,10 +69,10 @@ Allow: /demo
 Allow: /link/
 
 # Sitemap location
-Sitemap: https://md.malpinohdistro.com.ng/sitemap.xml
+Sitemap: https://mdistro.online/sitemap.xml
 
 # Crawl-delay for polite crawling
 Crawl-delay: 1
 
 # Host directive
-Host: https://md.malpinohdistro.com.ng
+Host: https://mdistro.online
