@@ -88,7 +88,7 @@ Deno.serve(async (req: Request) => {
       return json({ error: "email not configured" }, 500);
     }
 
-    const siteUrl = Deno.env.get("SITE_URL") ?? "https://md.malpinohdistro.com.ng";
+    const siteUrl = Deno.env.get("SITE_URL") ?? "https://mdistro.online";
     const link = notification.link ? `${siteUrl}${notification.link}` : null;
 
     const res = await fetch("https://api.brevo.com/v3/smtp/email", {

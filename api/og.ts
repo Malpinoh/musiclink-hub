@@ -43,8 +43,8 @@ export default async function handler(
   // Keep preview deployments isolated on their own deployment hostname.
   const requestHost = getHeader(req, "host")?.toLowerCase();
   const origin =
-    requestHost === "md.malpinohdistro.com.ng"
-      ? "https://md.malpinohdistro.com.ng"
+    requestHost === "mdistro.online"
+      ? "https://mdistro.online"
       : `https://${process.env.VERCEL_URL ?? "localhost"}`;
 
   const path = appPath(req);
