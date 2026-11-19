@@ -305,8 +305,11 @@ const FanlinkPage = () => {
     }
   };
 
-  // Prefer platform-supported HTTPS app links on iOS and app URI schemes on Android.
-  // A web fallback is retained for browsers where the native app handoff is unavailable.
+  // Prefer the platform HTTPS URL for fan-link navigation.
+  // Spotify's HTTPS link is the safest universal handoff: Android/iOS can open
+  // the native app when installed, while browsers fall back to Spotify Web.
+  // We intentionally avoid forcing a custom spotify: URI here because some
+  // mobile browsers keep the MDistro page visible when the app scheme fails.
   const getPlatformAppUrl = (platformName: string, platformUrl: string): string | null => {
     try {
       const url = new URL(platformUrl);
@@ -315,14 +318,7 @@ const FanlinkPage = () => {
       const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
 
       if (platformName === "spotify" && url.hostname.includes("spotify.com")) {
-        // Spotify recommends HTTPS content links on iOS; Android supports spotify: URIs.
-        if (!isAndroid || isIOS) return null;
-        const parts = path.split("/").filter(Boolean);
-        if (parts.length >= 2 && ["track", "album", "artist", "playlist", "episode", "show", "audiobook"].includes(parts[0])) {
-          const contentUri = "spotify:" + parts[0] + ":" + parts[1];
-          // Keep the existing experimental album-play behaviour; Spotify controls playback mode.
-          return parts[0] === "album" ? contentUri + ":play" : contentUri;
-        }
+        return null;
       }
 
       // Use custom app schemes only on Android; iOS receives the platform HTTPS universal link.
