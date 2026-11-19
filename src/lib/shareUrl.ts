@@ -5,7 +5,7 @@
 const SUPABASE_URL =
   import.meta.env.VITE_SUPABASE_URL || "https://uwzhhzkvqqvaqvkuocrz.supabase.co";
 
-export const PUBLIC_SITE_URL = "https://md.malpinohdistro.com.ng";
+export const PUBLIC_SITE_URL = "https://mdistro.online";
 
 /** Current page as a public, previewable URL on the custom domain */
 export function getCurrentShareUrl(): string {
