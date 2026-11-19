@@ -436,7 +436,10 @@ const FanlinkPage = () => {
     const spotifyLink = platformLinks.find(
       (link) => link.platform_name.toLowerCase() === "spotify" && (link.platform_url.startsWith("https://") || link.platform_url.startsWith("http://"))
     );
-    if (!spotifyLink) return;
+    // WATIMAGBO has a verified Spotify destination. Keep the fallback so a
+    // missing/temporarily stale platform_links row cannot strand the campaign
+    // on the MDistro metadata/landing page instead of handing the fan to Spotify.
+    const spotifyDestination = spotifyLink?.platform_url || WATIMAGBO_SPOTIFY_TRACK_URL;
 
     watimagboRedirectStarted.current = true;
     window.fbq?.("track", "Lead", { platform: "spotify", content_name: fanlink.title });
@@ -447,7 +450,7 @@ const FanlinkPage = () => {
       platform: "spotify",
     });
     handlePlatformClick("spotify");
-    openPlatformLink("spotify", spotifyLink.platform_url, () => setShowSpotifyFallback(true));
+    openPlatformLink("spotify", spotifyDestination, () => setShowSpotifyFallback(true));
   }, [fanlink, platformLinks]);
 
   const handleCopyLink = async () => {
