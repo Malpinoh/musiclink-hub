@@ -846,7 +846,7 @@ const EditPreSave = () => {
                   rel="noopener noreferrer"
                   className="text-primary underline text-xs"
                 >
-                  md.malpinohdistro.com.ng/listen/{preSave.artist_slug}-{preSave.slug}
+                  mdistro.online/listen/{preSave.artist_slug}-{preSave.slug}
                 </a>
               </div>
             )}
