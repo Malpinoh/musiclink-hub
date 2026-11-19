@@ -516,7 +516,7 @@ const CreatePreSave = () => {
               Streaming links auto-activate on release day. Fans who pre-save get notified.
             </p>
             <div className="rounded-xl bg-secondary/50 p-4 font-mono text-sm break-all border border-border/50">
-              <span className="text-muted-foreground">md.malpinohdistro.com.ng/pre/</span>
+              <span className="text-muted-foreground">mdistro.online/pre/</span>
               <span className="text-primary">{slugify(metadata.artist)}-{slugify(metadata.title)}</span>
             </div>
           </div>
