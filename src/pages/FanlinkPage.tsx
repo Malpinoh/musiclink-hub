@@ -30,8 +30,6 @@ import {
   ShazamIcon,
 } from "@/components/icons/PlatformIcons";
 
-const WATIMAGBO_SPOTIFY_TRACK_URL = "https://open.spotify.com/track/5EuErnwjFlkcBwl4UhWQgz";
-
 const platformConfig: Record<string, { icon: React.ReactNode; color: string }> = {
   spotify: { icon: <SpotifyIcon />, color: "#1DB954" },
   apple_music: { icon: <AppleMusicIcon />, color: "#FA243C" },
@@ -174,8 +172,6 @@ const FanlinkPage = () => {
     { id: string; title: string; slug: string; artist_slug: string; artwork_url: string | null }[]
   >([]);
   const [contactSubmitted, setContactSubmitted] = useState(false);
-  const [showSpotifyFallback, setShowSpotifyFallback] = useState(false);
-  const watimagboRedirectStarted = useRef(false);
 
   const currentUrl = getCurrentShareUrl();
   const tiktokAttribution = getTikTokAttribution();
@@ -238,15 +234,9 @@ const FanlinkPage = () => {
         .order("display_order");
 
       if (linksError) throw linksError;
-      const isWatimagboFanlink =
-        fanlinkData.artist_slug?.toLowerCase() === "ade-s-kay" &&
-        fanlinkData.slug?.toLowerCase() === "watimagbo";
-      const resolvedPlatformLinks = (linksData || []).map((link) =>
-        isWatimagboFanlink && link.platform_name?.toLowerCase() === "spotify"
-          ? { ...link, platform_url: WATIMAGBO_SPOTIFY_TRACK_URL }
-          : link
-      );
-      setPlatformLinks(resolvedPlatformLinks);
+      // Use the streaming URLs configured for this fanlink directly.
+      // Campaign-specific destination overrides are intentionally not applied.
+      setPlatformLinks(linksData || []);
 
       // Load theme
       const { data: themeData } = await supabase
@@ -418,36 +408,6 @@ const FanlinkPage = () => {
     });
   };
 
-  // Watimagbo is the only fan link that automatically opens Spotify.
-  // Resolve the Spotify destination from this fanlink's active platform link so
-  // the destination stays in sync with the link configured in MDistro.
-  useEffect(() => {
-    const isWatimagbo =
-      fanlink?.artist_slug?.toLowerCase() === "ade-s-kay" &&
-      fanlink?.slug?.toLowerCase() === "watimagbo";
-
-    if (!isWatimagbo || !fanlink || watimagboRedirectStarted.current) return;
-    if (fanlink.is_published === false || (fanlink.expires_at && new Date(fanlink.expires_at) < new Date())) return;
-
-    const spotifyLink = platformLinks.find(
-      (link) => link.platform_name.toLowerCase() === "spotify" && (link.platform_url.startsWith("https://") || link.platform_url.startsWith("http://"))
-    );
-    // WATIMAGBO has a verified Spotify destination. Keep the fallback so a
-    // missing/temporarily stale platform_links row cannot strand the campaign
-    // on the MDistro metadata/landing page instead of handing the fan to Spotify.
-    const spotifyDestination = spotifyLink?.platform_url || WATIMAGBO_SPOTIFY_TRACK_URL;
-
-    watimagboRedirectStarted.current = true;
-    window.fbq?.("track", "Lead", { platform: "spotify", content_name: fanlink.title });
-    window.gtag?.("event", "generate_lead", { platform: "spotify", content_name: fanlink.title });
-    trackTikTokFanlinkEvent("ClickButton", {
-      content_id: fanlink.id,
-      content_name: fanlink.title,
-      platform: "spotify",
-    });
-    handlePlatformClick("spotify");
-    openPlatformLink("spotify", spotifyDestination, () => setShowSpotifyFallback(true));
-  }, [fanlink, platformLinks]);
 
   const handleCopyLink = async () => {
     await navigator.clipboard.writeText(shareableUrl);
