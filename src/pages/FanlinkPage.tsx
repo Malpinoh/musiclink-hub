@@ -295,72 +295,86 @@ const FanlinkPage = () => {
     }
   };
 
-  // Prefer the platform HTTPS URL for fan-link navigation.
-  // Spotify's HTTPS link is the safest universal handoff: Android/iOS can open
-  // the native app when installed, while browsers fall back to Spotify Web.
-  // We intentionally avoid forcing a custom spotify: URI here because some
-  // mobile browsers keep the MDistro page visible when the app scheme fails.
+  // Hand off platform clicks to the native streaming app when the platform
+  // supports a web/app link on the device. HTTPS links are intentionally kept
+  // as the universal fallback because iOS/Android can route them to the
+  // installed app, while users without the app still reach the web player.
+  //
+  // Spotify is the one platform where we use its documented Android deeplink
+  // when possible. Spotify recommends its native `spotify:` URI on Android;
+  // iOS uses the HTTPS link so Universal Links can open Spotify without the
+  // extra confirmation associated with custom schemes.
   const getPlatformAppUrl = (platformName: string, platformUrl: string): string | null => {
+    if (!platformUrl) return null;
+
     try {
       const url = new URL(platformUrl);
-      const path = url.pathname.startsWith("/") ? url.pathname.slice(1) : url.pathname;
       const isAndroid = /android/i.test(navigator.userAgent);
-      const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
 
-      if (platformName === "spotify" && url.hostname.includes("spotify.com")) {
-        return null;
-      }
+      if (
+        isAndroid &&
+        platformName === "spotify" &&
+        url.hostname === "open.spotify.com"
+      ) {
+        const parts = url.pathname.split("/").filter(Boolean);
+        const resourceType = parts[0];
+        const resourceId = parts[1];
 
-      // Use custom app schemes only on Android; iOS receives the platform HTTPS universal link.
-      if (isAndroid && platformName === "apple_music" && url.hostname.includes("apple.com")) {
-        return "music://" + path + url.search + url.hash;
-      }
-
-      if (isAndroid && platformName === "audiomack" && url.hostname.includes("audiomack.com")) {
-        return "audiomack://" + path + url.search + url.hash;
+        if (resourceType && resourceId) {
+          return `spotify:${resourceType}:${resourceId}`;
+        }
       }
     } catch {
-      // Use the original URL when the platform URL cannot be parsed.
+      // Invalid/non-HTTP URLs simply use the configured destination below.
     }
+
     return null;
   };
 
-  const openPlatformLink = (
-    platformName: string,
-    platformUrl: string,
-    onFallback?: () => void
-  ) => {
+  const openPlatformLink = (platformName: string, platformUrl: string) => {
     const appUrl = getPlatformAppUrl(platformName, platformUrl);
+
     if (!appUrl) {
       window.location.assign(platformUrl);
       return;
     }
 
-    let handoffStarted = false;
-    const fallbackTimer = window.setTimeout(() => {
+    let fallbackTimer: number | undefined;
+    let appOpened = false;
+
+    const cleanup = () => {
+      if (fallbackTimer) window.clearTimeout(fallbackTimer);
       document.removeEventListener("visibilitychange", handleVisibilityChange);
-      if (handoffStarted || document.visibilityState === "hidden") return;
-      if (onFallback) onFallback();
-      else window.location.assign(platformUrl);
-    }, 1600);
+      window.removeEventListener("pagehide", handlePageHide);
+    };
 
     const handleVisibilityChange = () => {
       if (document.visibilityState === "hidden") {
-        handoffStarted = true;
-        window.clearTimeout(fallbackTimer);
-        document.removeEventListener("visibilitychange", handleVisibilityChange);
+        appOpened = true;
+        cleanup();
       }
     };
 
+    const handlePageHide = () => {
+      appOpened = true;
+      cleanup();
+    };
+
     document.addEventListener("visibilitychange", handleVisibilityChange);
+    window.addEventListener("pagehide", handlePageHide);
+
+    // If the native app is not installed (or the browser blocks the custom
+    // scheme), return to the platform HTTPS URL after a short handoff window.
+    fallbackTimer = window.setTimeout(() => {
+      cleanup();
+      if (!appOpened) window.location.assign(platformUrl);
+    }, 1200);
 
     try {
       window.location.assign(appUrl);
     } catch {
-      window.clearTimeout(fallbackTimer);
-      document.removeEventListener("visibilitychange", handleVisibilityChange);
-      if (onFallback) onFallback();
-      else window.location.assign(platformUrl);
+      cleanup();
+      window.location.assign(platformUrl);
     }
   };
 
