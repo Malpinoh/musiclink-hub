@@ -633,37 +633,7 @@ const FanlinkPage = () => {
 
             {/* ── Right: actions ── */}
             <div className="w-full">
-              {showSpotifyFallback && fanlink.artist_slug?.toLowerCase() === "ade-s-kay" && fanlink.slug?.toLowerCase() === "watimagbo" && (
-                <div role="status" className="mb-4 rounded-2xl border border-[#1DB954]/30 bg-[#1DB954]/10 p-4 text-center">
-                  <p className="text-sm font-semibold">Spotify didn't open automatically?</p>
-                  <p className="mt-1 text-xs text-muted-foreground">Tap below to try opening the track in the Spotify app, or continue to Spotify on the web.</p>
-                  <div className="mt-3 flex flex-col gap-2 sm:flex-row">
-                    <Button
-                      className="flex-1"
-                      onClick={() => {
-                        setShowSpotifyFallback(false);
-                        handlePlatformClick("spotify");
-                        trackTikTokFanlinkEvent("ClickButton", {
-                          content_id: fanlink.id,
-                          content_name: fanlink.title,
-                          platform: "spotify",
-                        });
-                        openPlatformLink("spotify", WATIMAGBO_SPOTIFY_TRACK_URL);
-                      }}
-                    >
-                      <SpotifyIcon />
-                      Try Spotify app again
-                    </Button>
-                    <Button
-                      variant="outline"
-                      className="flex-1"
-                      onClick={() => window.location.assign(WATIMAGBO_SPOTIFY_TRACK_URL)}
-                    >
-                      Continue in browser
-                    </Button>
-                  </div>
-                </div>
-              )}
+
 
               {/* Fan Contact Form */}
               {showContactForm && !contactSubmitted && (
