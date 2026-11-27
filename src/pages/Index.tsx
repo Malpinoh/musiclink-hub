@@ -31,7 +31,7 @@ const homeJsonLd = {
   "@type": "WebPage",
   "name": "Smart Music Links & Pre-Save Campaigns | MDistro Link",
   "description": "Create a professional music smart link in minutes. Bring Spotify, Apple Music, YouTube, Audiomack, Boomplay and more together, launch pre-save campaigns, and measure fan engagement with MDistro Link.",
-  "url": "https://mdistro.online",
+  "url": "https://md.malpinohdistro.com.ng",
   "mainEntity": {
     "@type": "SoftwareApplication",
     "name": "MDistro Link",
@@ -88,7 +88,7 @@ const Index = () => {
     {
       icon: <Link2 className="w-6 h-6" />,
       title: "Custom URLs",
-      description: "Clean, branded URLs like mdistro.online/artist/song"
+      description: "Clean, branded URLs like md.malpinohdistro.com.ng/artist/song"
     }
   ];
 
