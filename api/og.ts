@@ -44,7 +44,7 @@ export default async function handler(
   const requestHost = getHeader(req, "host")?.toLowerCase();
   const origin =
     requestHost === "mdistro.online"
-      ? "https://mdistro.online"
+      ? "https://md.malpinohdistro.com.ng"
       : `https://${process.env.VERCEL_URL ?? "localhost"}`;
 
   const path = appPath(req);
