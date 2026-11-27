@@ -2,7 +2,7 @@ import { describe, expect, test } from "bun:test";
 import { clearPresaveState, createPresaveState, validatePresaveState } from "../src/lib/spotifyOAuthState";
 import { readSubscriptionResponse } from "../src/lib/subscriptionResponse";
 
-const origin = "https://mdistro.online";
+const origin = "https://md.malpinohdistro.com.ng";
 const values = new Map<string, string>();
 const storage: Storage = {
   getItem: k => values.get(k) ?? null,
