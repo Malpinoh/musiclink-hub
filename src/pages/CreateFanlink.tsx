@@ -501,7 +501,7 @@ const CreateFanlink = () => {
               Your fanlink URL — share this anywhere to route fans to their preferred platform.
             </p>
             <div className="rounded-xl bg-secondary/50 p-4 font-mono text-sm break-all border border-border/50">
-              <span className="text-muted-foreground">mdistro.online/</span>
+              <span className="text-muted-foreground">md.malpinohdistro.com.ng/</span>
               <span className="text-primary">
                 {slugify(metadata.artist || "artist")}/{slugify(metadata.title || "track")}
               </span>
