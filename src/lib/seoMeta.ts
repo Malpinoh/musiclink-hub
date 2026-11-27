@@ -2,7 +2,7 @@
 // Mirrors the server-rendered output of the `meta` edge function so crawlers
 // and browsers always see the same tags.
 
-export const SITE_URL = "https://mdistro.online";
+export const SITE_URL = "https://md.malpinohdistro.com.ng";
 export const SITE_NAME = "MDistro Link";
 export const TWITTER_HANDLE = "@MalpinohDistro";
 export const DEFAULT_IMAGE = `${SITE_URL}/og-image.png`;
