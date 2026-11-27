@@ -66,7 +66,7 @@ function buildEmailHtml(
 ): string {
   const artworkUrl = preSave.artwork_url || "https://via.placeholder.com/300x300?text=Music";
   // Smart landing page URL with all streaming links
-  const landingUrl = `https://mdistro.online/listen/${preSave.artist_slug}-${preSave.slug}`;
+  const landingUrl = `https://md.malpinohdistro.com.ng/listen/${preSave.artist_slug}-${preSave.slug}`;
   
   const platformButtons = streamingLinks.length > 0
     ? streamingLinks.map(buildPlatformButtonHtml).join("")
